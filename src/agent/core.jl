@@ -30,9 +30,10 @@ All baseline fields added by the @agent macro are listed in this vector.
 They are added in the same order defined here.
 """
 AGENT_BASELINE_FIELDS::Vector = [
+    :(lock::ReentrantLock),
     :(context::Union{Nothing,AgentContext}),
     :(role_handler::Union{AgentRoleHandler}),
-    :(aid::Union{Nothing,String})
+    :(aid::Union{Nothing,String}),
 ]
 """
 Default values for the baseline fields. These have to be defined using
@@ -40,6 +41,7 @@ an anonymous functions. Always need to have the same length as
 AGENT_BASELINE_FIELDS.
 """
 AGENT_BASELINE_DEFAULTS::Vector = [
+    () -> ReentrantLock(),
     () -> nothing,
     () -> AgentRoleHandler(Vector(), Vector(), Vector()),
     () -> nothing,
@@ -91,7 +93,7 @@ macro agent(struct_def)
     # Create a constructor, which will assign 'nothing' to all baseline fields, therefore requires you just to call it with the your fields
     # f.e. @agent MyMagent own_field::String end, can be constructed using MyAgent("MyOwnValueFor own_field").
     new_fields = struct_fields[2+length(AGENT_BASELINE_FIELDS):end]
-    default_constructor_def = Expr(:(=), Expr(:call, struct_name, new_fields...), Expr(:block, :(), Expr(:call, struct_name, [Expr(:call, default) for default in reverse(AGENT_BASELINE_DEFAULTS)]..., new_fields...)))
+    default_constructor_def = Expr(:(=), Expr(:call, struct_name, new_fields...), Expr(:block, :(), Expr(:call, struct_name, [Expr(:call, default) for default in AGENT_BASELINE_DEFAULTS]..., new_fields...)))
 
     esc(Expr(:block, new_struct_def, default_constructor_def))
 end
@@ -102,15 +104,17 @@ In this function the message will be handed over to the different handlers in th
 agent.
 """
 function dispatch_message(agent::Agent, message::Any, meta::Any)
-    for role in agent.role_handler.roles
-        handle_message(role, message, meta)
-    end
-    for (role, call, condition) in agent.role_handler.handle_message_subs
-        if condition(message, meta)
-            call(role, message, meta)
+    lock(agent.lock) do
+        for role in agent.role_handler.roles
+            handle_message(role, message, meta)
         end
+        for (role, call, condition) in agent.role_handler.handle_message_subs
+            if condition(message, meta)
+                call(role, message, meta)
+            end
+        end
+        handle_message(agent, message, meta)
     end
-    handle_message(agent, message, meta)
 end
 
 """

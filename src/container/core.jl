@@ -8,6 +8,7 @@ using ..AgentCore: Agent, dispatch_message
 import ..ContainerAPI.send_message
 
 using Parameters
+using Base.Threads
 
 # id key for the receiver
 RECEIVER_ID::String = "receiver_id"
@@ -64,7 +65,8 @@ function forward_message(container::Container, msg::Any, meta::Dict, receiver_id
         if !haskey(container.agents, receiver_id)
             @warn "Container has no agent with id: $receiver_id"
         else
-            dispatch_message(container.agents[receiver_id], msg, meta)
+            agent = container.agents[receiver_id]
+            return Threads.@spawn dispatch_message(agent, msg, meta)
         end
     end
 end
@@ -82,7 +84,7 @@ function send_message(
     meta::Dict,
     receiver_id::String
 )
-    forward_message(c, message, meta, receiver_id)
+    return forward_message(c, message, meta, receiver_id)
 end
 
 end
