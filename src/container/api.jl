@@ -18,7 +18,7 @@ function send_message(
     container::ContainerInterface,
     message::Any,
     meta::Dict,
-    receiver_id::String
+    receiver_id::Any
 )
     @warn "The API send_message definition has been called, this should never happen. There is most likely an import error."
 end

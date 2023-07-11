@@ -1,9 +1,10 @@
 module ContainerCore
-export Container, register, send_message
+export Container, register, send_message, start
 
 using ..ContainerAPI
 using ..AsyncUtil
 using ..AgentCore: Agent, dispatch_message
+using ..ProtocolCore
 
 import ..ContainerAPI.send_message
 
@@ -24,6 +25,18 @@ able to send messages via different protocols using different codecs.
 @with_kw mutable struct Container <: ContainerInterface
     agents::Dict{String,Agent} = Dict()
     agent_counter::Integer = 0
+    protocol::Union{Nothing,Protocol} = nothing
+    codec::Any = (msg, meta) -> msg
+end
+
+"""
+Starts the container and initialized all its components. After the call the container
+start to act as the communication layer.
+"""
+function start(container::Container)
+    init(container.protocol, 
+    () -> false, 
+    (msg, source) -> forward_message(container, msg, Dict(), "agent1"))
 end
 
 """
@@ -63,7 +76,7 @@ function forward_message(container::Container, msg::Any, meta::Dict, receiver_id
         @warn "Got a message missing an agent id!"
     else
         if !haskey(container.agents, receiver_id)
-            @warn "Container has no agent with id: $receiver_id"
+            @warn "Container $(container.agents) has no agent with id: $receiver_id"
         else
             agent = container.agents[receiver_id]
             return Threads.@spawn dispatch_message(agent, msg, meta)
@@ -79,12 +92,15 @@ Currently only support internal messaging. It will always be assumed that the re
 exists inside the given `container``.`
 """
 function send_message(
-    c::Container,
+    container::Container,
     message::Any,
     meta::Dict,
-    receiver_id::String
+    receiver::Any
 )
-    return forward_message(c, message, meta, receiver_id)
+    if typeof(receiver) === String
+        return forward_message(container, message, meta, receiver)
+    end
+    return send(container.protocol, receiver, container.codec(message, meta))
 end
 
 end
