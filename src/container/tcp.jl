@@ -84,14 +84,10 @@ function init(protocol::TCPProtocol, stop_check::Function, data_handler::Functio
         end
     end)
 
-    error_task = errormonitor(@async begin
+    errormonitor(@async begin
         while !stop_check()
             sleep(0.1)
         end
         @async Base.throwto(listen_task, InterruptException())
     end)
-
-    #wait(listen_task)
-    #wait(error_task)
-    @info "Starting TCP: Done"
 end
