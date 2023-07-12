@@ -43,6 +43,8 @@ end
     wait(@async send_message(container2, "Hello Friends, this is RSc!", Dict(), 
         InetAddr(ip"127.0.0.2", 2940)))
 
+    shutdown(container)
+    shutdown(container2)
 
     @test agent3.counter == 10
 end

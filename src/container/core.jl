@@ -1,5 +1,5 @@
 module ContainerCore
-export Container, register, send_message, start
+export Container, register, send_message, start, shutdown
 
 using ..ContainerAPI
 using ..AsyncUtil
@@ -27,6 +27,7 @@ able to send messages via different protocols using different codecs.
     agent_counter::Integer = 0
     protocol::Union{Nothing,Protocol} = nothing
     codec::Any = (msg, meta) -> msg
+    shutdown::Bool = false
 end
 
 """
@@ -35,8 +36,15 @@ start to act as the communication layer.
 """
 function start(container::Container)
     init(container.protocol, 
-    () -> false, 
+    () -> container.shutdown, 
     (msg, source) -> forward_message(container, msg, Dict(), "agent1"))
+end
+
+"""
+Shut down the container. It is always necessary to call it, to free bound resources
+"""
+function shutdown(container::Container)
+    container.shutdown = true
 end
 
 """
@@ -95,12 +103,15 @@ function send_message(
     container::Container,
     message::Any,
     meta::Dict,
-    receiver::Any
-)
-    if typeof(receiver) === String
-        return forward_message(container, message, meta, receiver)
-    end
+    receiver::Any)
     return send(container.protocol, receiver, container.codec(message, meta))
+end
+
+function send_message(container::Container,
+    message::Any,
+    meta::Dict,
+    receiver::String)
+    return forward_message(container, message, meta, receiver)
 end
 
 end
