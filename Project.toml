@@ -4,12 +4,13 @@ authors = ["OFFIS e.V."]
 version = "0.1.0"
 
 [deps]
+LightBSON = "a4a7f996-b3a6-4de6-b9db-2fa5f350df41"
+
+[compat]
+julia = "1"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
 test = ["Test"]
-
-[compat]
-julia = "1"
