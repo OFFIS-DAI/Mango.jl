@@ -5,7 +5,7 @@ test:
   script:
     # Let's run the tests. Substitute `coverage = false` below, if you do not
     # want coverage results.
-    - julia -e 'using Pkg; Pkg.clone(pwd()); Pkg.build("Mango"); Pkg.test("Mango"; coverage = true)'
+    - julia -e 'using Pkg; Pkg.add(path=pwd()); Pkg.build("Mango"); Pkg.test("Mango"; coverage = true)'
     # Comment out below if you do not want coverage results.
     - julia -e 'using Pkg; Pkg.add("Coverage");
       import Mango; cd(joinpath(dirname(pathof(Mango)), ".."));
