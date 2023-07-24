@@ -32,7 +32,7 @@ They are added in the same order defined here.
 AGENT_BASELINE_FIELDS::Vector = [
     :(lock::ReentrantLock),
     :(context::Union{Nothing,AgentContext}),
-    :(role_handler::Union{AgentRoleHandler}),
+    :(role_handler::AgentRoleHandler),
     :(aid::Union{Nothing,String}),
 ]
 """
