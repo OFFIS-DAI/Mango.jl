@@ -11,7 +11,12 @@ Since our primary focus with Mango.jl is speed improvements over python, the pri
 module EncodeDecode
 using LightBSON
 using OrderedCollections
-export encode, decode, TypeAwareCodec, register_flat_type, register_deep_type
+export encode, decode
+
+struct MsgContent
+    typeinfo::String
+    payload::Vector{UInt8}
+end
 
 # the core functions
 # these versions will reduce structs to OrderedDicts with their field names as is LightBSON default
