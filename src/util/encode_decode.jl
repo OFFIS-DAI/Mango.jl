@@ -15,7 +15,7 @@ export encode, decode, TypeAwareCodec, register_flat_type, register_deep_type
 
 # the core functions
 # these versions will reduce structs to OrderedDicts with their field names as is LightBSON default
-function encode(data::Union{Dict{String,<:Any},OrderedDict{String,<:Any}})::Vector{UInt8}
+function encode(data::OrderedDict{String,Any})::Vector{UInt8}
     buf = Vector{UInt8}()
     LightBSON.bson_write(buf, data)
     return buf
