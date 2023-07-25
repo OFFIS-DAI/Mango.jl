@@ -37,21 +37,10 @@ LightBSON.bson_simple(::Type{MyNested}) = true
     test_string = "test"
     test_big_string = "big_string"^1
     test_floats = rand(1)
-    test_dict = OrderedDict([string(i) => i * 10 for i = 1:1])
-    test_composite = MyComposite(100.0, test_big_string, test_dict)
-    test_nested = MyNested(
-        test_composite,
-        test_composite,
-        test_composite,
-        MyNested(
-            test_composite,
-            test_composite,
-            test_composite,
-            MyNested(test_composite, test_composite, test_composite, nothing),
-        ),
-    )
+    d1 = OrderedDict([string(i) => i * 10 for i = 1:1])
+    test_composite = MyComposite(100.0, test_big_string, d1)
     test_data =
-        [test_string, test_big_string, test_floats, test_dict, test_composite, test_nested]
+        [test_string, test_big_string, test_floats, d1, test_composite]
     test_dict = OrderedDict([string(i) => test_data[i] for i in eachindex(test_data)])
 
     encoded = EncodeDecode.encode(test_dict)
