@@ -25,51 +25,5 @@ function decode(buf::Vector{UInt8})::OrderedDict{String,Any}
     return LightBSON.bson_read(OrderedDict{String,Any}, buf)
 end
 
-# type extension features
-mutable struct TypeAwareCodec
-    known_types::Vector{Type}
-    is_flat::Vector{Bool}
-    encoders::Vector{Function}
-    decoders::Vector{Function}
-
-    function TypeAwareCodec()
-        return new(Vector{Type}(), Vector{Bool}(), Vector{Function}(), Vector{Function}())
-    end
-end
-
-function iterate_and_encode(data::Union{Dict{String,<:Any},OrderedDict{String,<:Any}}, codec::TypeAwareCodec)::Dict{String,Vector{UInt8}}
-
-end
-
-function decode_and_iterate(buf::Vector{UInt8}, codec::TypeAwareCodec)::OrderedDict{String,Any}
-
-end
-
-function encode(data::Union{Dict{String,<:Any},OrderedDict{String,<:Any}}, codec::TypeAwareCodec)::Vector{UInt8}
-    return iterate_and_encode(data, codec)
-end
-
-function decode(buf::Vector{UInt8}, codec::TypeAwareCodec)::OrderedDict{String,Any}
-    return decode_and_iterate(buf, codec)
-end
-
-function register_flat_type(codec::TypeAwareCodec, t::Type)
-
-end
-
-function register_flat_type(codec::TypeAwareCodec, t::Type, encoder::Function, decoder::Function)
-
-end
-
-function register_deep_type(codec::TypeAwareCodec, t::Type)
-
-end
-
-function register_deep_type(codec::TypeAwareCodec, t::Type, encoder::Function, decoder::Function)
-
-end
-
-
-
 
 end
