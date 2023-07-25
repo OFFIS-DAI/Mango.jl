@@ -10,18 +10,19 @@ Since our primary focus with Mango.jl is speed improvements over python, the pri
 =#
 module EncodeDecode
 using LightBSON
+using OrderedCollections
 export encode, decode, TypeAwareCodec, register_flat_type, register_deep_type
 
 # the core functions
 # these versions will reduce structs to OrderedDicts with their field names as is LightBSON default
-function encode(data::Dict{String,<:Any})::Vector{UInt8}
+function encode(data::Union{Dict{String,<:Any},OrderedDict{String,<:Any}})::Vector{UInt8}
     buf = Vector{UInt8}()
     LightBSON.bson_write(buf, data)
     return buf
 end
 
-function decode(buf::Vector{UInt8})::Dict{String,Any}
-    return LightBSON.bson_read(Dict{String,Any}, buf)
+function decode(buf::Vector{UInt8})::OrderedDict{String,Any}
+    return LightBSON.bson_read(OrderedDict{String,Any}, buf)
 end
 
 # type extension features
@@ -36,19 +37,19 @@ mutable struct TypeAwareCodec
     end
 end
 
-function iterate_and_encode(data::Dict{String,<:Any}, codec::TypeAwareCodec)::Dict{String,Vector{UInt8}}
+function iterate_and_encode(data::Union{Dict{String,<:Any},OrderedDict{String,<:Any}}, codec::TypeAwareCodec)::Dict{String,Vector{UInt8}}
 
 end
 
-function decode_and_iterate(buf::Vector{UInt8}, codec::TypeAwareCodec)::Dict{String,Any}
+function decode_and_iterate(buf::Vector{UInt8}, codec::TypeAwareCodec)::OrderedDict{String,Any}
 
 end
 
-function encode(data::Dict{String,<:Any}, codec::TypeAwareCodec)::Vector{UInt8}
+function encode(data::Union{Dict{String,<:Any},OrderedDict{String,<:Any}}, codec::TypeAwareCodec)::Vector{UInt8}
     return iterate_and_encode(data, codec)
 end
 
-function decode(buf::Vector{UInt8}, codec::TypeAwareCodec)::Dict{String,Any}
+function decode(buf::Vector{UInt8}, codec::TypeAwareCodec)::OrderedDict{String,Any}
     return decode_and_iterate(buf, codec)
 end
 
