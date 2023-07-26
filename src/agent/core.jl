@@ -26,6 +26,13 @@ struct AgentRoleHandler
 end
 
 """
+Internal scheduler for scheduling predefined task types
+"""
+struct AgentScheduler
+    tasks::Vector{Task}
+end
+
+"""
 All baseline fields added by the @agent macro are listed in this vector.
 They are added in the same order defined here.
 """
@@ -33,6 +40,7 @@ AGENT_BASELINE_FIELDS::Vector = [
     :(lock::ReentrantLock),
     :(context::Union{Nothing,AgentContext}),
     :(role_handler::Union{AgentRoleHandler}),
+    :(scheduler::AgentScheduler)
     :(aid::Union{Nothing,String}),
 ]
 """
@@ -44,6 +52,7 @@ AGENT_BASELINE_DEFAULTS::Vector = [
     () -> ReentrantLock(),
     () -> nothing,
     () -> AgentRoleHandler(Vector(), Vector(), Vector()),
+    () -> AgentScheduler(Vector()),
     () -> nothing,
 ]
 
@@ -166,6 +175,29 @@ Internal implemntation of the agent API.
 """
 function subscribe_handle(agent::Agent, role::Role, condition::Function, handler::Function)
     push!(agent.role_handler.handle_message_subs, (role, condition, handler))
+end
+
+@enum SchedulingType begin
+    ASYNC = 1
+    THREAD = 2
+    DISTRIBUTED = 3
+end
+
+abstract type TaskData end
+
+struct PeriodicTaskData <: TaskData
+    interval::Float64
+end
+
+function periodic_task(f::Function, data::PeriodicTaskData)
+    while true
+        f()
+        sleep(data.interval)
+    end
+end
+
+function schedule(f::Function, agent::Agent, data::TaskData; scheduling_type::SchedulingType=ASYNC)
+
 end
 
 end
