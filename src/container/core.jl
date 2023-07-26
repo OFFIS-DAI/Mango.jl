@@ -7,12 +7,17 @@ using ..AgentCore: Agent, dispatch_message
 using ..ProtocolCore
 
 import ..ContainerAPI.send_message
+import JSON
 
 using Parameters
 using Base.Threads
 
 # id key for the receiver
 RECEIVER_ID::String = "receiver_id"
+# id key for the sender address
+SENDER_ADDR::String = "sender_addr"
+# id key for the sender 
+SENDER_ID::String = "sender_id"
 # prefix for the generated aid's
 AGENT_PREFIX::String = "agent"
 
@@ -26,8 +31,28 @@ able to send messages via different protocols using different codecs.
     agents::Dict{String,Agent} = Dict()
     agent_counter::Integer = 0
     protocol::Union{Nothing,Protocol} = nothing
-    codec::Any = (msg, meta) -> msg
+    codec::Any = ((msg) -> JSON.json(msg), (msg_data) -> JSON.parse(String(msg_data)))
     shutdown::Bool = false
+    loop::Any = nothing
+    tasks::Any = nothing
+end
+
+"""
+Internal representation of a message in mango
+"""
+struct MangoMessage
+    content::Any
+    meta::Dict
+end
+
+"""
+Process the message data after rawly receiving them.
+"""
+function process_message(container::Container, msg_data::Any, sender_addr::Any)
+    msg = container.codec[2](msg_data)
+    content, meta = msg["content"], msg["meta"]
+    meta[SENDER_ADDR] = sender_addr
+    forward_message(container, content, meta)
 end
 
 """
@@ -35,16 +60,22 @@ Starts the container and initialized all its components. After the call the cont
 start to act as the communication layer.
 """
 function start(container::Container)
-    init(container.protocol, 
+    container.loop, container.tasks = init(container.protocol, 
     () -> container.shutdown, 
-    (msg, source) -> forward_message(container, msg, Dict(), "agent1"))
+    (msg_data, sender_addr) -> process_message(container, msg_data, sender_addr))
 end
 
 """
-Shut down the container. It is always necessary to call it, to free bound resources
+Shut down the container. It is always necessary to call it for freeing bound resources
 """
 function shutdown(container::Container)
     container.shutdown = true
+    close(container.protocol)
+    @asynclog Base.throwto(container.loop, InterruptException())
+    
+    for task in container.tasks
+        wait(task)
+    end
 end
 
 """
@@ -79,11 +110,13 @@ Internal function of the container, which forward the message to the correct age
 At this point it has already been evaluated the message has to be routed to an agent in control of
 the container. 
 """
-function forward_message(container::Container, msg::Any, meta::Dict, receiver_id::String)
+function forward_message(container::Container, msg::Any, meta::Dict)
+    receiver_id = meta[RECEIVER_ID]
+
     if isnothing(receiver_id)
         @warn "Got a message missing an agent id!"
     else
-        if !haskey(container.agents, receiver_id)
+        if !haskey(container.agents, meta[RECEIVER_ID])
             @warn "Container $(container.agents) has no agent with id: $receiver_id"
         else
             agent = container.agents[receiver_id]
@@ -92,26 +125,38 @@ function forward_message(container::Container, msg::Any, meta::Dict, receiver_id
     end
 end
 
-"""
-Send a message `message` with the metadata `meta` using the given container `container`
-to the agent with the receiver id `receiver_id`.
-
-Currently only support internal messaging. It will always be assumed that the receiver_id
-exists inside the given `container``.`
-"""
-function send_message(
-    container::Container,
-    message::Any,
-    meta::Dict,
-    receiver::Any)
-    return send(container.protocol, receiver, container.codec(message, meta))
+function to_external_message(content::Any, meta::Dict)
+    return MangoMessage(content, meta)
 end
 
+"""
+Send a message `message` with using the given container `container`
+to the agent with the receiver id `receiver_id`. The receivers address 
+is used by the chosen protocol to appropriatley route the message to
+external participants. To specifiy further meta data of the message
+`kwargs` should be used.
+
+# Returns
+True if the message has been sent successfully, false otherwise.
+"""
 function send_message(container::Container,
-    message::Any,
-    meta::Dict,
-    receiver::String)
-    return forward_message(container, message, meta, receiver)
+    content::Any,
+    receiver_id::String,
+    receiver_addr::Any=nothing,
+    sender_id::Union{Nothing,String}=nothing;
+    kwargs...)
+
+    meta = Dict()
+    for (key, value) in kwargs
+        meta[key] = value
+    end
+    meta[RECEIVER_ID] = receiver_id
+    meta[SENDER_ID] = sender_id
+
+    if isnothing(receiver_addr)
+        return forward_message(container, content, meta)
+    end
+    return @asynclog send(container.protocol, receiver_addr, container.codec[1](to_external_message(content, meta)))
 end
 
 end

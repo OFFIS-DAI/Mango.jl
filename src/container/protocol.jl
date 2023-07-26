@@ -1,5 +1,5 @@
 module ProtocolCore
-export Protocol, send, start
+export Protocol, send, start, close
 
 """
 Type for all implementations of protocols, acts like an interface. A protocol defines the way message are processed and especially sent and received 

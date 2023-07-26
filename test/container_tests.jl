@@ -19,7 +19,7 @@ end
     register(container, agent1)
     register(container, agent2)
 
-    wait(@asynclog send_message(container, "Hello Friends, this is RSc!", Dict(), agent1.aid))
+    wait(@asynclog send_message(container, "Hello Friends, this is RSc!", agent1.aid))
 
     @test agent1.counter == 10
 end
@@ -40,8 +40,7 @@ end
     wait(Threads.@spawn start(container))
     wait(Threads.@spawn start(container2))
 
-    wait(@async send_message(container2, "Hello Friends, this is RSc!", Dict(), 
-        InetAddr(ip"127.0.0.2", 2940)))
+    wait(send_message(container2, "Hello Friends2, this is RSc!", agent3.aid, InetAddr(ip"127.0.0.2", 2940)))
 
     shutdown(container)
     shutdown(container2)

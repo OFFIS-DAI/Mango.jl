@@ -1,14 +1,52 @@
 
-export TCPAddress, TCPProtocol, send, init
+export TCPAddress, TCPProtocol, send, init, close
 
-using Sockets: connect, write, close, getpeername, read, listen, accept, IPAddr, TCPServer, TCPSocket, @ip_str, InetAddr
+using Sockets: connect, write, getpeername, read, listen, accept, IPAddr, TCPSocket, TCPServer, @ip_str, InetAddr
 using Parameters
 using ..AsyncUtil
+
+using ConcurrentUtilities: Pool, acquire, release, drain!
+
+import Dates
+import Base.close
+
+@with_kw struct TCPConnectionPool
+    keep_alive_time_ms::Int32
+    connections::Pool{InetAddr,Tuple{TCPSocket,Dates.DateTime}} = Pool{InetAddr,Tuple{TCPSocket,Dates.DateTime}}(100)
+end
 
 @with_kw mutable struct TCPProtocol <: Protocol{InetAddr}
     address::InetAddr
     server::Union{Nothing,TCPServer} = nothing
-    connections::Dict{InetAddr,TCPServer} = Dict()
+    pool::TCPConnectionPool = TCPConnectionPool(keep_alive_time_ms=300000)
+end
+
+function close(pool::TCPConnectionPool)
+    for (_,v) in pool.connections.keyedvalues
+        for (connection,__) in v
+            close(connection)
+        end
+    end
+    drain!(pool.connections)
+end
+
+function is_valid(connection::Tuple{TCPSocket,Dates.DateTime}, keep_alive_time_ms::Int32)
+    if (Dates.now() - connection[2]).value > keep_alive_time_ms
+        close(connection[1])
+        return false
+    end
+    return true
+end
+
+function acquire_tcp_connection(tcp_pool::TCPConnectionPool, key::InetAddr)
+    connection,_ = acquire(tcp_pool.connections, key, forcenew=false, isvalid=c ->is_valid(c, tcp_pool.keep_alive_time)) do  
+        return (connect(key.host, key.port), Dates.now())
+    end
+    return connection
+end
+
+function release_tcp_connection(tcp_pool::TCPConnectionPool, key::InetAddr, connection::TCPSocket)
+    release(tcp_pool.connections, key, (connection, Dates.now()))
 end
 
 """
@@ -19,13 +57,14 @@ as a form, which is writeable to an arbitrary IO-Stream.
 Return true if successfull.
 """
 function send(protocol::TCPProtocol, destination::InetAddr, message::Any)
-    @info "Attempt to connect to $(destination.host):$(destination.port)"
-    connection = connect(destination.host, destination.port)
+    @debug "Attempt to connect to $(destination.host):$(destination.port)"
+    connection = acquire_tcp_connection(protocol.pool, destination)
 
-    write(connection, message)
+    write(connection, message * "\r\n")
+    flush(connection)
 
-    @info "Close $(destination.host):$(destination.port)"
-    close(connection)
+    @debug "Release $(destination.host):$(destination.port)"
+    release_tcp_connection(protocol.pool, destination, connection)
     return true
 end
 
@@ -34,17 +73,16 @@ Internal function for handling incoming connections
 """
 function handle_connection(data_handler::Function, connection::TCPSocket)
     try
-        while !eof(connection)        
+        while !eof(connection)   
             # Get the client address
             @debug "Process $connection"
             client_address = getpeername(connection)
             client_ip, client_port = client_address
-    
-            bytes = read(connection)
-        
+            
+            bytes = readline(connection)
             data_handler(bytes, InetAddr(client_ip, client_port))
         end
-
+        
     catch err
         if !isa(err, Base.IOError)
             @error "connection job exited with unexpected error" exception=(err, catch_backtrace())
@@ -63,19 +101,19 @@ function init(protocol::TCPProtocol, stop_check::Function, data_handler::Functio
 
     server = listen(protocol.address.host, protocol.address.port)
 
-    @info "Listen on $(protocol.address.host):$(protocol.address.port)"
+    @debug "Listen on $(protocol.address.host):$(protocol.address.port)"
     
     protocol.server = server
-
+    tasks = []
     listen_task = errormonitor(@async begin
         try
             while isopen(server)
                 connection = accept(server)
-                @asynclog handle_connection(data_handler, connection)
+                push!(tasks, @async handle_connection(data_handler, connection))
             end
         catch err
             if isa(err, InterruptException)
-                # expected exit behavior
+                # nothing
             else
                 @error "Caught an unexpected error in listen" exception=(err, catch_backtrace())
             end
@@ -84,10 +122,12 @@ function init(protocol::TCPProtocol, stop_check::Function, data_handler::Functio
         end
     end)
 
-    errormonitor(@async begin
-        while !stop_check()
-            sleep(0.1)
-        end
-        @async Base.throwto(listen_task, InterruptException())
-    end)
+    return listen_task, tasks
+end
+
+"""
+Release all tcp resources
+"""
+function close(protocol::TCPProtocol)
+    close(protocol.pool)
 end

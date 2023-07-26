@@ -29,7 +29,7 @@ end
     register(container, agent1)
     register(container, agent2)
 
-    wait(@asynclog send_message(container, "Hello Roles, this is RSc!", Dict(), agent2.aid))
+    wait(@asynclog send_message(container, "Hello Roles, this is RSc!", agent2.aid))
 
     @test agent2.role_handler.roles[1] === role1
     @test agent2.counter == 10
@@ -50,7 +50,7 @@ end
     register(container, agent1)
     register(container, agent2)
 
-    wait(@asynclog send_message(container, "Hello Roles, this is RSc!", Dict(), agent2.aid))
+    wait(@asynclog send_message(container, "Hello Roles, this is RSc!", agent2.aid))
 
     @test agent2.role_handler.roles[1] === role1
     @test agent2.role_handler.roles[1].counter == 15
