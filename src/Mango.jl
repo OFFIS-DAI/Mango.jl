@@ -5,9 +5,8 @@ module Mango
 
 export @agent, @role, Role, Agent, Container, send_message, register, @asynclog, AgentRoleHandler, AgentContext, RoleContext, add, subscribe, TCPProtocol, start, shutdown
 
-
 include("util/async.jl")
-using .AsyncUtil
+include("util/scheduling.jl")
 
 include("container/api.jl")
 using .ContainerAPI

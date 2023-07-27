@@ -1,5 +1,3 @@
-module AsyncUtil
-
 export @asynclog
 
 """
@@ -17,6 +15,4 @@ macro asynclog(expr)
             rethrow(ex)
         end
     end
-end
-
 end

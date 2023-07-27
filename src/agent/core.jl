@@ -1,11 +1,14 @@
 module AgentCore
-export @agent, dispatch_message, AgentRoleHandler, AgentContext, handle_message, add
+export @agent, dispatch_message, AgentRoleHandler, AgentContext, handle_message, add, schedule
 
+using ..Mango
 using ..AgentRole
 using ..ContainerAPI
 using ..AgentAPI
 
 import ..AgentAPI.subscribe_handle
+import Dates
+import ..Mango: schedule, wait_for_all_tasks
 
 """
 Context of the agent. Represents the environment for the specific agent. Therefore it includes a 
@@ -26,13 +29,6 @@ struct AgentRoleHandler
 end
 
 """
-Internal scheduler for scheduling predefined task types
-"""
-struct AgentScheduler
-    tasks::Vector{Task}
-end
-
-"""
 All baseline fields added by the @agent macro are listed in this vector.
 They are added in the same order defined here.
 """
@@ -40,6 +36,7 @@ AGENT_BASELINE_FIELDS::Vector = [
     :(lock::ReentrantLock),
     :(context::Union{Nothing,AgentContext}),
     :(role_handler::Union{AgentRoleHandler}),
+    :(scheduler::Scheduler),
     :(aid::Union{Nothing,String}),
 ]
 """
@@ -51,6 +48,7 @@ AGENT_BASELINE_DEFAULTS::Vector = [
     () -> ReentrantLock(),
     () -> nothing,
     () -> AgentRoleHandler(Vector(), Vector(), Vector()),
+    () -> Scheduler(Vector()),
     () -> nothing,
 ]
 
@@ -173,6 +171,14 @@ Internal implemntation of the agent API.
 """
 function subscribe_handle(agent::Agent, role::Role, condition::Function, handler::Function)
     push!(agent.role_handler.handle_message_subs, (role, condition, handler))
+end
+
+function schedule(f::Function, agent::Agent, data::TaskData, scheduling_type::SchedulingType=ASYNC)
+    schedule(f, agent.scheduler, data, scheduling_type)
+end
+
+function wait_for_all_tasks(agent::Agent)
+    wait_for_all_tasks(agent.scheduler)
 end
 
 end

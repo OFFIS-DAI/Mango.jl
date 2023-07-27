@@ -3,7 +3,8 @@ export TCPAddress, TCPProtocol, send, init, close
 
 using Sockets: connect, write, getpeername, read, listen, accept, IPAddr, TCPSocket, TCPServer, @ip_str, InetAddr
 using Parameters
-using ..AsyncUtil
+import ..Mango: @asynclog
+
 
 using ConcurrentUtilities: Pool, acquire, release, drain!
 
@@ -18,7 +19,7 @@ end
 @with_kw mutable struct TCPProtocol <: Protocol{InetAddr}
     address::InetAddr
     server::Union{Nothing,TCPServer} = nothing
-    pool::TCPConnectionPool = TCPConnectionPool(keep_alive_time_ms=300000)
+    pool::TCPConnectionPool = TCPConnectionPool(keep_alive_time_ms=100000)
 end
 
 function close(pool::TCPConnectionPool)
