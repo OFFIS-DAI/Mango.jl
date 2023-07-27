@@ -3,7 +3,7 @@
 Agents are autonomous entities that can perceive their environment, make decisions, and interact with other agents and the system they inhabit. They are the building blocks of Mango.jl, representing the individual entities or actors within a larger system.
 
 
-## Agent Definition with @agent Macro
+## 1. Agent Definition with @agent Macro
 
 To define an agent the `@agent` macro can be used. It simplifies the process of defining an agent struct and automatically adds necessary baseline fields. Here's how you can define an agent:
 
@@ -21,7 +21,7 @@ my_agent = MyAgent("MyValue")
 
 The `@agent` macro adds baseline fields such as `lock`, `context`, `role_handler`, `scheduler`, and `aid`. You can initialize the agent with exclusive fields like `my_own_field` in the example.
 
-## Role Management
+## 1. Role Management
 
 Agents can have multiple roles associated with them. Roles can be added using the `add` function, allowing the agent to interact with its environment based on different roles. Here's how you can add roles to an agent:
 
@@ -54,7 +54,7 @@ add(my_agent, role2)
 
 Additionally, roles can define the `setup` function to define actions to take when the roles are added to the agent. It is also possible to subscribe to specific messages using a boolean expression with the `subscribe(role::Role, handler::Function, condition::Function)` function.
 
-## Message Handling
+## 1. Message Handling
 
 Agents and Roles can handle incoming messages through the `handle_message` function. By default, it does nothing, but you can override it to define message-specific behavior. You can also add custom message handlers for specific roles using the `subscribe_handle` function. Here's how to handle messages:
 
@@ -101,7 +101,7 @@ send_message(role, "Message", "receiver_id", "receiver_addr")
 ```
 
 
-## Task Scheduling
+## 1. Task Scheduling
 
 Agents can schedule tasks using the `schedule` function, which delegates to the `Mango.schedule` function. You can wait for all scheduled tasks to complete using `wait_for_all_tasks`. Here's how to schedule tasks:
 

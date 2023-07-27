@@ -1,17 +1,5 @@
 # Scheduling
 
-## Table of Contents
-
-1. [Introduction](#introduction)
-2. [Module Overview](#module-overview)
-   - [Scheduling Types](#scheduling-types)
-   - [Task Data Types](#task-data-types)
-3. [Scheduler](#scheduler)
-4. [Functions](#functions)
-   - [execute_task](#execute_task)
-   - [schedule](#schedule)
-   - [wait_for_all_tasks](#wait_for_all_tasks)
-
 ## 1. Introduction
 
 Welcome to the documentation for the `Scheduling` component in Mango.jl. This utility component provides a flexible scheduler for executing predefined tasks with different scheduling types, including `ASYNC`, `THREAD`, and `PROCESS`. It offers various `TaskData` types to specify different task execution behaviors.
