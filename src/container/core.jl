@@ -1,8 +1,8 @@
 module ContainerCore
 export Container, register, send_message, start, shutdown
 
+import ..Mango: @asynclog
 using ..ContainerAPI
-using ..AsyncUtil
 using ..AgentCore: Agent, dispatch_message
 using ..ProtocolCore
 
