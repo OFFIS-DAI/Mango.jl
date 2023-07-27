@@ -10,6 +10,6 @@ makedocs(
     pages=Any["Home" => "index.md",
               "Agents" => "agent.md",
               "Container" => "container.md",
-              "Scheduling" => "scheduling.md",]
+              "Scheduling" => "scheduling.md",],
     repo = "https://gitlab.com/mango-agents/Mango.jl",
 )
