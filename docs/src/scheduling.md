@@ -1,4 +1,4 @@
-# Agent Scheduler
+# Scheduling
 
 ## Table of Contents
 
@@ -66,9 +66,9 @@ struct Scheduler
 end
 ```
 
-## 4. Functions <a name="functions"></a>
+## 4. Functions 
 
-### execute_task <a name="execute_task"></a>
+### execute_task 
 
 The `execute_task` function executes a task with a specific `TaskData`.
 
@@ -82,7 +82,7 @@ execute_task(f::Function, data::AwaitableTaskData)
 execute_task(f::Function, data::ConditionalTaskData)
 ```
 
-### schedule <a name="schedule"></a>
+### schedule
 
 The `schedule` function adds a task to the scheduler with the specified `TaskData` and scheduling type.
 
@@ -92,7 +92,7 @@ The `schedule` function adds a task to the scheduler with the specified `TaskDat
 schedule(f::Function, scheduler::Union{Scheduler,Agent}, data::TaskData, scheduling_type::SchedulingType=ASYNC)
 ```
 
-### wait_for_all_tasks <a name="wait_for_all_tasks"></a>
+### wait_for_all_tasks 
 
 The `wait_for_all_tasks` function waits for all the scheduled tasks in the provided scheduler to complete.
 

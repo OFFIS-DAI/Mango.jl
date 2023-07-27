@@ -7,7 +7,10 @@ makedocs(
     format=Documenter.HTML(; prettyurls=get(ENV, "CI", nothing) == "true"),
     authors="mango Team",
     sitename="Mango.jl",
-    pages=Any["index.md"]
+    pages=Any["Home" => "index.md",
+              "Agents" => "agent.md",
+              "Container" => "container.md",
+              "Scheduling" => "scheduling.md",]
     # strict = true,
     # clean = true,
     # checkdocs = :exports,

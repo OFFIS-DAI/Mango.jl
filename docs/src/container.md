@@ -2,18 +2,18 @@
 
 Welcome to the user documentation for the Container feature in Mango.jl! This module is a fundamental part of the Mango.jl framework, providing functionalities for managing agents, handling messages, and enabling communication within the simulation environment.
 
-## 1. Introduction <a name="introduction"></a>
+## 1. Introduction
 
 The Container feature in Mango.jl allows you to create and manage a container, which acts as the communication layer within the simulation environment. The container is responsible for handling messages, forwarding them to the appropriate agents, and managing agent registration.
 
-## 2. Container Struct <a name="container-struct"></a>
+## 2. Container Struct 
 
 The `Container` struct represents the container as an actor within the simulation. It is implemented using composition, making it flexible to use different protocols and codecs for message communication. Key components of the `Container` struct are:
 
 - `protocol`: The protocol used for message communication (e.g., TCP).
 - `codec`: A pair of functions for encoding and decoding messages in the container.
 
-## 3. Start and Shutdown <a name="start-and-shutdown"></a>
+## 3. Start and Shutdown 
 
 Before using the container for message handling and agent management, you need to start the container using the `start` function. This function initializes the container's components and enables it to act as the communication layer.
 
@@ -33,7 +33,7 @@ wait(Threads.@spwan start(container))
 shutdown(container)
 ```
 
-## 4. Registering Agents <a name="registering-agents"></a>
+## 4. Registering Agents 
 
 To enable the container to manage agents and handle their messaging activities, you can register agents using the `register` function. This function associates an agent with a unique agent ID (AID) and adds the agent to the container's internal list.
 
@@ -54,7 +54,7 @@ my_agent = MyAgent()
 register(container, my_agent)
 ```
 
-## 5. Sending Messages <a name="sending-messages"></a>
+## 5. Sending Messages
 
 To send messages between agents within the container, you can use the `send_message` function. The container routes the message to the specified receiver agent based on the receiver's AID.
 
@@ -74,11 +74,11 @@ send_message(container, "Hello from Agent 1!", "agent2_id")
 
 This protocol allows communication over plain TCP connections, enabling message exchange between different entities within the Mango.jl simulation environment.
 
-### 1. Introduction <a name="introduction"></a>
+### 1. Introduction
 
 The TCP Protocol in Mango.jl is a communication protocol used to exchange messages over plain TCP connections. It enables agents within the simulation environment to communicate with each other by establishing and managing TCP connections.
 
-### 2. TCPProtocol Struct <a name="tcpprotocol-struct"></a>
+### 2. TCPProtocol Struct 
 
 The `TCPProtocol` struct represents the TCP Protocol within Mango.jl. It encapsulates the necessary functionalities for communication via TCP connections. Key features of the `TCPProtocol` struct are:
 
