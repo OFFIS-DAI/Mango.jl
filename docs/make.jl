@@ -11,14 +11,5 @@ makedocs(
               "Agents" => "agent.md",
               "Container" => "container.md",
               "Scheduling" => "scheduling.md",]
-    # strict = true,
-    # clean = true,
-    # checkdocs = :exports,
+    repo = "https://gitlab.com/mango-agents/Mango.jl",
 )
-
-# Some setup is needed for documentation deployment, see “Hosting Documentation” and
-# deploydocs() in the Documenter manual for more information.
-# deploydocs(
-#    repo="github.com/mango/Mango.jl.git",
-#    push_preview=true
-#) 
