@@ -56,11 +56,13 @@ as a form, which is writeable to an arbitrary IO-Stream.
 # Returns
 Return true if successfull.
 """
-function send(protocol::TCPProtocol, destination::InetAddr, message::Any)
+function send(protocol::TCPProtocol, destination::InetAddr, message::Vector{UInt8})
     @debug "Attempt to connect to $(destination.host):$(destination.port)"
     connection = acquire_tcp_connection(protocol.pool, destination)
 
-    write(connection, message * "\r\n")
+    length_bytes = reinterpret(UInt8, [length(message)])
+
+    write(connection,  [length_bytes; message])
     flush(connection)
 
     @debug "Release $(destination.host):$(destination.port)"
@@ -79,8 +81,10 @@ function handle_connection(data_handler::Function, connection::TCPSocket)
             client_address = getpeername(connection)
             client_ip, client_port = client_address
             
-            bytes = readline(connection)
-            data_handler(bytes, InetAddr(client_ip, client_port))
+            message_length = reinterpret(Int64, read(connection, 8))[1]
+            message_bytes = read(connection, message_length)
+
+            data_handler(message_bytes, InetAddr(client_ip, client_port))
         end
         
     catch err

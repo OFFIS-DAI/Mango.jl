@@ -31,7 +31,7 @@ able to send messages via different protocols using different codecs.
     agents::Dict{String,Agent} = Dict()
     agent_counter::Integer = 0
     protocol::Union{Nothing,Protocol} = nothing
-    codec::Any = ((msg) -> JSON.json(msg), (msg_data) -> JSON.parse(String(msg_data)))
+    codec::Any = ((msg) -> Vector{UInt8}(JSON.json(msg)), (msg_data) -> JSON.parse(String(msg_data)))
     shutdown::Bool = false
     loop::Any = nothing
     tasks::Any = nothing
