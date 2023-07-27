@@ -3,7 +3,7 @@ export Container, register, send_message, start, shutdown
 
 import ..Mango: @asynclog
 using ..ContainerAPI
-using ..AgentCore: Agent, dispatch_message
+using ..AgentCore: Agent, AgentContext, dispatch_message
 using ..ProtocolCore
 
 import ..ContainerAPI.send_message
@@ -101,6 +101,7 @@ function register(container::Container, agent::Agent, suggested_aid::Union{Strin
     end
     container.agents[actual_aid] = agent
     agent.aid = actual_aid
+    agent.context = AgentContext(container)
     container.agent_counter += 1
     return agent.aid
 end
@@ -153,7 +154,7 @@ function send_message(container::Container,
     meta[RECEIVER_ID] = receiver_id
     meta[SENDER_ID] = sender_id
 
-    if isnothing(receiver_addr)
+    if isnothing(receiver_addr) || receiver_addr == id(container.protocol)
         return forward_message(container, content, meta)
     end
     return @asynclog send(container.protocol, receiver_addr, container.codec[1](to_external_message(content, meta)))

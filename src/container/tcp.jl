@@ -1,5 +1,5 @@
 
-export TCPAddress, TCPProtocol, send, init, close
+export TCPAddress, TCPProtocol, send, init, close, id
 
 using Sockets: connect, write, getpeername, read, listen, accept, IPAddr, TCPSocket, TCPServer, @ip_str, InetAddr
 using Parameters
@@ -128,6 +128,10 @@ function init(protocol::TCPProtocol, stop_check::Function, data_handler::Functio
     end)
 
     return listen_task, tasks
+end
+
+function id(protocol::TCPProtocol)
+    return protocol.address
 end
 
 """

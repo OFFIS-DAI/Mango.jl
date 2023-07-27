@@ -2,6 +2,7 @@ module AgentRole
 export Role, handle_message, RoleContext, @role, subscribe, bind_context
 
 using ..AgentAPI
+import ..AgentAPI.send_message
 
 """
 Defines the type Role, which is the common base types for all roles in mango.
@@ -127,6 +128,19 @@ at the roles agent.
 """
 function subscribe(role::Role, handler::Function, condition::Function)
     subscribe_handle(role.context.agent, role, handler, condition)
+end
+
+"""
+Send a message using the context to the agent with the receiver id `receiver_id` at the address `receiver_addr`. 
+This method will always set a sender_id. Additionally, further keyword arguments can be defines to fill the 
+internal meta data of the message.
+"""
+function send_message(role::Role,
+    content::Any,
+    receiver_id::String,
+    receiver_addr::Any=nothing;
+    kwargs...)
+    send_message(role.context.agent, content, receiver_id, receiver_addr; kwargs...)
 end
 
 end

@@ -4,7 +4,7 @@ export @agent, dispatch_message, AgentRoleHandler, AgentContext, handle_message,
 using ..Mango
 using ..AgentRole
 using ..ContainerAPI
-using ..AgentAPI
+import ..ContainerAPI.send_message
 
 import ..AgentAPI.subscribe_handle
 import Dates
@@ -173,12 +173,31 @@ function subscribe_handle(agent::Agent, role::Role, condition::Function, handler
     push!(agent.role_handler.handle_message_subs, (role, condition, handler))
 end
 
+"""
+Delegates to the scheduler `Scheduler`
+"""
 function schedule(f::Function, agent::Agent, data::TaskData, scheduling_type::SchedulingType=ASYNC)
     schedule(f, agent.scheduler, data, scheduling_type)
 end
 
+"""
+Delegates to the scheduler `Scheduler`
+"""
 function wait_for_all_tasks(agent::Agent)
     wait_for_all_tasks(agent.scheduler)
+end
+
+"""
+Send a message using the context to the agent with the receiver id `receiver_id` at the address `receiver_addr`. 
+This method will always set a sender_id. Additionally, further keyword arguments can be defines to fill the 
+internal meta data of the message.
+"""
+function send_message(agent::Agent,
+    content::Any,
+    receiver_id::String,
+    receiver_addr::Any=nothing;
+    kwargs...)
+    ContainerAPI.send_message(agent.context.container, content, receiver_id, receiver_addr, agent.aid; kwargs...)
 end
 
 end

@@ -56,6 +56,36 @@ end
     @test agent2.role_handler.roles[1].counter == 15
 end
 
+@testset "AgentSendMessage" begin
+    container = Container()
+    agent1 = MyAgent(0)
+    agent2 = MyAgent(0)
+    register(container, agent1)
+    register(container, agent2)
+
+    wait(@asynclog send_message(agent1, "Hello Agents, this is RSc!", agent2.aid))
+
+    @test agent2.counter == 10
+end
+
+@testset "RoleSendMessage" begin
+    container = Container()
+    agent1 = MyAgent(0)
+    agent2 = MyAgent(0)
+    role1 = MyRole(0)
+    role2 = MyRole(0)
+    add(agent2, role1)
+    add(agent1, role2)
+    register(container, agent1)
+    register(container, agent2)
+
+    wait(@asynclog send_message(role2, "Hello Roles, this is RSc!", agent2.aid))
+
+    @test agent2.role_handler.roles[1] === role1
+    @test agent2.counter == 10
+    @test agent2.role_handler.roles[1].counter == 10
+end
+
 @testset "AgentSchedulerInstantAsync" begin
     agent = MyAgent(0)
     result = 0

@@ -1,5 +1,5 @@
 module ProtocolCore
-export Protocol, send, start, close
+export Protocol, send, start, close, id
 
 """
 Type for all implementations of protocols, acts like an interface. A protocol defines the way message are processed and especially sent and received 
@@ -35,6 +35,11 @@ To control the lifetime of the loops a stop_check should be passed (() -> boolea
 terminate. The exact behavior depends on the implementation though.
 """
 function init(protocol::Protocol{T}, stop_check::Function, data_handler::Function) where T end
+
+"""
+Return the external identifier associated with the protocol (e.g. it could be the host+port, dns name, ...)
+"""
+function id(protocol::Protocol{T}) where T end
 
 include("./tcp.jl")
 
