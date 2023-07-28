@@ -1,15 +1,21 @@
-name = "mango"
+name = "Mango"
 uuid = "5e49fdec-d473-4d14-b295-7bff2fcf1925"
 authors = ["OFFIS e.V."]
 version = "0.1.0"
 
 [deps]
+ConcurrentUtilities = "f0e56b4a-5159-44fe-b623-3e5288b988bb"
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
+Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
+JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+Parameters = "d96e819e-fc66-5662-9728-84c9c7592b0a"
+Sockets = "6462fe0b-24de-5631-8697-dd941f90decc"
+
+[compat]
+julia = "1"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
 test = ["Test"]
-
-[compat]
-julia = "1"
