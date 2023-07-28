@@ -17,10 +17,6 @@ function ==(x::MyComposite, y::MyComposite)
     return x.x == y.x && x.y == y.y && x.z == y.z
 end
 
-LightBSON.bson_simple(::Type{MyComposite}) = true
-LightBSON.bson_simple(::Type{MyNested}) = true
-
-
 @testset "EncodeDecode" begin
     #= things that will not pass the simple equality check:
         - imaginary numbers (get cast to ordered dicts with "re" and "im" keys)
