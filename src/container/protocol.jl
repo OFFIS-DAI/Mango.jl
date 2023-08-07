@@ -41,6 +41,11 @@ Return the external identifier associated with the protocol (e.g. it could be th
 """
 function id(protocol::Protocol{T}) where T end
 
+"""
+Parse different types to the correct type (if required). Should be implemented if the id type is not trivial.
+"""
+function parse_id(id::Any)::T where T end
+
 include("./tcp.jl")
 
 end

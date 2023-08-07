@@ -197,7 +197,7 @@ function send_message(agent::Agent,
     receiver_id::String,
     receiver_addr::Any=nothing;
     kwargs...)
-    ContainerAPI.send_message(agent.context.container, content, receiver_id, receiver_addr, agent.aid; kwargs...)
+    wait(ContainerAPI.send_message(agent.context.container, content, receiver_id, receiver_addr, agent.aid; kwargs...))
 end
 
 end
