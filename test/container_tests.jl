@@ -42,8 +42,16 @@ end
 
     wait(send_message(container2, "Hello Friends2, this is RSc!", agent3.aid, InetAddr(ip"127.0.0.2", 2940)))
 
-    shutdown(container)
-    shutdown(container2)
+    wait(@async begin
+        while agent3.counter != 10 
+            sleep(1)
+        end
+    end)
+
+    @sync begin
+        @async shutdown(container)
+        @async shutdown(container2)
+    end
 
     @test agent3.counter == 10
 end
@@ -53,10 +61,10 @@ end
 end
 
 function handle_message(agent::PingPongAgent, message::Any, meta::Dict)
-    if message == "Ping"
+    if message == "Ping" && agent.counter < 5
         agent.counter += 1
         send_message(agent, "Pong", meta["sender_id"], meta["sender_addr"])
-    elseif message == "Pong"
+    elseif message == "Pong" && agent.counter < 5
         agent.counter += 1
         send_message(agent, "Ping", meta["sender_id"], meta["sender_addr"])
     end
@@ -70,6 +78,7 @@ end
 
     ping_agent = PingPongAgent(0)
     pong_agent = PingPongAgent(0)
+
     register(container2, ping_agent)
     register(container, pong_agent)
 
