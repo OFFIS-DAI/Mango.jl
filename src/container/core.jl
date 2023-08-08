@@ -51,7 +51,9 @@ Process the message data after rawly receiving them.
 function process_message(container::Container, msg_data::Any, sender_addr::Any)
     msg = container.codec[2](msg_data)
     content, meta = msg["content"], msg["meta"]
-    meta[SENDER_ADDR] = sender_addr
+    if haskey(meta, SENDER_ADDR)
+        meta[SENDER_ADDR] = parse_id(container.protocol, meta[SENDER_ADDR])
+    end
     forward_message(container, content, meta)
 end
 
@@ -153,6 +155,10 @@ function send_message(container::Container,
     end
     meta[RECEIVER_ID] = receiver_id
     meta[SENDER_ID] = sender_id
+    
+    if !isnothing(container.protocol)
+        meta[SENDER_ADDR] = id(container.protocol)
+    end
 
     if isnothing(receiver_addr) || receiver_addr == id(container.protocol)
         return forward_message(container, content, meta)

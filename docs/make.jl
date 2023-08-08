@@ -8,8 +8,10 @@ makedocs(
     authors="mango Team",
     sitename="Mango.jl",
     pages=Any["Home" => "index.md",
+              "Getting Started" => "getting_started.md",
               "Agents" => "agent.md",
               "Container" => "container.md",
+              "Codecs" => "encode_decode.md",
               "Scheduling" => "scheduling.md",],
     repo = "https://gitlab.com/mango-agents/Mango.jl",
 )

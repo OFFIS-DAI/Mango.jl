@@ -140,7 +140,7 @@ function send_message(role::Role,
     receiver_id::String,
     receiver_addr::Any=nothing;
     kwargs...)
-    send_message(role.context.agent, content, receiver_id, receiver_addr; kwargs...)
+    return send_message(role.context.agent, content, receiver_id, receiver_addr; kwargs...)
 end
 
 end

@@ -1,5 +1,5 @@
 
-export TCPAddress, TCPProtocol, send, init, close, id
+export TCPAddress, TCPProtocol, send, init, close, id, parse_id
 
 using Sockets: connect, write, getpeername, read, listen, accept, IPAddr, TCPSocket, TCPServer, @ip_str, InetAddr
 using Parameters
@@ -39,8 +39,8 @@ function is_valid(connection::Tuple{TCPSocket,Dates.DateTime}, keep_alive_time_m
     return true
 end
 
-function acquire_tcp_connection(tcp_pool::TCPConnectionPool, key::InetAddr)
-    connection,_ = acquire(tcp_pool.connections, key, forcenew=false, isvalid=c ->is_valid(c, tcp_pool.keep_alive_time)) do  
+function acquire_tcp_connection(tcp_pool::TCPConnectionPool, key::InetAddr)::TCPSocket
+    connection,_ = acquire(tcp_pool.connections, key, forcenew=false, isvalid=c ->is_valid(c, tcp_pool.keep_alive_time_ms)) do  
         return (connect(key.host, key.port), Dates.now())
     end
     return connection
@@ -62,13 +62,23 @@ function send(protocol::TCPProtocol, destination::InetAddr, message::Vector{UInt
     connection = acquire_tcp_connection(protocol.pool, destination)
 
     length_bytes = reinterpret(UInt8, [length(message)])
-
-    write(connection,  [length_bytes; message])
+    
+    write(connection, [length_bytes; message])
     flush(connection)
 
     @debug "Release $(destination.host):$(destination.port)"
     release_tcp_connection(protocol.pool, destination, connection)
     return true
+end
+
+
+function parse_id(_::TCPProtocol, id::Any)::InetAddr
+    if typeof(id) == InetAddr
+        return id
+    end
+    if typeof(id) == Dict{String,Any}
+        return InetAddr(string(id["host"]["host"]), id["port"])
+    end
 end
 
 """
