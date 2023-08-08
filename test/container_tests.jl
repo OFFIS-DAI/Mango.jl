@@ -76,7 +76,7 @@ end
     wait(Threads.@spawn start(container))
     wait(Threads.@spawn start(container2))
 
-    send_message(ping_agent, "Ping", pong_agent.aid, InetAddr(ip"127.0.0.2", 2980))
+    wait(send_message(ping_agent, "Ping", pong_agent.aid, InetAddr(ip"127.0.0.2", 2980)))
     
     wait(@async begin
         while ping_agent.counter < 5 

@@ -64,7 +64,7 @@ function send(protocol::TCPProtocol, destination::InetAddr, message::Vector{UInt
     length_bytes = reinterpret(UInt8, [length(message)])
     
     write(connection,  [length_bytes; message])
-    flush(connection)    
+    flush(connection)
 
     @debug "Release $(destination.host):$(destination.port)"
     release_tcp_connection(protocol.pool, destination, connection)
