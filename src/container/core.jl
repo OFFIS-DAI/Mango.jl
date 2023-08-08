@@ -52,7 +52,7 @@ function process_message(container::Container, msg_data::Any, sender_addr::Any)
     msg = container.codec[2](msg_data)
     content, meta = msg["content"], msg["meta"]
     if haskey(meta, SENDER_ADDR)
-        meta[SENDER_ADDR] = parse_id(meta[SENDER_ADDR])
+        meta[SENDER_ADDR] = parse_id(container.protocol, meta[SENDER_ADDR])
     end
     forward_message(container, content, meta)
 end

@@ -44,7 +44,7 @@ function id(protocol::Protocol{T}) where T end
 """
 Parse different types to the correct type (if required). Should be implemented if the id type is not trivial.
 """
-function parse_id(id::Any)::T where T end
+function parse_id(protocol::Protocol{T}, id_data::Any)::T where T end
 
 include("./tcp.jl")
 

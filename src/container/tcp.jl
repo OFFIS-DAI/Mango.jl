@@ -39,7 +39,7 @@ function is_valid(connection::Tuple{TCPSocket,Dates.DateTime}, keep_alive_time_m
     return true
 end
 
-function acquire_tcp_connection(tcp_pool::TCPConnectionPool, key::InetAddr)
+function acquire_tcp_connection(tcp_pool::TCPConnectionPool, key::InetAddr)::TCPSocket
     connection,_ = acquire(tcp_pool.connections, key, forcenew=false, isvalid=c ->is_valid(c, tcp_pool.keep_alive_time_ms)) do  
         return (connect(key.host, key.port), Dates.now())
     end
@@ -72,7 +72,7 @@ function send(protocol::TCPProtocol, destination::InetAddr, message::Vector{UInt
 end
 
 
-function parse_id(id::Any)
+function parse_id(_::TCPProtocol, id::Any)::InetAddr
     if typeof(id) == InetAddr
         return id
     end
