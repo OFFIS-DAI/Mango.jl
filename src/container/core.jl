@@ -5,11 +5,12 @@ import ..Mango: @asynclog
 using ..ContainerAPI
 using ..AgentCore: Agent, AgentContext, dispatch_message
 using ..ProtocolCore
+using ..EncodeDecode
 
 import ..ContainerAPI.send_message
-import JSON
 
 using Parameters
+using OrderedCollections
 using Base.Threads
 
 # id key for the receiver
@@ -31,7 +32,7 @@ able to send messages via different protocols using different codecs.
     agents::Dict{String,Agent} = Dict()
     agent_counter::Integer = 0
     protocol::Union{Nothing,Protocol} = nothing
-    codec::Any = ((msg) -> Vector{UInt8}(JSON.json(msg)), (msg_data) -> JSON.parse(String(msg_data)))
+    codec::Any = (EncodeDecode.encode, EncodeDecode.decode)
     shutdown::Bool = false
     loop::Any = nothing
     tasks::Any = nothing
@@ -42,7 +43,7 @@ Internal representation of a message in mango
 """
 struct MangoMessage
     content::Any
-    meta::Dict
+    meta::Dict{String,Any}
 end
 
 """
@@ -62,9 +63,11 @@ Starts the container and initialized all its components. After the call the cont
 start to act as the communication layer.
 """
 function start(container::Container)
-    container.loop, container.tasks = init(container.protocol, 
-    () -> container.shutdown, 
-    (msg_data, sender_addr) -> process_message(container, msg_data, sender_addr))
+    container.loop, container.tasks = init(
+        container.protocol,
+        () -> container.shutdown,
+        (msg_data, sender_addr) -> process_message(container, msg_data, sender_addr),
+    )
 end
 
 """
@@ -74,7 +77,7 @@ function shutdown(container::Container)
     container.shutdown = true
     close(container.protocol)
     @asynclog Base.throwto(container.loop, InterruptException())
-    
+
     for task in container.tasks
         wait(task)
     end
@@ -96,7 +99,11 @@ suggested_aid: you can provide an aid yourself. The container will always use th
 # Returns
 The actually used aid will be returned.
 """
-function register(container::Container, agent::Agent, suggested_aid::Union{String,Nothing}=nothing)
+function register(
+    container::Container,
+    agent::Agent,
+    suggested_aid::Union{String,Nothing} = nothing,
+)
     actual_aid::String = "$AGENT_PREFIX$(container.agent_counter)"
     if isnothing(suggested_aid) && haskey(container.agents, suggested_aid)
         actual_aid = suggested_aid
@@ -113,7 +120,7 @@ Internal function of the container, which forward the message to the correct age
 At this point it has already been evaluated the message has to be routed to an agent in control of
 the container. 
 """
-function forward_message(container::Container, msg::Any, meta::Dict)
+function forward_message(container::Container, msg::Any, meta::OrderedDict{String,Any})
     receiver_id = meta[RECEIVER_ID]
 
     if isnothing(receiver_id)
@@ -128,7 +135,7 @@ function forward_message(container::Container, msg::Any, meta::Dict)
     end
 end
 
-function to_external_message(content::Any, meta::Dict)
+function to_external_message(content::Any, meta::OrderedDict{String,Any})
     return MangoMessage(content, meta)
 end
 
@@ -142,20 +149,22 @@ external participants. To specifiy further meta data of the message
 # Returns
 True if the message has been sent successfully, false otherwise.
 """
-function send_message(container::Container,
+function send_message(
+    container::Container,
     content::Any,
     receiver_id::String,
-    receiver_addr::Any=nothing,
-    sender_id::Union{Nothing,String}=nothing;
-    kwargs...)
+    receiver_addr::Any = nothing,
+    sender_id::Union{Nothing,String} = nothing;
+    kwargs...,
+)
 
-    meta = Dict()
+    meta = OrderedDict{String,Any}()
     for (key, value) in kwargs
         meta[key] = value
     end
     meta[RECEIVER_ID] = receiver_id
     meta[SENDER_ID] = sender_id
-    
+
     if !isnothing(container.protocol)
         meta[SENDER_ADDR] = id(container.protocol)
     end
@@ -163,7 +172,12 @@ function send_message(container::Container,
     if isnothing(receiver_addr) || receiver_addr == id(container.protocol)
         return forward_message(container, content, meta)
     end
-    return @asynclog send(container.protocol, receiver_addr, container.codec[1](to_external_message(content, meta)))
+
+    return @asynclog send(
+        container.protocol,
+        receiver_addr,
+        container.codec[1](to_external_message(content, meta)),
+    )
 end
 
 end
