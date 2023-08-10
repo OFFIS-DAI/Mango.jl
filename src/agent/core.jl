@@ -1,5 +1,6 @@
 module AgentCore
-export @agent, dispatch_message, AgentRoleHandler, AgentContext, handle_message, add, schedule
+export @agent,
+    dispatch_message, AgentRoleHandler, AgentContext, handle_message, add, schedule
 
 using ..Mango
 using ..AgentRole
@@ -93,12 +94,30 @@ macro agent(struct_def)
     end
 
     # Create the new struct definition
-    new_struct_def = Expr(:struct, true, Expr(:(<:), struct_name, :(Agent)), Expr(:block, struct_fields...))
+    new_struct_def = Expr(
+        :struct,
+        true,
+        Expr(:(<:), struct_name, :(Agent)),
+        Expr(:block, struct_fields...),
+    )
 
     # Create a constructor, which will assign 'nothing' to all baseline fields, therefore requires you just to call it with the your fields
     # f.e. @agent MyMagent own_field::String end, can be constructed using MyAgent("MyOwnValueFor own_field").
     new_fields = struct_fields[2+length(AGENT_BASELINE_FIELDS):end]
-    default_constructor_def = Expr(:(=), Expr(:call, struct_name, new_fields...), Expr(:block, :(), Expr(:call, struct_name, [Expr(:call, default) for default in AGENT_BASELINE_DEFAULTS]..., new_fields...)))
+    default_constructor_def = Expr(
+        :(=),
+        Expr(:call, struct_name, new_fields...),
+        Expr(
+            :block,
+            :(),
+            Expr(
+                :call,
+                struct_name,
+                [Expr(:call, default) for default in AGENT_BASELINE_DEFAULTS]...,
+                new_fields...,
+            ),
+        ),
+    )
 
     esc(Expr(:block, new_struct_def, default_constructor_def))
 end
@@ -129,6 +148,7 @@ the multiple dispatch of julia).
 """
 function handle_message(agent::Agent, message::Any, meta::Any)
     # do nothing by default
+    @warn "Default handle message was called. This may be a bug."
 end
 
 """
@@ -176,7 +196,12 @@ end
 """
 Delegates to the scheduler `Scheduler`
 """
-function schedule(f::Function, agent::Agent, data::TaskData, scheduling_type::SchedulingType=ASYNC)
+function schedule(
+    f::Function,
+    agent::Agent,
+    data::TaskData,
+    scheduling_type::SchedulingType = ASYNC,
+)
     schedule(f, agent.scheduler, data, scheduling_type)
 end
 
@@ -192,12 +217,21 @@ Send a message using the context to the agent with the receiver id `receiver_id`
 This method will always set a sender_id. Additionally, further keyword arguments can be defines to fill the 
 internal meta data of the message.
 """
-function send_message(agent::Agent,
+function send_message(
+    agent::Agent,
     content::Any,
     receiver_id::String,
-    receiver_addr::Any=nothing;
-    kwargs...)
-    return ContainerAPI.send_message(agent.context.container, content, receiver_id, receiver_addr, agent.aid; kwargs...)
+    receiver_addr::Any = nothing;
+    kwargs...,
+)
+    return ContainerAPI.send_message(
+        agent.context.container,
+        content,
+        receiver_id,
+        receiver_addr,
+        agent.aid;
+        kwargs...,
+    )
 end
 
 end
