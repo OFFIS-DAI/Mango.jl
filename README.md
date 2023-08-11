@@ -1,16 +1,34 @@
-# mango.jl
+# Mango.jl
 
+**Note:** _This project is still in an early development stage. 
+We appreciate constructive feedback and suggestions for improvement._
 <!-- Tidyverse lifecycle badges, see https://www.tidyverse.org/lifecycle/ Uncomment or delete as needed. -->
 ![lifecycle](https://img.shields.io/badge/lifecycle-experimental-orange.svg)<!--
 ![lifecycle](https://img.shields.io/badge/lifecycle-maturing-blue.svg)
 ![lifecycle](https://img.shields.io/badge/lifecycle-stable-green.svg)
 ![lifecycle](https://img.shields.io/badge/lifecycle-retired-orange.svg)
 ![lifecycle](https://img.shields.io/badge/lifecycle-archived-red.svg)
-![lifecycle](https://img.shields.io/badge/lifecycle-dormant-blue.svg) -->
+![lifecycle](https://img.shields.io/badge/lifecycle-dormant-blue.svg) -->  
+
+
+[Docs](https://mango-agents.gitlab.io/Mango.jl/)
+| [Gitlab](https://gitlab.com/mango-agents/Mango.jl) | [mail](mailto:mango@offis.de)
+
+Mango.jl allows the user to create simple agents with little effort and in the same time offers options to structure agents with complex behaviour. The main features of mango are listed below.
+
+Mango.jl as a package is partly based on the ideas of [mango-agents](https://mango-agents.readthedocs.io), but will also contain new concepts and techniques. It was made with the picture of scalable agent simulations in mind, which shall also feature .
+
+## Features
+* Container mechanism to speedup local message exchange
+* Structuring complex agents with loose coupling and agent roles
+* Built-in codecs
+* Supports communication between agents directly via TCP
+
+## License
+Mango.jl is developed and published under the MIT license.
 <!-- travis-ci.com badge, uncomment or delete as needed, depending on whether you are using that service. -->
 <!-- [![Build Status](https://travis-ci.com/mango/mango.jl.svg?branch=master)](https://travis-ci.com/mango/mango.jl) -->
 <!-- Coverage badge on codecov.io, which is used by default. -->
-[![codecov.io](http://codecov.io/github/mango/mango.jl/coverage.svg?branch=master)](http://codecov.io/github/mango/mango.jl?branch=master)
 <!-- Documentation -- uncomment or delete as needed -->
 <!--
 [![Documentation](https://img.shields.io/badge/docs-stable-blue.svg)](https://mango.github.io/mango.jl/stable)
