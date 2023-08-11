@@ -1,0 +1,32 @@
+
+image: julia:1.9.2
+
+test:
+  script:
+    # Let's run the tests. Substitute `coverage = false` below, if you do not
+    # want coverage results.
+    - julia -e 'using Pkg; Pkg.add(path=pwd()); Pkg.build("Mango"); Pkg.test("Mango"; coverage = true)'
+    # Comment out below if you do not want coverage results.
+    - julia -e 'using Pkg; Pkg.add("Coverage");
+      import Mango; cd(joinpath(dirname(pathof(Mango)), ".."));
+      using Coverage; cl, tl = get_summary(process_folder());
+      println("(", cl/tl*100, "%) covered")'
+
+pages:
+  stage: deploy
+  script:
+    - apt-get update -qq && apt-get install -y git  # needed by Documenter
+    - julia -e 'using Pkg; Pkg.add(path=pwd()); Pkg.build("Mango");'  # rebuild Julia (can be put somewhere else I'm sure
+    - julia -e 'using Pkg; import Mango; Pkg.add("Documenter")'  # install Documenter
+    - julia --color=yes docs/make.jl  # make documentation
+    - mv docs/build public  # move to the directory picked up by Gitlab pages
+  artifacts:
+    paths:
+      - public
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+deploy:
+  stage: deploy
+  script: echo "Define your deployment script!"
+  environment: production
