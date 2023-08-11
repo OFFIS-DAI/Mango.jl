@@ -7,6 +7,8 @@ export @agent, @role, Role, Agent, Container, send_message, register, @asynclog,
 
 include("util/async.jl")
 include("util/scheduling.jl")
+include("util/encode_decode.jl")
+using .EncodeDecode
 
 include("container/api.jl")
 using .ContainerAPI

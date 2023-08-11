@@ -26,7 +26,10 @@ function encode(data::Union{OrderedDict{String,Any},Any})::Vector{UInt8}
     return buf
 end
 
-function decode(buf::Vector{UInt8}, t::Type=OrderedDict{String,Any})::Union{OrderedDict{String,Any},Any}
+function decode(
+    buf::Vector{UInt8},
+    t::Type = OrderedDict{String,Any},
+)::Union{OrderedDict{String,Any},Any}
     return LightBSON.bson_read(t, buf)
 end
 
