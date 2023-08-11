@@ -6,7 +6,7 @@ using ..AgentRole
 using ..ContainerAPI
 import ..ContainerAPI.send_message
 
-import ..AgentAPI.subscribe_handle
+import ..AgentAPI.subscribe_message_handle, ..AgentAPI.subscribe_send_handle
 import Dates
 import ..Mango: schedule, wait_for_all_tasks
 
@@ -39,6 +39,7 @@ AGENT_BASELINE_FIELDS::Vector = [
     :(scheduler::Scheduler),
     :(aid::Union{Nothing,String}),
 ]
+
 """
 Default values for the baseline fields. These have to be defined using
 an anonymous functions. Always need to have the same length as 
@@ -97,7 +98,7 @@ macro agent(struct_def)
 
     # Create a constructor, which will assign 'nothing' to all baseline fields, therefore requires you just to call it with the your fields
     # f.e. @agent MyMagent own_field::String end, can be constructed using MyAgent("MyOwnValueFor own_field").
-    new_fields = struct_fields[2+length(AGENT_BASELINE_FIELDS):end]
+    new_fields = [field for field in struct_fields[2+length(AGENT_BASELINE_FIELDS):end] if typeof(field) != LineNumberNode]
     default_constructor_def = Expr(:(=), Expr(:call, struct_name, new_fields...), Expr(:block, :(), Expr(:call, struct_name, [Expr(:call, default) for default in AGENT_BASELINE_DEFAULTS]..., new_fields...)))
 
     esc(Expr(:block, new_struct_def, default_constructor_def))
@@ -167,10 +168,17 @@ function shutdown(agent::Agent)
 end
 
 """
-Internal implemntation of the agent API.
+Internal implementation of the agent API.
 """
-function subscribe_handle(agent::Agent, role::Role, condition::Function, handler::Function)
+function subscribe_message_handle(agent::Agent, role::Role, condition::Function, handler::Function)
     push!(agent.role_handler.handle_message_subs, (role, condition, handler))
+end
+
+"""
+Internal implementation of the agent API.
+"""
+function subscribe_send_handle(agent::Agent, role::Role, handler::Function)
+    push!(agent.role_handler.send_message_subs, (role, handler))
 end
 
 """
@@ -197,6 +205,9 @@ function send_message(agent::Agent,
     receiver_id::String,
     receiver_addr::Any=nothing;
     kwargs...)
+    for (role, handler) in agent.role_handler.send_message_subs
+        handler(role, content, receiver_id, receiver_addr; kwargs...)
+    end
     return ContainerAPI.send_message(agent.context.container, content, receiver_id, receiver_addr, agent.aid; kwargs...)
 end
 

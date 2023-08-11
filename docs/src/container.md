@@ -8,7 +8,7 @@ The Container feature in Mango.jl allows you to create and manage a container, w
 
 ## 2. Container Struct 
 
-The `Container` struct represents the container as an actor within the simulation. It is implemented using composition, making it flexible to use different protocols and codecs for message communication. Key components of the `Container` struct are:
+The `Container` struct represents the container as an actor within the simulation. It is implemented using composition, making it flexible to use different protocols and codecs for message communication. The key components of the `Container` struct are:
 
 - `protocol`: The protocol used for message communication (e.g., TCP).
 - `codec`: A pair of functions for encoding and decoding messages in the container.

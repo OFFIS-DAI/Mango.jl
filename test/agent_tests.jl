@@ -10,7 +10,10 @@ end
 
 @role struct MyRole
     counter::Integer
+    invoked::Bool
 end
+
+MyRole(counter::Integer) = MyRole(counter, false) 
 
 function handle_message(agent::MyAgent, message::Any, meta::Any)
     agent.counter += 10
@@ -46,7 +49,7 @@ end
     agent2 = MyAgent(0)
     role1 = MyRole(0)
     add(agent2, role1)
-    subscribe(role1, handle_specific_message, (msg, meta) -> typeof(msg) == String)
+    subscribe_message(role1, handle_specific_message, (msg, meta) -> typeof(msg) == String)
     register(container, agent1)
     register(container, agent2)
 
@@ -54,6 +57,26 @@ end
 
     @test agent2.role_handler.roles[1] === role1
     @test agent2.role_handler.roles[1].counter == 15
+end
+
+function on_send_message(role::MyRole, content::Any, receiver_id::String, receiver_addr::Any; kwargs...)
+    role.invoked = true
+end
+
+@testset "AgentRoleSendSubscribe" begin
+    container = Container()
+    agent1 = MyAgent(0)
+    agent2 = MyAgent(0)
+    role1 = MyRole(0)
+    add(agent2, role1)
+    subscribe_send(role1, on_send_message)
+    register(container, agent1)
+    register(container, agent2)
+
+    wait(send_message(agent2, "Hello Roles, this is RSc!", agent1.aid))
+
+    @test agent2.role_handler.roles[1] === role1
+    @test agent2.role_handler.roles[1].invoked
 end
 
 @testset "AgentSendMessage" begin

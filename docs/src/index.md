@@ -14,3 +14,6 @@ Mango.jl as a package is partly based on the ideas of [mango-agents](mango-agent
 
 ## Development state
 Mango.jl is in an early development state. Feel free to try out the framework if you are interested and be aware that there might be some unexpected edges here and there.
+
+## License
+Mango.jl is developed and published under the MIT license.
