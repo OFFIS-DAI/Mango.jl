@@ -19,7 +19,16 @@ end
 my_agent = MyAgent("MyValue")
 ```
 
-The `@agent` macro adds baseline fields such as `lock`, `context`, `role_handler`, `scheduler`, and `aid`. You can initialize the agent with exclusive fields like `my_own_field` in the example.
+The `@agent` macro adds the baseline fields listed in the table below. You can initialize the agent with exclusive fields like `my_own_field` in the example.
+
+| Field        | Description                                                    | Usable?                                                                           |
+|--------------|----------------------------------------------------------------|-----------------------------------------------------------------------------------|
+| aid          | The id of the agent                                            | Yes with aid(agent)!                                                               |
+| context      | Holds the reference to the container to send messages.         | Generally not recommended, use the convenience methods defined on the Agent type. |
+| scheduler    | The scheduler of the agent                                     | Generally not recommended, use the convenience methods defined on the Agent type. |
+| lock         | The agent lock to ensure only one message is handled per time. | Internal use only!                                                                |
+| role_handler | Contains the roles and handles their interactions              | Internal use only!                                                                |
+
 
 ## 2. Role Management
 
@@ -52,7 +61,7 @@ add(my_agent, role2)
 # Now you can interact with the roles as needed
 ```
 
-Additionally, roles can define the `setup` function to define actions to take when the roles are added to the agent. It is also possible to subscribe to specific messages using a boolean expression with the `subscribe(role::Role, handler::Function, condition::Function)` function.
+Additionally, roles can define the `setup` function to define actions to take when the roles are added to the agent. It is also possible to subscribe to specific messages using a boolean expression with the `subscribe(role::Role, handler::Function, condition::Function)` function. With the @role macro the role context is added to the role, which contains the reference to the agent. However, it is recommended to use the equivalent methods defined on the role to execute actions like scheduling and sending messages.
 
 ## 3. Message Handling
 
@@ -74,7 +83,7 @@ function handle_message(agent::MyAgent, message::Any, meta::Any)
     println("Received message @agent: ", message)
 end
 # Override the default handle_message function for custom behavior
-function handle_message(agent::MyRole, message::Any, meta::Any)
+function handle_message(role::MyRole, message::Any, meta::Any)
     println("Received message @role: ", message)
 end
 ```

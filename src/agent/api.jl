@@ -1,5 +1,5 @@
 module AgentAPI
-export Agent, AgentInterface, subscribe_handle, send_message
+export Agent, AgentInterface, subscribe_message_handle, subscribe_send_handle, send_message
 
 import ..ContainerAPI.send_message
 
@@ -19,7 +19,12 @@ abstract type Agent <: AgentInterface end
 """
 Used internally by the RoleContext to subscribe message handler to the agent.
 """
-function subscribe_handle(agent::AgentInterface, role::Any, condition::Any, handler::Any) end
+function subscribe_message_handle(agent::AgentInterface, role::Any, condition::Any, handler::Any) end
+
+"""
+Used internally by the RoleContext to subscribe send handler to the agent.
+"""
+function subscribe_send_handle(agent::AgentInterface, role::Any, handler::Any) end
 
 """
 API Definition for the role context

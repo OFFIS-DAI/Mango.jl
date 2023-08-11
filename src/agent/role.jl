@@ -1,8 +1,11 @@
 module AgentRole
-export Role, handle_message, RoleContext, @role, subscribe, bind_context
+export Role, handle_message, RoleContext, @role, subscribe_message, subscribe_send, bind_context
 
 using ..AgentAPI
 import ..AgentAPI.send_message
+import ..Mango: schedule 
+using ..Mango
+
 
 """
 Defines the type Role, which is the common base types for all roles in mango.
@@ -75,8 +78,8 @@ macro role(struct_def)
 
     # Creates a constructor, which will assign nothing to all baseline fields, therefore requires you just to call it with the your fields
     # f.e. @role MyRole own_field::String end, can be constructed using MyRole("MyOwnValueFor own_field").
-    new_fields = struct_fields[2+length(ROLE_BASELINE_FIELDS):end] # when adding more fields increment the second value!
-    default_constructor_def = Expr(:(=), Expr(:call, struct_name, new_fields...), Expr(:block, :(), Expr(:call, struct_name, [nothing for _ in 1:length(ROLE_BASELINE_FIELDS)]..., new_fields...)))
+    new_fields = [field for field in struct_fields[2+length(ROLE_BASELINE_FIELDS):end] if typeof(field) != LineNumberNode] 
+    default_constructor_def = Expr(:(=), Expr(:call, struct_name, new_fields...), Expr(:call, struct_name, [nothing for _ in 1:length(ROLE_BASELINE_FIELDS)]..., new_fields...))
 
     esc(Expr(:block, new_struct_def, default_constructor_def))
 end
@@ -126,8 +129,23 @@ to the message dispatching. This handler function will be called everytime the g
 condition function (message, meta -> boolean) evaluates to true when a message arrives
 at the roles agent.
 """
-function subscribe(role::Role, handler::Function, condition::Function)
-    subscribe_handle(role.context.agent, role, handler, condition)
+function subscribe_message(role::Role, handler::Function, condition::Function)
+    subscribe_message_handle(role.context.agent, role, handler, condition)
+end
+
+"""
+Subscribe a send_message hook in function (signature, (role, content, receiver_id, receiver_addr; kwargs...)) to the
+message sending. The hook in function will be called every time a message is sent by the agent.
+"""
+function subscribe_send(role::Role, handler::Function)
+    subscribe_send_handle(role.context.agent, role, handler)
+end
+
+"""
+Delegates to the scheduler `Scheduler`
+"""
+function schedule(f::Function, role::Role, data::TaskData, scheduling_type::SchedulingType=ASYNC)
+    schedule(f, role.context.agent, data, scheduling_type)
 end
 
 """

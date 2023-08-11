@@ -13,7 +13,6 @@ makedocs(
               "Container" => "container.md",
               "Codecs" => "encode_decode.md",
               "Scheduling" => "scheduling.md",
-              "Privacy" => "privacy.md",
               "Legals" => "legals.md",],
     repo = "https://gitlab.com/mango-agents/Mango.jl",
 )
