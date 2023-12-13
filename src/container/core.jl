@@ -102,7 +102,7 @@ The actually used aid will be returned.
 function register(
     container::Container,
     agent::Agent,
-    suggested_aid::Union{String,Nothing} = nothing,
+    suggested_aid::Union{String,Nothing}=nothing,
 )
     actual_aid::String = "$AGENT_PREFIX$(container.agent_counter)"
     if isnothing(suggested_aid) && haskey(container.agents, suggested_aid)
@@ -153,14 +153,14 @@ function send_message(
     container::Container,
     content::Any,
     receiver_id::String,
-    receiver_addr::Any = nothing,
-    sender_id::Union{Nothing,String} = nothing;
+    receiver_addr::Any=nothing,
+    sender_id::Union{Nothing,String}=nothing;
     kwargs...,
 )
 
     meta = OrderedDict{String,Any}()
     for (key, value) in kwargs
-        meta[key] = value
+        meta[string(key)] = value
     end
     meta[RECEIVER_ID] = receiver_id
     meta[SENDER_ID] = sender_id
