@@ -120,7 +120,7 @@ Internal function of the container, which forward the message to the correct age
 At this point it has already been evaluated the message has to be routed to an agent in control of
 the container. 
 """
-function forward_message(container::Container, msg::Any, meta::OrderedDict{String,Any})
+function forward_message(container::Container, msg::Any, meta::AbstractDict)
     receiver_id = meta[RECEIVER_ID]
 
     if isnothing(receiver_id)
@@ -135,7 +135,7 @@ function forward_message(container::Container, msg::Any, meta::OrderedDict{Strin
     end
 end
 
-function to_external_message(content::Any, meta::OrderedDict{String,Any})
+function to_external_message(content::Any, meta::AbstractDict)
     return MangoMessage(content, meta)
 end
 

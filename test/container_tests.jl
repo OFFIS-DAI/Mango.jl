@@ -8,7 +8,7 @@ using OrderedCollections
 import Mango.AgentCore.handle_message
 
 
-function handle_message(agent::MyAgent, message::Any, meta::OrderedDict{String,Any})
+function handle_message(agent::MyAgent, message::Any, meta::AbstractDict)
     agent.counter += 10
 end
 
@@ -27,12 +27,12 @@ end
 
 @testset "TCPContainerMessaging" begin
     container = Container()
-    container.protocol = TCPProtocol(address = InetAddr(ip"127.0.0.2", 2939))
+    container.protocol = TCPProtocol(address=InetAddr(ip"127.0.0.2", 2939))
     agent1 = MyAgent(0)
     register(container, agent1)
 
     container2 = Container()
-    container2.protocol = TCPProtocol(address = InetAddr(ip"127.0.0.2", 2940))
+    container2.protocol = TCPProtocol(address=InetAddr(ip"127.0.0.2", 2940))
     agent2 = MyAgent(0)
     register(container2, agent2)
     agent3 = MyAgent(0)
@@ -68,7 +68,7 @@ end
     counter::Int
 end
 
-function handle_message(agent::PingPongAgent, message::Any, meta::OrderedDict{String,Any})
+function handle_message(agent::PingPongAgent, message::Any, meta::AbstractDict)
     if message == "Ping" && agent.counter < 5
         agent.counter += 1
         send_message(agent, "Pong", meta["sender_id"], meta["sender_addr"])
@@ -80,9 +80,9 @@ end
 
 @testset "TCPContainerPingPong" begin
     container = Container()
-    container.protocol = TCPProtocol(address = InetAddr(ip"127.0.0.2", 2980))
+    container.protocol = TCPProtocol(address=InetAddr(ip"127.0.0.2", 2980))
     container2 = Container()
-    container2.protocol = TCPProtocol(address = InetAddr(ip"127.0.0.2", 2981))
+    container2.protocol = TCPProtocol(address=InetAddr(ip"127.0.0.2", 2981))
 
     ping_agent = PingPongAgent(0)
     pong_agent = PingPongAgent(0)
