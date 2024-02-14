@@ -1,6 +1,13 @@
 module AgentCore
 export @agent,
-    dispatch_message, AgentRoleHandler, AgentContext, handle_message, add, schedule
+    dispatch_message,
+    AgentRoleHandler,
+    AgentContext,
+    handle_message,
+    add,
+    schedule,
+    wait_for_all_tasks,
+    shutdown
 
 using ..Mango
 using ..AgentRole
@@ -104,8 +111,24 @@ macro agent(struct_def)
 
     # Create a constructor, which will assign 'nothing' to all baseline fields, therefore requires you just to call it with the your fields
     # f.e. @agent MyMagent own_field::String end, can be constructed using MyAgent("MyOwnValueFor own_field").
-    new_fields = [field for field in struct_fields[2+length(AGENT_BASELINE_FIELDS):end] if typeof(field) != LineNumberNode]
-    default_constructor_def = Expr(:(=), Expr(:call, struct_name, new_fields...), Expr(:block, :(), Expr(:call, struct_name, [Expr(:call, default) for default in AGENT_BASELINE_DEFAULTS]..., new_fields...)))
+    new_fields = [
+        field for field in struct_fields[2+length(AGENT_BASELINE_FIELDS):end] if
+        typeof(field) != LineNumberNode
+    ]
+    default_constructor_def = Expr(
+        :(=),
+        Expr(:call, struct_name, new_fields...),
+        Expr(
+            :block,
+            :(),
+            Expr(
+                :call,
+                struct_name,
+                [Expr(:call, default) for default in AGENT_BASELINE_DEFAULTS]...,
+                new_fields...,
+            ),
+        ),
+    )
 
     esc(Expr(:block, new_struct_def, default_constructor_def))
 end
@@ -169,15 +192,22 @@ Will be called on shutdown of the container, in which
 the agent is living
 """
 function shutdown(agent::Agent)
-    for role in agent.roles
+    for role in agent.role_handler.roles
         shutdown(role)
     end
+
+    interrupt_all_tasks(agent.scheduler)
 end
 
 """
 Internal implementation of the agent API.
 """
-function subscribe_message_handle(agent::Agent, role::Role, condition::Function, handler::Function)
+function subscribe_message_handle(
+    agent::Agent,
+    role::Role,
+    condition::Function,
+    handler::Function,
+)
     push!(agent.role_handler.handle_message_subs, (role, condition, handler))
 end
 
@@ -195,7 +225,7 @@ function schedule(
     f::Function,
     agent::Agent,
     data::TaskData,
-    scheduling_type::SchedulingType=ASYNC,
+    scheduling_type::SchedulingType = ASYNC,
 )
     schedule(f, agent.scheduler, data, scheduling_type)
 end
@@ -216,12 +246,20 @@ function send_message(
     agent::Agent,
     content::Any,
     receiver_id::String,
-    receiver_addr::Any=nothing;
-    kwargs...)
+    receiver_addr::Any = nothing;
+    kwargs...,
+)
     for (role, handler) in agent.role_handler.send_message_subs
         handler(role, content, receiver_id, receiver_addr; kwargs...)
     end
-    return ContainerAPI.send_message(agent.context.container, content, receiver_id, receiver_addr, agent.aid; kwargs...)
+    return ContainerAPI.send_message(
+        agent.context.container,
+        content,
+        receiver_id,
+        receiver_addr,
+        agent.aid;
+        kwargs...,
+    )
 end
 
 end

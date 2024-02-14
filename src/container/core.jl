@@ -3,11 +3,13 @@ export Container, register, send_message, start, shutdown
 
 import ..Mango: @asynclog
 using ..ContainerAPI
-using ..AgentCore: Agent, AgentContext, dispatch_message
+using ..AgentCore: Agent, AgentContext, dispatch_message, wait_for_all_tasks
 using ..ProtocolCore
 using ..EncodeDecode
 
 import ..ContainerAPI.send_message
+
+import ..AgentCore: shutdown
 
 using Parameters
 using OrderedCollections
@@ -81,6 +83,10 @@ function shutdown(container::Container)
     for task in container.tasks
         wait(task)
     end
+
+    for agent in values(container.agents)
+        shutdown(agent)
+    end
 end
 
 """
@@ -102,7 +108,7 @@ The actually used aid will be returned.
 function register(
     container::Container,
     agent::Agent,
-    suggested_aid::Union{String,Nothing}=nothing,
+    suggested_aid::Union{String,Nothing} = nothing,
 )
     actual_aid::String = "$AGENT_PREFIX$(container.agent_counter)"
     if isnothing(suggested_aid) && haskey(container.agents, suggested_aid)
@@ -153,8 +159,8 @@ function send_message(
     container::Container,
     content::Any,
     receiver_id::String,
-    receiver_addr::Any=nothing,
-    sender_id::Union{Nothing,String}=nothing;
+    receiver_addr::Any = nothing,
+    sender_id::Union{Nothing,String} = nothing;
     kwargs...,
 )
 
