@@ -24,7 +24,9 @@ end
 
 Scheduler() = Scheduler(Vector{Task}(), Vector{TaskData}())
 
-
+function is_stopable(data::TaskData)::Bool
+    return false
+end
 
 struct PeriodicTaskData <: TaskData
     interval_s::Float64
@@ -33,6 +35,10 @@ struct PeriodicTaskData <: TaskData
     function PeriodicTaskData(interval_s::Float64)
         return new(interval_s, Channel(1))
     end
+end
+
+function is_stopable(data::PeriodicTaskData)::Bool
+    return true
 end
 
 struct InstantTaskData <: TaskData end
@@ -102,7 +108,7 @@ function stop_and_wait_for_all_tasks(scheduler::Scheduler)
         data = scheduler.task_datas[i]
 
         try
-            if typeof(data) == PeriodicTaskData
+            if is_stopable(data)
                 put!(data.ch, Stop())
             end
             wait(task)
