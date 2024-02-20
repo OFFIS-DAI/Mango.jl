@@ -1,5 +1,20 @@
 
-export SchedulingType, ASYNC, PROCESS, THREAD, TaskData, PeriodicTaskData, InstantTaskData, DateTimeTaskData, AwaitableTaskData, ConditionalTaskData, execute_task, wait_for_all_tasks, schedule, Scheduler, interrupt, interrupt_all_tasks
+export SchedulingType,
+    ASYNC,
+    PROCESS,
+    THREAD,
+    TaskData,
+    PeriodicTaskData,
+    InstantTaskData,
+    DateTimeTaskData,
+    AwaitableTaskData,
+    ConditionalTaskData,
+    execute_task,
+    wait_for_all_tasks,
+    schedule,
+    Scheduler,
+    interrupt,
+    interrupt_all_tasks
 
 import Dates
 import Base.schedule
@@ -28,15 +43,15 @@ end
 
 struct InstantTaskData <: TaskData end
 
-struct DateTimeTaskData <: TaskData 
+struct DateTimeTaskData <: TaskData
     date::Dates.DateTime
 end
 
-struct AwaitableTaskData <: TaskData 
+struct AwaitableTaskData <: TaskData
     awaitable::Any
 end
 
-struct ConditionalTaskData <: TaskData 
+struct ConditionalTaskData <: TaskData
     condition::Function
     check_interval_s::Float64
 end
@@ -54,7 +69,7 @@ end
 
 function execute_task(f::Function, data::DateTimeTaskData)
     sleep((data.date - Dates.now()).value / 1000)
-    f()    
+    f()
 end
 
 function execute_task(f::Function, data::AwaitableTaskData)
@@ -69,10 +84,15 @@ function execute_task(f::Function, data::ConditionalTaskData)
     f()
 end
 
-function schedule(f::Function, scheduler::Scheduler, data::TaskData, scheduling_type::SchedulingType=ASYNC)
+function schedule(
+    f::Function,
+    scheduler::Scheduler,
+    data::TaskData,
+    scheduling_type::SchedulingType = ASYNC,
+)
     task = nothing
     if scheduling_type == ASYNC
-        task = @asynclog execute_task(f, data)
+        task = Threads.@spawn execute_task(f, data)
     elseif scheduling_type == THREAD
         task = Threads.@spawn execute_task(f, data)
     elseif scheduling_type == PROCESS
@@ -90,7 +110,8 @@ function wait_for_all_tasks(scheduler::Scheduler)
             if isa(task.result, InterruptException)
                 # ignore, task has been interrupted by the scheduler
             else
-                @error "An error occurred while waiting for $task" exception=(err, catch_backtrace())
+                @error "An error occurred while waiting for $task" exception =
+                    (err, catch_backtrace())
             end
         end
     end
@@ -103,6 +124,6 @@ function interrupt_all_tasks(scheduler::Scheduler)
 end
 
 function interrupt(task::Any)
-    @asynclog Base.throwto(task, InterruptException())
+    Threads.@spawn Base.throwto(task, InterruptException())
 end
 

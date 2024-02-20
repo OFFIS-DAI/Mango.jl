@@ -1,7 +1,7 @@
 module ContainerCore
 export Container, register, send_message, start, shutdown
 
-import ..Mango: @asynclog
+
 using ..ContainerAPI
 using ..AgentCore: Agent, AgentContext, dispatch_message, wait_for_all_tasks
 using ..ProtocolCore
@@ -78,7 +78,7 @@ Shut down the container. It is always necessary to call it for freeing bound res
 function shutdown(container::Container)
     container.shutdown = true
     close(container.protocol)
-    @asynclog Base.throwto(container.loop, InterruptException())
+    Threads.@spawn Base.throwto(container.loop, InterruptException())
 
     for task in container.tasks
         wait(task)
@@ -179,7 +179,7 @@ function send_message(
         return forward_message(container, content, meta)
     end
 
-    return @asynclog send(
+    return Threads.@spawn send(
         container.protocol,
         receiver_addr,
         container.codec[1](to_external_message(content, meta)),

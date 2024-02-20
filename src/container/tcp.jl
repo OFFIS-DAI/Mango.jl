@@ -14,7 +14,7 @@ using Sockets:
     @ip_str,
     InetAddr
 using Parameters
-import ..Mango: @asynclog
+
 
 
 using ConcurrentUtilities: Pool, acquire, release, drain!
@@ -150,11 +150,14 @@ function init(protocol::TCPProtocol, stop_check::Function, data_handler::Functio
     protocol.server = server
     tasks = []
     listen_task = errormonitor(
-        @async begin
+        Threads.@spawn begin
             try
                 while isopen(server)
                     connection = accept(server)
-                    push!(tasks, @async handle_connection(data_handler, connection))
+                    push!(
+                        tasks,
+                        Threads.@spawn handle_connection(data_handler, connection)
+                    )
                 end
             catch err
                 if isa(err, InterruptException)

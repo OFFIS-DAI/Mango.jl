@@ -69,15 +69,15 @@ send_message(ping_agent, "Ping", pong_agent.aid, InetAddr(ip"127.0.0.2", 2980))
 # Wait for a moment to see the result
 # In general you want to use a Condition() instead to
 # Define a clear stopping signal for the agents
-wait(@async begin
+wait(Threads.@spawn begin
     while ping_agent.counter < 5 
         sleep(1)
     end
 end)
 
 @sync begin
-    @async shutdown(container)
-    @async shutdown(container2)
+    Threads.@spawn shutdown(container)
+    Threads.@spawn shutdown(container2)
 end
 ```
 
