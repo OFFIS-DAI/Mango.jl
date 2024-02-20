@@ -3,7 +3,7 @@ export Container, register, send_message, start, shutdown
 
 
 using ..ContainerAPI
-using ..AgentCore: Agent, AgentContext, dispatch_message, wait_for_all_tasks
+using ..AgentCore: Agent, AgentContext, dispatch_message, stop_and_wait_for_all_tasks
 using ..ProtocolCore
 using ..EncodeDecode
 

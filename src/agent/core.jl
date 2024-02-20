@@ -6,7 +6,7 @@ export @agent,
     handle_message,
     add,
     schedule,
-    wait_for_all_tasks,
+    stop_and_wait_for_all_tasks,
     shutdown
 
 using ..Mango
@@ -16,7 +16,7 @@ import ..ContainerAPI.send_message
 
 import ..AgentAPI.subscribe_message_handle, ..AgentAPI.subscribe_send_handle
 import Dates
-import ..Mango: schedule, wait_for_all_tasks
+import ..Mango: schedule, stop_and_wait_for_all_tasks
 
 """
 Context of the agent. Represents the environment for the specific agent. Therefore it includes a 
@@ -57,7 +57,7 @@ AGENT_BASELINE_DEFAULTS::Vector = [
     () -> ReentrantLock(),
     () -> nothing,
     () -> AgentRoleHandler(Vector(), Vector(), Vector()),
-    () -> Scheduler(Vector()),
+    () -> Scheduler(),
     () -> nothing,
 ]
 
@@ -196,7 +196,7 @@ function shutdown(agent::Agent)
         shutdown(role)
     end
 
-    interrupt_all_tasks(agent.scheduler)
+    stop_and_wait_for_all_tasks(agent.scheduler)
 end
 
 """
@@ -221,20 +221,15 @@ end
 """
 Delegates to the scheduler `Scheduler`
 """
-function schedule(
-    f::Function,
-    agent::Agent,
-    data::TaskData,
-    scheduling_type::SchedulingType = ASYNC,
-)
-    schedule(f, agent.scheduler, data, scheduling_type)
+function schedule(f::Function, agent::Agent, data::TaskData)
+    schedule(f, agent.scheduler, data)
 end
 
 """
 Delegates to the scheduler `Scheduler`
 """
-function wait_for_all_tasks(agent::Agent)
-    wait_for_all_tasks(agent.scheduler)
+function stop_and_wait_for_all_tasks(agent::Agent)
+    stop_and_wait_for_all_tasks(agent.scheduler)
 end
 
 """

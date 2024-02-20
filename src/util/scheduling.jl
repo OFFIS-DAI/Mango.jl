@@ -1,44 +1,38 @@
 
-export SchedulingType,
-    ASYNC,
-    PROCESS,
-    THREAD,
-    TaskData,
+export TaskData,
     PeriodicTaskData,
     InstantTaskData,
     DateTimeTaskData,
     AwaitableTaskData,
     ConditionalTaskData,
     execute_task,
-    wait_for_all_tasks,
+    stop_and_wait_for_all_tasks,
     schedule,
-    Scheduler,
-    interrupt,
-    interrupt_all_tasks
+    Scheduler
 
 import Dates
 import Base.schedule
-using Distributed: @spawnat, Future
 
-"""
-Internal scheduler for scheduling predefined task types
-"""
-struct Scheduler
-    tasks::Vector{Union{Task,Future}}
-end
-
-Scheduler() = Scheduler(Vector())
-
-@enum SchedulingType begin
-    ASYNC = 1
-    THREAD = 2
-    PROCESS = 3
-end
-
+struct Stop end
+struct Continue end
 abstract type TaskData end
+
+struct Scheduler
+    tasks::Vector{Task}
+    task_datas::Vector{TaskData}
+end
+
+Scheduler() = Scheduler(Vector{Task}(), Vector{TaskData}())
+
+
 
 struct PeriodicTaskData <: TaskData
     interval_s::Float64
+    ch::Channel # channel for sending interrupt signal
+
+    function PeriodicTaskData(interval_s::Float64)
+        return new(interval_s, Channel(1))
+    end
 end
 
 struct InstantTaskData <: TaskData end
@@ -57,9 +51,20 @@ struct ConditionalTaskData <: TaskData
 end
 
 function execute_task(f::Function, data::PeriodicTaskData)
+    signal = Continue()
+
     while true
         f()
         sleep(data.interval_s)
+
+        # check stop condition
+        if isready(data.ch)
+            signal = take!(data.ch)
+        end
+
+        if signal == Stop()
+            break
+        end
     end
 end
 
@@ -84,27 +89,22 @@ function execute_task(f::Function, data::ConditionalTaskData)
     f()
 end
 
-function schedule(
-    f::Function,
-    scheduler::Scheduler,
-    data::TaskData,
-    scheduling_type::SchedulingType = ASYNC,
-)
-    task = nothing
-    if scheduling_type == ASYNC
-        task = Threads.@spawn execute_task(f, data)
-    elseif scheduling_type == THREAD
-        task = Threads.@spawn execute_task(f, data)
-    elseif scheduling_type == PROCESS
-        task = @spawnat :any execute_task(f, data)
-    end
+function schedule(f::Function, scheduler::Scheduler, data::TaskData)
+    task = Threads.@spawn execute_task(f, data)
     push!(scheduler.tasks, task)
+    push!(scheduler.task_datas, data)
     return task
 end
 
-function wait_for_all_tasks(scheduler::Scheduler)
-    for task in scheduler.tasks
+function stop_and_wait_for_all_tasks(scheduler::Scheduler)
+    for i in eachindex(scheduler.tasks)
+        task = scheduler.tasks[i]
+        data = scheduler.task_datas[i]
+
         try
+            if typeof(data) == PeriodicTaskData
+                put!(data.ch, Stop())
+            end
             wait(task)
         catch err
             if isa(task.result, InterruptException)
@@ -115,15 +115,5 @@ function wait_for_all_tasks(scheduler::Scheduler)
             end
         end
     end
-end
-
-function interrupt_all_tasks(scheduler::Scheduler)
-    for task in scheduler.tasks
-        interrupt(task)
-    end
-end
-
-function interrupt(task::Any)
-    Threads.@spawn Base.throwto(task, InterruptException())
 end
 
