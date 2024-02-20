@@ -103,14 +103,18 @@ function schedule(f::Function, scheduler::Scheduler, data::TaskData)
 end
 
 function stop_and_wait_for_all_tasks(scheduler::Scheduler)
-    for i in eachindex(scheduler.tasks)
-        task = scheduler.tasks[i]
+    for i in eachindex(scheduler.task_datas)
         data = scheduler.task_datas[i]
 
+        if is_stopable(data)
+            put!(data.ch, Stop())
+        end
+    end
+
+    for i in eachindex(scheduler.tasks)
+        task = scheduler.tasks[i]
+
         try
-            if is_stopable(data)
-                put!(data.ch, Stop())
-            end
             wait(task)
         catch err
             if isa(task.result, InterruptException)
