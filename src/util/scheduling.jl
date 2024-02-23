@@ -6,6 +6,9 @@ export TaskData,
     AwaitableTaskData,
     ConditionalTaskData,
     execute_task,
+    stop_task,
+    stop_all_tasks,
+    wait_for_all_tasks,
     stop_and_wait_for_all_tasks,
     schedule,
     Scheduler
@@ -21,7 +24,7 @@ struct Scheduler
     tasks::Dict{Task,TaskData}
 end
 
-Scheduler() = Scheduler(Dict{Task,TaskData}()y)
+Scheduler() = Scheduler(Dict{Task,TaskData}())
 
 function is_stopable(data::TaskData)::Bool
     return false
@@ -100,13 +103,26 @@ function schedule(f::Function, scheduler::Scheduler, data::TaskData)
     return task
 end
 
-function stop_and_wait_for_all_tasks(scheduler::Scheduler)
+function stop_task(scheduler::Scheduler, t::Task)
+    data = scheduler.tasks[t]
+
+    if is_stopable(data)
+        put!(data.ch, Stop())
+    end
+
+    @warn "Attempted to stop a non-stopable task."
+    return nothing
+end
+
+function stop_all_tasks(scheduler::Scheduler)
     for data in values(scheduler.tasks)
         if is_stopable(data)
             put!(data.ch, Stop())
         end
     end
+end
 
+function wait_for_all_tasks(scheduler::Scheduler)
     for task in keys(scheduler.tasks)
         try
             wait(task)
@@ -119,5 +135,10 @@ function stop_and_wait_for_all_tasks(scheduler::Scheduler)
             end
         end
     end
+end
+
+function stop_and_wait_for_all_tasks(scheduler::Scheduler)
+    stop_all_tasks(scheduler)
+    wait_for_all_tasks(scheduler)
 end
 
