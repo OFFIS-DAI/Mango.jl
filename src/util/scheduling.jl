@@ -18,11 +18,10 @@ struct Continue end
 abstract type TaskData end
 
 struct Scheduler
-    tasks::Vector{Task}
-    task_datas::Vector{TaskData}
+    tasks::Dict{Task,TaskData}
 end
 
-Scheduler() = Scheduler(Vector{Task}(), Vector{TaskData}())
+Scheduler() = Scheduler(Dict{Task,TaskData}()y)
 
 function is_stopable(data::TaskData)::Bool
     return false
@@ -97,23 +96,18 @@ end
 
 function schedule(f::Function, scheduler::Scheduler, data::TaskData)
     task = Threads.@spawn execute_task(f, data)
-    push!(scheduler.tasks, task)
-    push!(scheduler.task_datas, data)
+    scheduler.tasks[task] = data
     return task
 end
 
 function stop_and_wait_for_all_tasks(scheduler::Scheduler)
-    for i in eachindex(scheduler.task_datas)
-        data = scheduler.task_datas[i]
-
+    for data in values(scheduler.tasks)
         if is_stopable(data)
             put!(data.ch, Stop())
         end
     end
 
-    for i in eachindex(scheduler.tasks)
-        task = scheduler.tasks[i]
-
+    for task in keys(scheduler.tasks)
         try
             wait(task)
         catch err
