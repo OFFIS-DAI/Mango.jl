@@ -16,7 +16,8 @@ import ..ContainerAPI.send_message
 
 import ..AgentAPI.subscribe_message_handle, ..AgentAPI.subscribe_send_handle
 import Dates
-import ..Mango: schedule, stop_and_wait_for_all_tasks
+import ..Mango:
+    schedule, stop_task, stop_all_tasks, wait_for_all_tasks, stop_and_wait_for_all_tasks
 
 """
 Context of the agent. Represents the environment for the specific agent. Therefore it includes a 
@@ -231,6 +232,28 @@ Delegates to the scheduler `Scheduler`
 function stop_and_wait_for_all_tasks(agent::Agent)
     stop_and_wait_for_all_tasks(agent.scheduler)
 end
+
+"""
+Delegates to the scheduler `Scheduler`
+"""
+function stop_task(agent::Agent, t::Task)
+    stop_task(agent.scheduler, t)
+end
+
+"""
+Delegates to the scheduler `Scheduler`
+"""
+function wait_for_all_tasks(agent::Agent)
+    wait_for_all_tasks(agent.scheduler)
+end
+
+"""
+Delegates to the scheduler `Scheduler`
+"""
+function stop_all_tasks(agent::Agent)
+    stop_all_tasks(agent.scheduler)
+end
+
 
 """
 Send a message using the context to the agent with the receiver id `receiver_id` at the address `receiver_addr`. 
