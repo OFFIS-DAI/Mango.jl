@@ -2,19 +2,11 @@
 
 ## 1. Introduction
 
-Welcome to the documentation for the `Scheduling` component in Mango.jl. This utility component provides a flexible scheduler for executing predefined tasks with different scheduling types, including `ASYNC`, `THREAD`, and `PROCESS`. It offers various `TaskData` types to specify different task execution behaviors.
+Welcome to the documentation for the `Scheduling` component in Mango.jl. This utility component provides a flexible scheduler for executing predefined tasks. It offers various `TaskData` types to specify different task execution behaviors.
 
 ## 2. Module Overview
 
 The `Scheduling` module exports several types and functions to facilitate task scheduling and execution. Let's briefly review the main components of this module.
-
-### Scheduling Types
-
-The module defines the following scheduling types using an `enum`:
-
-1. `ASYNC`: The task will be scheduled asynchronously, allowing non-blocking execution.
-2. `THREAD`: The task will be scheduled as a separate thread.
-3. `PROCESS`: The task will be scheduled as a separate process.
 
 ### Task Data Types
 
@@ -29,18 +21,53 @@ The module provides different `TaskData` types, each catering to specific schedu
 
 ### Typical usage
 
-Typically the scheduler is used within methods from the agent. To schedule a task the function `schedule` can be used, here you have to provide the agent, which schedules the task (or the scheduler instance), and the TaskData, which defines the flow of the task. Furthermore you can decide which type of task you want to start using the scheduling types.
+Typically the scheduler is used within methods from the agent. To schedule a task the function `schedule` can be used. It takes two inputs: The agent (which forwards the call to its scheduler) and the TaskData object of the task.
 
 ```julia
 agent = MyAgent(0)
 result = 0
 
-schedule(agent, InstantTaskData(), THREAD) do 
+schedule(agent, InstantTaskData()) do 
     # some expensive calculation
     result = 10       
 end
 wait_for_all_tasks(agent)
 ```
+
+`PeriodicTaskData` creates tasks that get executed repeatedly forever. 
+This means that calling `wait` on such a task will generally simply block forever.
+For this reason a periodic task has to be stopped before it can be waited on.
+
+```julia
+delay_in_s = 0.5 # delay between executions of the task in seconds
+
+t = schedule(agent, PeriodicTaskData(delay)) do 
+    # some expensive calculation
+    result = 10       
+end
+
+stop_task(agent, t)
+wait_for_all_tasks(agent)
+```
+
+Alternatively, you can stop all `stopable` tasks simultaneously with the `stop_all_tasks` function.
+
+```julia
+delay_in_s = 0.5 # delay between executions of the task in seconds
+
+for i in 1:100
+    schedule(agent, PeriodicTaskData(delay)) do 
+        # some expensive calculation
+        result = 10       
+    end
+end
+
+stop_all_task(agent, t)
+wait_for_all_tasks(agent)
+```
+
+Finally, `stop_and_wait_for_all_tasks` is a convenience methods combining both `stop_all_tasks` and `wait_for_all_tasks`.
+
 
 ## 3. Scheduler
 
@@ -88,4 +115,34 @@ The `wait_for_all_tasks` function waits for all the scheduled tasks in the provi
 
 ```julia
 wait_for_all_tasks(scheduler::Scheduler)
+```
+
+### stop_task
+
+The `stop_task` function send the stop signal to a task `t`. This will result in its completion once their next execution cycle is finished. If `t` is not stopable this will output a warning.
+
+#### Signature
+
+```julia
+stop_task(scheduler::Scheduler, t::Task)
+```
+
+### stop_all_tasks 
+
+The `stop_all_tasks` function send the stop signal to all stopable tasks. This will result in their completion once their next execution cycle is finished.
+
+#### Signature
+
+```julia
+stop_all_tasks(scheduler::Scheduler)
+```
+
+### stop_and_wait_for_all_tasks 
+
+The `stop_and_wait_for_all_tasks` function send the stop signal to all stopable tasks. It then waits for all scheduled tasks to finish.
+
+#### Signature
+
+```julia
+stop_and_wait_for_all_tasks(scheduler::Scheduler)
 ```

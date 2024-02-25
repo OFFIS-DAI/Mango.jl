@@ -1,9 +1,10 @@
 module AgentRole
-export Role, handle_message, RoleContext, @role, subscribe_message, subscribe_send, bind_context
+export Role,
+    handle_message, RoleContext, @role, subscribe_message, subscribe_send, bind_context
 
 using ..AgentAPI
 import ..AgentAPI.send_message
-import ..Mango: schedule 
+import ..Mango: schedule
 using ..Mango
 
 
@@ -29,9 +30,7 @@ end
 List of all baseline fields of every role, which will be inserted
 by the macro @role.
 """
-ROLE_BASELINE_FIELDS::Vector = [
-    :(context::Union{RoleContext,Nothing})
-]
+ROLE_BASELINE_FIELDS::Vector = [:(context::Union{RoleContext,Nothing})]
 
 """
 Macro for defining an role struct. Expects a struct definition
@@ -74,12 +73,29 @@ macro role(struct_def)
     end
 
     # Create the new struct definition
-    new_struct_def = Expr(:struct, true, Expr(:(<:), struct_name, :(Role)), Expr(:block, struct_fields...))
+    new_struct_def = Expr(
+        :struct,
+        true,
+        Expr(:(<:), struct_name, :(Role)),
+        Expr(:block, struct_fields...),
+    )
 
     # Creates a constructor, which will assign nothing to all baseline fields, therefore requires you just to call it with the your fields
     # f.e. @role MyRole own_field::String end, can be constructed using MyRole("MyOwnValueFor own_field").
-    new_fields = [field for field in struct_fields[2+length(ROLE_BASELINE_FIELDS):end] if typeof(field) != LineNumberNode] 
-    default_constructor_def = Expr(:(=), Expr(:call, struct_name, new_fields...), Expr(:call, struct_name, [nothing for _ in 1:length(ROLE_BASELINE_FIELDS)]..., new_fields...))
+    new_fields = [
+        field for field in struct_fields[2+length(ROLE_BASELINE_FIELDS):end] if
+        typeof(field) != LineNumberNode
+    ]
+    default_constructor_def = Expr(
+        :(=),
+        Expr(:call, struct_name, new_fields...),
+        Expr(
+            :call,
+            struct_name,
+            [nothing for _ = 1:length(ROLE_BASELINE_FIELDS)]...,
+            new_fields...,
+        ),
+    )
 
     esc(Expr(:block, new_struct_def, default_constructor_def))
 end
@@ -144,8 +160,8 @@ end
 """
 Delegates to the scheduler `Scheduler`
 """
-function schedule(f::Function, role::Role, data::TaskData, scheduling_type::SchedulingType=ASYNC)
-    schedule(f, role.context.agent, data, scheduling_type)
+function schedule(f::Function, role::Role, data::TaskData)
+    schedule(f, role.context.agent, data)
 end
 
 """
@@ -153,11 +169,13 @@ Send a message using the context to the agent with the receiver id `receiver_id`
 This method will always set a sender_id. Additionally, further keyword arguments can be defines to fill the 
 internal meta data of the message.
 """
-function send_message(role::Role,
+function send_message(
+    role::Role,
     content::Any,
     receiver_id::String,
-    receiver_addr::Any=nothing;
-    kwargs...)
+    receiver_addr::Any = nothing;
+    kwargs...,
+)
     return send_message(role.context.agent, content, receiver_id, receiver_addr; kwargs...)
 end
 

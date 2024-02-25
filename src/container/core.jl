@@ -1,13 +1,15 @@
 module ContainerCore
 export Container, register, send_message, start, shutdown
 
-import ..Mango: @asynclog
+
 using ..ContainerAPI
-using ..AgentCore: Agent, AgentContext, dispatch_message
+using ..AgentCore: Agent, AgentContext, dispatch_message, stop_and_wait_for_all_tasks
 using ..ProtocolCore
 using ..EncodeDecode
 
 import ..ContainerAPI.send_message
+
+import ..AgentCore: shutdown
 
 using Parameters
 using OrderedCollections
@@ -76,10 +78,14 @@ Shut down the container. It is always necessary to call it for freeing bound res
 function shutdown(container::Container)
     container.shutdown = true
     close(container.protocol)
-    @asynclog Base.throwto(container.loop, InterruptException())
+    Threads.@spawn Base.throwto(container.loop, InterruptException())
 
     for task in container.tasks
         wait(task)
+    end
+
+    for agent in values(container.agents)
+        shutdown(agent)
     end
 end
 
@@ -102,7 +108,7 @@ The actually used aid will be returned.
 function register(
     container::Container,
     agent::Agent,
-    suggested_aid::Union{String,Nothing}=nothing,
+    suggested_aid::Union{String,Nothing} = nothing,
 )
     actual_aid::String = "$AGENT_PREFIX$(container.agent_counter)"
     if isnothing(suggested_aid) && haskey(container.agents, suggested_aid)
@@ -153,8 +159,8 @@ function send_message(
     container::Container,
     content::Any,
     receiver_id::String,
-    receiver_addr::Any=nothing,
-    sender_id::Union{Nothing,String}=nothing;
+    receiver_addr::Any = nothing,
+    sender_id::Union{Nothing,String} = nothing;
     kwargs...,
 )
 
@@ -173,7 +179,7 @@ function send_message(
         return forward_message(container, content, meta)
     end
 
-    return @asynclog send(
+    return Threads.@spawn send(
         container.protocol,
         receiver_addr,
         container.codec[1](to_external_message(content, meta)),

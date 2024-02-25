@@ -1,50 +1,78 @@
 
-export SchedulingType, ASYNC, PROCESS, THREAD, TaskData, PeriodicTaskData, InstantTaskData, DateTimeTaskData, AwaitableTaskData, ConditionalTaskData, execute_task, wait_for_all_tasks, schedule, Scheduler, interrupt, interrupt_all_tasks
+export TaskData,
+    PeriodicTaskData,
+    InstantTaskData,
+    DateTimeTaskData,
+    AwaitableTaskData,
+    ConditionalTaskData,
+    execute_task,
+    stop_task,
+    stop_all_tasks,
+    wait_for_all_tasks,
+    stop_and_wait_for_all_tasks,
+    schedule,
+    Scheduler
 
 import Dates
 import Base.schedule
-using Distributed: @spawnat, Future
 
-"""
-Internal scheduler for scheduling predefined task types
-"""
-struct Scheduler
-    tasks::Vector{Union{Task,Future}}
-end
-
-Scheduler() = Scheduler(Vector())
-
-@enum SchedulingType begin
-    ASYNC = 1
-    THREAD = 2
-    PROCESS = 3
-end
-
+struct Stop end
+struct Continue end
 abstract type TaskData end
+
+struct Scheduler
+    tasks::Dict{Task,TaskData}
+end
+
+Scheduler() = Scheduler(Dict{Task,TaskData}())
+
+function is_stopable(data::TaskData)::Bool
+    return false
+end
 
 struct PeriodicTaskData <: TaskData
     interval_s::Float64
+    ch::Channel # channel for sending interrupt signal
+
+    function PeriodicTaskData(interval_s::Float64)
+        return new(interval_s, Channel(1))
+    end
+end
+
+function is_stopable(data::PeriodicTaskData)::Bool
+    return true
 end
 
 struct InstantTaskData <: TaskData end
 
-struct DateTimeTaskData <: TaskData 
+struct DateTimeTaskData <: TaskData
     date::Dates.DateTime
 end
 
-struct AwaitableTaskData <: TaskData 
+struct AwaitableTaskData <: TaskData
     awaitable::Any
 end
 
-struct ConditionalTaskData <: TaskData 
+struct ConditionalTaskData <: TaskData
     condition::Function
     check_interval_s::Float64
 end
 
 function execute_task(f::Function, data::PeriodicTaskData)
+    signal = Continue()
+
     while true
         f()
         sleep(data.interval_s)
+
+        # check stop condition
+        if isready(data.ch)
+            signal = take!(data.ch)
+        end
+
+        if signal == Stop()
+            break
+        end
     end
 end
 
@@ -54,7 +82,7 @@ end
 
 function execute_task(f::Function, data::DateTimeTaskData)
     sleep((data.date - Dates.now()).value / 1000)
-    f()    
+    f()
 end
 
 function execute_task(f::Function, data::AwaitableTaskData)
@@ -69,40 +97,48 @@ function execute_task(f::Function, data::ConditionalTaskData)
     f()
 end
 
-function schedule(f::Function, scheduler::Scheduler, data::TaskData, scheduling_type::SchedulingType=ASYNC)
-    task = nothing
-    if scheduling_type == ASYNC
-        task = @asynclog execute_task(f, data)
-    elseif scheduling_type == THREAD
-        task = Threads.@spawn execute_task(f, data)
-    elseif scheduling_type == PROCESS
-        task = @spawnat :any execute_task(f, data)
-    end
-    push!(scheduler.tasks, task)
+function schedule(f::Function, scheduler::Scheduler, data::TaskData)
+    task = Threads.@spawn execute_task(f, data)
+    scheduler.tasks[task] = data
     return task
 end
 
+function stop_task(scheduler::Scheduler, t::Task)
+    data = scheduler.tasks[t]
+
+    if is_stopable(data)
+        put!(data.ch, Stop())
+    end
+
+    @warn "Attempted to stop a non-stopable task."
+    return nothing
+end
+
+function stop_all_tasks(scheduler::Scheduler)
+    for data in values(scheduler.tasks)
+        if is_stopable(data)
+            put!(data.ch, Stop())
+        end
+    end
+end
+
 function wait_for_all_tasks(scheduler::Scheduler)
-    for task in scheduler.tasks
+    for task in keys(scheduler.tasks)
         try
             wait(task)
         catch err
             if isa(task.result, InterruptException)
                 # ignore, task has been interrupted by the scheduler
             else
-                @error "An error occurred while waiting for $task" exception=(err, catch_backtrace())
+                @error "An error occurred while waiting for $task" exception =
+                    (err, catch_backtrace())
             end
         end
     end
 end
 
-function interrupt_all_tasks(scheduler::Scheduler)
-    for task in scheduler.tasks
-        interrupt(task)
-    end
-end
-
-function interrupt(task::Any)
-    @asynclog Base.throwto(task, InterruptException())
+function stop_and_wait_for_all_tasks(scheduler::Scheduler)
+    stop_all_tasks(scheduler)
+    wait_for_all_tasks(scheduler)
 end
 
