@@ -37,7 +37,7 @@ struct PeriodicTaskData <: TaskData
     timer::Timer
 
     function PeriodicTaskData(interval_s::Float64)
-        return new(Timer(0; interval_s))
+        return new(Timer(interval_s; interval=interval_s))
     end
 end
 
@@ -123,7 +123,7 @@ function wait_for_all_tasks(scheduler::Scheduler)
         try
             wait(task)
         catch err
-            if isa(task.result, InterruptException)
+            if isa(task.result, InterruptException) || isa(task.result, EOFError)
                 # ignore, task has been interrupted by the scheduler
             else
                 @error "An error occurred while waiting for $task" exception =

@@ -78,7 +78,6 @@ Shut down the container. It is always necessary to call it for freeing bound res
 function shutdown(container::Container)
     container.shutdown = true
     close(container.protocol)
-    Threads.@spawn Base.throwto(container.loop, InterruptException())
 
     for task in container.tasks
         wait(task)
@@ -108,7 +107,7 @@ The actually used aid will be returned.
 function register(
     container::Container,
     agent::Agent,
-    suggested_aid::Union{String,Nothing} = nothing,
+    suggested_aid::Union{String,Nothing}=nothing,
 )
     actual_aid::String = "$AGENT_PREFIX$(container.agent_counter)"
     if isnothing(suggested_aid) && haskey(container.agents, suggested_aid)
@@ -159,8 +158,8 @@ function send_message(
     container::Container,
     content::Any,
     receiver_id::String,
-    receiver_addr::Any = nothing,
-    sender_id::Union{Nothing,String} = nothing;
+    receiver_addr::Any=nothing,
+    sender_id::Union{Nothing,String}=nothing;
     kwargs...,
 )
 

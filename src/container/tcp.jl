@@ -31,7 +31,7 @@ end
 @with_kw mutable struct TCPProtocol <: Protocol{InetAddr}
     address::InetAddr
     server::Union{Nothing,TCPServer} = nothing
-    pool::TCPConnectionPool = TCPConnectionPool(keep_alive_time_ms = 100000)
+    pool::TCPConnectionPool = TCPConnectionPool(keep_alive_time_ms=100000)
 end
 
 function close(pool::TCPConnectionPool)
@@ -55,8 +55,8 @@ function acquire_tcp_connection(tcp_pool::TCPConnectionPool, key::InetAddr)::TCP
     connection, _ = acquire(
         tcp_pool.connections,
         key,
-        forcenew = false,
-        isvalid = c -> is_valid(c, tcp_pool.keep_alive_time_ms),
+        forcenew=false,
+        isvalid=c -> is_valid(c, tcp_pool.keep_alive_time_ms),
     ) do
         return (connect(key.host, key.port), Dates.now())
     end
@@ -160,7 +160,7 @@ function init(protocol::TCPProtocol, stop_check::Function, data_handler::Functio
                     )
                 end
             catch err
-                if isa(err, InterruptException)
+                if isa(err, InterruptException) || isa(err, Base.IOError)
                     # nothing
                 else
                     @error "Caught an unexpected error in listen" exception =
@@ -184,4 +184,5 @@ Release all tcp resources
 """
 function close(protocol::TCPProtocol)
     close(protocol.pool)
+    close(protocol.server)
 end
