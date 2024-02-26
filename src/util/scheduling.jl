@@ -30,17 +30,23 @@ function is_stopable(data::TaskData)::Bool
     return false
 end
 
+function stop_single_task(data::TaskData)::Nothing
+end
+
 struct PeriodicTaskData <: TaskData
-    interval_s::Float64
-    ch::Channel # channel for sending interrupt signal
+    timer::Timer
 
     function PeriodicTaskData(interval_s::Float64)
-        return new(interval_s, Channel(1))
+        return new(Timer(0; interval_s))
     end
 end
 
 function is_stopable(data::PeriodicTaskData)::Bool
     return true
+end
+
+function stop_single_task(data::PeriodicTaskData)::Nothing
+    close(data.timer)
 end
 
 struct InstantTaskData <: TaskData end
@@ -59,20 +65,10 @@ struct ConditionalTaskData <: TaskData
 end
 
 function execute_task(f::Function, data::PeriodicTaskData)
-    signal = Continue()
 
     while true
         f()
-        sleep(data.interval_s)
-
-        # check stop condition
-        if isready(data.ch)
-            signal = take!(data.ch)
-        end
-
-        if signal == Stop()
-            break
-        end
+        wait(data.timer)
     end
 end
 
@@ -107,7 +103,7 @@ function stop_task(scheduler::Scheduler, t::Task)
     data = scheduler.tasks[t]
 
     if is_stopable(data)
-        put!(data.ch, Stop())
+        stop_single_task(data)
     end
 
     @warn "Attempted to stop a non-stopable task."
@@ -117,7 +113,7 @@ end
 function stop_all_tasks(scheduler::Scheduler)
     for data in values(scheduler.tasks)
         if is_stopable(data)
-            put!(data.ch, Stop())
+            stop_single_task(data)
         end
     end
 end
