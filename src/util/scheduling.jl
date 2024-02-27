@@ -37,7 +37,7 @@ struct PeriodicTaskData <: TaskData
     timer::Timer
 
     function PeriodicTaskData(interval_s::Float64)
-        return new(Timer(interval_s; interval=interval_s))
+        return new(Timer(0; interval=interval_s))
     end
 end
 
@@ -65,6 +65,10 @@ struct ConditionalTaskData <: TaskData
 end
 
 function execute_task(f::Function, data::PeriodicTaskData)
+    # because uv lib does not wait the first time when
+    # delay=0, and the windows implementation does not
+    # care about the delay at all
+    wait(data.timer)
 
     while true
         f()
