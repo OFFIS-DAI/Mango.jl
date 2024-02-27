@@ -21,10 +21,10 @@ end
     task = schedule(scheduler, PeriodicTaskData(0.1)) do
         result += 10
     end
-    sleep(0.35)
+    sleep(0.51)
     stop_and_wait_for_all_tasks(scheduler)
 
-    @test result == 40
+    @test result == 60
 end
 
 @testset "AgentSchedulerDateTimeThread" begin
