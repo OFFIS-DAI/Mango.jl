@@ -12,7 +12,7 @@ The `Scheduling` module exports several types and functions to facilitate task s
 
 The module provides different `TaskData` types, each catering to specific scheduling requirements:
 
-1. `PeriodicTaskData`: For tasks that need to be executed periodically, it holds the time interval in seconds between task executions.
+1. `PeriodicTaskData`: For tasks that need to be executed periodically, it holds the time interval in seconds between task executions. Note: In macOS and linux-based systems the tasks will be executed immediately at the first time, under windows it will be delayed by defined number of seconds.
 2. `InstantTaskData`: For tasks that need to be executed instantly, without any delay.
 3. `DateTimeTaskData`: For tasks that need to be executed at a specific date and time.
 4. `AwaitableTaskData`: For tasks that require waiting for an awaitable object to complete before execution.
