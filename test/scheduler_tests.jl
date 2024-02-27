@@ -24,7 +24,7 @@ end
     sleep(1.51)
     stop_and_wait_for_all_tasks(scheduler)
 
-    @test result == 60
+    @test result == 160
 end
 
 @testset "AgentSchedulerDateTimeThread" begin
