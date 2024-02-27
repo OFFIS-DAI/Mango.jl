@@ -30,5 +30,6 @@ jobs:
       - uses: codecov/codecov-action@v4
         with:
           files: lcov.info
-          token: ${{ secrets.CODECOV_API }}
+          token: ${{ secrets.CODECOV_TOKEN  }}    
+          slug: OFFIS-DAI/Mango.jl
           fail_ci_if_error: false
