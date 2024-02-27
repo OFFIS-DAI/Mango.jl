@@ -1,5 +1,6 @@
 [deps]
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+Mango = "5e49fdec-d473-4d14-b295-7bff2fcf1925"
 
 [compat]
 Documenter = "~0.27"
