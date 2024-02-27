@@ -16,7 +16,7 @@ We appreciate constructive feedback and suggestions for improvement._
 
 
 
-[Docs](https://mango-agents.gitlab.io/Mango.jl/)
+[Docs](https://offis-dai.github.io/Mango.jl/stable)
 | [Gitlab](https://github.com/OFFIS-DAI/Mango.jl) | [mail](mailto:mango@offis.de)
 
 Mango.jl allows the user to create simple agents with little effort and in the same time offers options to structure agents with complex behaviour. The main features of mango are listed below.
