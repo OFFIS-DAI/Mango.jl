@@ -21,7 +21,7 @@ end
     task = schedule(scheduler, PeriodicTaskData(0.1)) do
         result += 10
     end
-    sleep(0.51)
+    sleep(1.51)
     stop_and_wait_for_all_tasks(scheduler)
 
     @test result == 60

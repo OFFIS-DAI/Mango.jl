@@ -27,12 +27,12 @@ end
 
 @testset "TCPContainerMessaging" begin
     container = Container()
-    container.protocol = TCPProtocol(address = InetAddr(ip"127.0.0.2", 2939))
+    container.protocol = TCPProtocol(address=InetAddr(ip"127.0.0.2", 2939))
     agent1 = MyAgent(0)
     register(container, agent1)
 
     container2 = Container()
-    container2.protocol = TCPProtocol(address = InetAddr(ip"127.0.0.2", 2940))
+    container2.protocol = TCPProtocol(address=InetAddr(ip"127.0.0.2", 2940))
     agent2 = MyAgent(0)
     register(container2, agent2)
     agent3 = MyAgent(0)
@@ -80,9 +80,9 @@ end
 
 @testset "TCPContainerPingPong" begin
     container = Container()
-    container.protocol = TCPProtocol(address = InetAddr(ip"127.0.0.2", 2980))
+    container.protocol = TCPProtocol(address=InetAddr(ip"127.0.0.2", 2939))
     container2 = Container()
-    container2.protocol = TCPProtocol(address = InetAddr(ip"127.0.0.2", 2981))
+    container2.protocol = TCPProtocol(address=InetAddr(ip"127.0.0.2", 2940))
 
     ping_agent = PingPongAgent(0)
     pong_agent = PingPongAgent(0)
@@ -93,7 +93,7 @@ end
     wait(Threads.@spawn start(container))
     wait(Threads.@spawn start(container2))
 
-    wait(send_message(ping_agent, "Ping", pong_agent.aid, InetAddr(ip"127.0.0.2", 2980)))
+    wait(send_message(ping_agent, "Ping", pong_agent.aid, InetAddr(ip"127.0.0.2", 2939)))
 
     wait(Threads.@spawn begin
         while ping_agent.counter < 5
