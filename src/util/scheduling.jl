@@ -38,7 +38,7 @@ mutable struct PeriodicTaskData <: TaskData
     timer::Timer
 
     function PeriodicTaskData(interval_s::Float64)
-        return new(interval_s, Timer(interval_s))
+        return new(interval_s, Timer(interval_s; interval=interval_s))
     end
 end
 
@@ -70,7 +70,6 @@ function execute_task(f::Function, data::PeriodicTaskData)
     while true
         f()
         wait(data.timer)
-        data.timer = Timer(data.interval_s)
     end
 end
 

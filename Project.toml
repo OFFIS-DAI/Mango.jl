@@ -2,7 +2,7 @@ name = "Mango"
 uuid = "5e49fdec-d473-4d14-b295-7bff2fcf1925"
 authors = ["OFFIS e.V."]
 repo = "https://github.com/OFFIS-DAI/Mango.jl"
-version = "0.2.0"
+version = "0.2.1"
 
 [deps]
 LightBSON = "a4a7f996-b3a6-4de6-b9db-2fa5f350df41"
