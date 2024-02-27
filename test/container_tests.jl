@@ -8,7 +8,7 @@ using OrderedCollections
 import Mango.AgentCore.handle_message
 
 
-function handle_message(agent::MyAgent, message::Any, meta::OrderedDict{String,Any})
+function handle_message(agent::MyAgent, message::Any, meta::AbstractDict)
     agent.counter += 10
 end
 
@@ -20,19 +20,19 @@ end
     register(container, agent1)
     register(container, agent2)
 
-    wait(@asynclog send_message(container, "Hello Friends, this is RSc!", agent1.aid))
+    wait(Threads.@spawn send_message(container, "Hello Friends, this is RSc!", agent1.aid))
 
     @test agent1.counter == 10
 end
 
 @testset "TCPContainerMessaging" begin
     container = Container()
-    container.protocol = TCPProtocol(address = InetAddr(ip"127.0.0.2", 2939))
+    container.protocol = TCPProtocol(address=InetAddr(ip"127.0.0.1", 2939))
     agent1 = MyAgent(0)
     register(container, agent1)
 
     container2 = Container()
-    container2.protocol = TCPProtocol(address = InetAddr(ip"127.0.0.2", 2940))
+    container2.protocol = TCPProtocol(address=InetAddr(ip"127.0.0.1", 2940))
     agent2 = MyAgent(0)
     register(container2, agent2)
     agent3 = MyAgent(0)
@@ -46,19 +46,19 @@ end
             container2,
             "Hello Friends2, this is RSc!",
             agent3.aid,
-            InetAddr(ip"127.0.0.2", 2940),
+            InetAddr(ip"127.0.0.1", 2940),
         ),
     )
 
-    wait(@async begin
+    wait(Threads.@spawn begin
         while agent3.counter != 10
             sleep(1)
         end
     end)
 
     @sync begin
-        @async shutdown(container)
-        @async shutdown(container2)
+        Threads.@spawn shutdown(container)
+        Threads.@spawn shutdown(container2)
     end
 
     @test agent3.counter == 10
@@ -68,7 +68,7 @@ end
     counter::Int
 end
 
-function handle_message(agent::PingPongAgent, message::Any, meta::OrderedDict{String,Any})
+function handle_message(agent::PingPongAgent, message::Any, meta::AbstractDict)
     if message == "Ping" && agent.counter < 5
         agent.counter += 1
         send_message(agent, "Pong", meta["sender_id"], meta["sender_addr"])
@@ -80,9 +80,9 @@ end
 
 @testset "TCPContainerPingPong" begin
     container = Container()
-    container.protocol = TCPProtocol(address = InetAddr(ip"127.0.0.2", 2980))
+    container.protocol = TCPProtocol(address=InetAddr(ip"127.0.0.1", 2939))
     container2 = Container()
-    container2.protocol = TCPProtocol(address = InetAddr(ip"127.0.0.2", 2981))
+    container2.protocol = TCPProtocol(address=InetAddr(ip"127.0.0.1", 2940))
 
     ping_agent = PingPongAgent(0)
     pong_agent = PingPongAgent(0)
@@ -93,17 +93,17 @@ end
     wait(Threads.@spawn start(container))
     wait(Threads.@spawn start(container2))
 
-    wait(send_message(ping_agent, "Ping", pong_agent.aid, InetAddr(ip"127.0.0.2", 2980)))
+    wait(send_message(ping_agent, "Ping", pong_agent.aid, InetAddr(ip"127.0.0.1", 2939)))
 
-    wait(@async begin
+    wait(Threads.@spawn begin
         while ping_agent.counter < 5
             sleep(1)
         end
     end)
 
     @sync begin
-        @async shutdown(container)
-        @async shutdown(container2)
+        Threads.@spawn shutdown(container)
+        Threads.@spawn shutdown(container2)
     end
 
     @test ping_agent.counter >= 5

@@ -3,16 +3,21 @@
 **Note:** _This project is still in an early development stage. 
 We appreciate constructive feedback and suggestions for improvement._
 <!-- Tidyverse lifecycle badges, see https://www.tidyverse.org/lifecycle/ Uncomment or delete as needed. -->
-![lifecycle](https://img.shields.io/badge/lifecycle-experimental-orange.svg)<!--
+![lifecycle](https://img.shields.io/badge/lifecycle-experimental-orange.svg)
+[![codecov](https://codecov.io/gh/OFFIS-DAI/Mango.jl/graph/badge.svg?token=JRZB5T2T2M)](https://codecov.io/gh/OFFIS-DAI/Mango.jl)
+<!--
 ![lifecycle](https://img.shields.io/badge/lifecycle-maturing-blue.svg)
 ![lifecycle](https://img.shields.io/badge/lifecycle-stable-green.svg)
 ![lifecycle](https://img.shields.io/badge/lifecycle-retired-orange.svg)
 ![lifecycle](https://img.shields.io/badge/lifecycle-archived-red.svg)
-![lifecycle](https://img.shields.io/badge/lifecycle-dormant-blue.svg) -->  
+![lifecycle](https://img.shields.io/badge/lifecycle-dormant-blue.svg) 
+-->  
 
 
-[Docs](https://mango-agents.gitlab.io/Mango.jl/)
-| [Gitlab](https://gitlab.com/mango-agents/Mango.jl) | [mail](mailto:mango@offis.de)
+
+
+[Docs](https://offis-dai.github.io/Mango.jl/stable)
+| [Gitlab](https://github.com/OFFIS-DAI/Mango.jl) | [mail](mailto:mango@offis.de)
 
 Mango.jl allows the user to create simple agents with little effort and in the same time offers options to structure agents with complex behaviour. The main features of mango are listed below.
 

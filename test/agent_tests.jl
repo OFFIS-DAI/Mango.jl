@@ -13,7 +13,7 @@ end
     invoked::Bool
 end
 
-MyRole(counter::Integer) = MyRole(counter, false) 
+MyRole(counter::Integer) = MyRole(counter, false)
 
 function handle_message(agent::MyAgent, message::Any, meta::Any)
     agent.counter += 10
@@ -59,7 +59,13 @@ end
     @test agent2.role_handler.roles[1].counter == 15
 end
 
-function on_send_message(role::MyRole, content::Any, receiver_id::String, receiver_addr::Any; kwargs...)
+function on_send_message(
+    role::MyRole,
+    content::Any,
+    receiver_id::String,
+    receiver_addr::Any;
+    kwargs...,
+)
     role.invoked = true
 end
 
@@ -91,6 +97,18 @@ end
     @test agent2.counter == 10
 end
 
+@testset "AgentSendMessageWithKwargs" begin
+    container = Container()
+    agent1 = MyAgent(0)
+    agent2 = MyAgent(0)
+    register(container, agent1)
+    register(container, agent2)
+
+    wait(send_message(agent1, "Hello Agents, this is RSc!", agent2.aid; kw = 1, kw2 = 2))
+
+    @test agent2.counter == 10
+end
+
 @testset "RoleSendMessage" begin
     container = Container()
     agent1 = MyAgent(0)
@@ -109,38 +127,14 @@ end
     @test agent2.role_handler.roles[1].counter == 10
 end
 
-@testset "AgentSchedulerInstantAsync" begin
-    agent = MyAgent(0)
-    result = 0
-
-    schedule(agent, InstantTaskData(), ASYNC) do 
-        result = 10        
-    end
-    wait_for_all_tasks(agent)
-
-    @test result == 10
-end
-
 @testset "AgentSchedulerInstantThread" begin
     agent = MyAgent(0)
     result = 0
 
-    schedule(agent, InstantTaskData(), THREAD) do 
-        result = 10        
+    schedule(agent, InstantTaskData()) do
+        result = 10
     end
-    wait_for_all_tasks(agent)
-
-    @test result == 10
-end
-
-@testset "AgentSchedulerInstantProcess" begin
-    agent = MyAgent(0)
-    result = 0
-
-    schedule(agent, InstantTaskData(), PROCESS) do 
-        result = 10        
-    end
-    wait_for_all_tasks(agent)
+    stop_and_wait_for_all_tasks(agent)
 
     @test result == 10
 end

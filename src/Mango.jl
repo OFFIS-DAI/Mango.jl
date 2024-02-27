@@ -3,9 +3,23 @@ Placeholder for a short summary about mango.
 """
 module Mango
 
-export @agent, @role, Role, Agent, Container, send_message, register, @asynclog, AgentRoleHandler, AgentContext, RoleContext, add, subscribe_message, subscribe_send, TCPProtocol, start, shutdown
+export @agent,
+    @role,
+    Role,
+    Agent,
+    Container,
+    send_message,
+    register,
+    AgentRoleHandler,
+    AgentContext,
+    RoleContext,
+    add,
+    subscribe_message,
+    subscribe_send,
+    TCPProtocol,
+    start,
+    shutdown
 
-include("util/async.jl")
 include("util/scheduling.jl")
 include("util/encode_decode.jl")
 using .EncodeDecode
