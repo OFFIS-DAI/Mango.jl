@@ -18,4 +18,5 @@ makedocs(
 )
 deploydocs(
     repo="github.com/OFFIS-DAI/Mango.jl.git",
+    push_preview=true
 )
