@@ -26,7 +26,7 @@ end
 
     # windows implementation of uvlib behaves differently, it calculates delay=delay+interval, therefore
     # it will be always interval_s seconds later than the other systems
-    @test result == 160 || result == 150
+    @test result == 160
 end
 
 @testset "AgentSchedulerDateTimeThread" begin

@@ -33,11 +33,12 @@ end
 function stop_single_task(data::TaskData)::Nothing
 end
 
-struct PeriodicTaskData <: TaskData
+mutable struct PeriodicTaskData <: TaskData
+    interval_s::Float64
     timer::Timer
 
     function PeriodicTaskData(interval_s::Float64)
-        return new(Timer(0; interval=interval_s))
+        return new(interval_s, Timer(interval_s))
     end
 end
 
@@ -67,8 +68,9 @@ end
 function execute_task(f::Function, data::PeriodicTaskData)
 
     while true
-        wait(data.timer)
         f()
+        wait(data.timer)
+        data.timer = Timer(data.interval_s)
     end
 end
 
