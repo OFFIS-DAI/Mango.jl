@@ -33,11 +33,13 @@ end
 function stop_single_task(data::TaskData)::Nothing
 end
 
-mutable struct PeriodicTaskData <: TaskData
-    interval_s::Float64
+struct PeriodicTaskData <: TaskData
     timer::Timer
+
+    function PeriodicTaskData(interval_s::Float64)
+        return new(Timer(0; interval=interval_s))
+    end
 end
-PeriodicTaskData(interval_s) = PeriodicTaskData(interval_s, Timer(0; interval=0))
 
 function is_stopable(data::PeriodicTaskData)::Bool
     return true
@@ -63,11 +65,10 @@ struct ConditionalTaskData <: TaskData
 end
 
 function execute_task(f::Function, data::PeriodicTaskData)
-    f_without_t = (t) -> f()
-    data.timer = Timer(f_without_t, 0; interval=data.interval_s)
 
-    while isopen(data.timer)
+    while true
         wait(data.timer)
+        f()
     end
 end
 
