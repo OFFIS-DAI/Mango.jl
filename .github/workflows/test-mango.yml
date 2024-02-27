@@ -3,7 +3,7 @@ name: Test Mango.jl
 on: [push]
 
 
-# needed to allow julia-actions/cache to delete old caches
+# needed to allow julia-actions/cache to delete caches
 permissions:
   actions: write
   contents: read
