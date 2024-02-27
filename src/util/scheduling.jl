@@ -33,13 +33,11 @@ end
 function stop_single_task(data::TaskData)::Nothing
 end
 
-struct PeriodicTaskData <: TaskData
+mutable struct PeriodicTaskData <: TaskData
+    interval_s::Float64
     timer::Timer
-
-    function PeriodicTaskData(interval_s::Float64)
-        return new(Timer(0; interval=interval_s))
-    end
 end
+PeriodicTaskData(interval_s) = PeriodicTaskData(interval_s, Timer(0; interval=0))
 
 function is_stopable(data::PeriodicTaskData)::Bool
     return true
@@ -65,13 +63,10 @@ struct ConditionalTaskData <: TaskData
 end
 
 function execute_task(f::Function, data::PeriodicTaskData)
-    # because uv lib does not wait the first time when
-    # delay=0, and the windows implementation does not
-    # care about the delay at all
-    wait(data.timer)
+    f_without_t = (t) -> f()
+    data.timer = Timer(f_without_t, 0; interval=data.interval_s)
 
-    while true
-        f()
+    while isopen(data.timer)
         wait(data.timer)
     end
 end
