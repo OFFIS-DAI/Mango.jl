@@ -15,16 +15,16 @@ export TaskData,
 
 import Dates
 import Base.schedule
+using ConcurrentCollections
+using Parameters
 
 struct Stop end
 struct Continue end
 abstract type TaskData end
 
-struct Scheduler
-    tasks::Dict{Task,TaskData}
+@with_kw struct Scheduler
+    tasks::AbstractDict{Task,TaskData} = ConcurrentDict{Task,TaskData}()
 end
-
-Scheduler() = Scheduler(Dict{Task,TaskData}())
 
 function is_stopable(data::TaskData)::Bool
     return false

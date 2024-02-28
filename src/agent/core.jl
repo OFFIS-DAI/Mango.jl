@@ -264,7 +264,7 @@ function send_message(
     agent::Agent,
     content::Any,
     receiver_id::String,
-    receiver_addr::Any = nothing;
+    receiver_addr::Any=nothing;
     kwargs...,
 )
     for (role, handler) in agent.role_handler.send_message_subs
