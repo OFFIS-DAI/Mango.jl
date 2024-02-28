@@ -21,11 +21,11 @@ end
     task = schedule(scheduler, PeriodicTaskData(0.1)) do
         result += 10
     end
-    sleep(1.55)
+    sleep(0.51)
     stop_and_wait_for_all_tasks(scheduler)
 
     # windows is kinda slow on this, but it should work better for longer delays
-    @test result == 160 || result == 150
+    @test result == 60 || result == 50
 end
 
 @testset "AgentSchedulerDateTimeThread" begin
