@@ -1,6 +1,6 @@
 module AgentRole
 export Role,
-    handle_message, RoleContext, @role, subscribe_message, subscribe_send, bind_context
+    handle_message, handle_event, RoleContext, @role, subscribe_message, subscribe_send, bind_context, emit_event, get_model, subscribe_event
 
 using ..AgentAPI
 import ..AgentAPI.send_message
@@ -117,6 +117,13 @@ function handle_message(role::Role, message::Any, meta::Any)
 end
 
 """
+Default function for arriving events, which get dispatched to the role.
+"""
+function handle_event(role::Role, src::Role, event::Any)
+    # do nothing by default
+end
+
+"""
 Internal function, used to initialize to role for a specified agent
 """
 function bind_context(role::Role, context::RoleContext)
@@ -160,8 +167,8 @@ end
 """
 Subscribe to specific types of events.
 """
-function subscribe_event(role::Role, event::DataType, event_handler::Any)
-    subscribe_event_handle(role.context.agent, role, event, event_handler)
+function subscribe_event(role::Role, event::DataType, condition::Function, event_handler::Any)
+    subscribe_event_handle(role.context.agent, role, event, condition, event_handler)
 end
 
 """
@@ -176,7 +183,7 @@ Get a shared model from the pool. If the model does not exist yet, it will be cr
 Only types with default constructor are allowed!
 """
 function get_model(role::Role, type::DataType)
-    get_model_handle(roelecontext.agent, role, type)
+    get_model_handle(role.context.agent, type)
 end
 
 """

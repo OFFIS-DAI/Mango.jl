@@ -1,5 +1,5 @@
 module AgentAPI
-export Agent, AgentInterface, subscribe_message_handle, subscribe_send_handle, send_message
+export Agent, AgentInterface, subscribe_message_handle, subscribe_send_handle, subscribe_event_handle, emit_event_handle, get_model_handle, send_message
 
 import ..ContainerAPI.send_message
 
@@ -29,7 +29,7 @@ function subscribe_send_handle(agent::AgentInterface, role::Any, handler::Any) e
 """
 Used internally by the RoleContext to subscribe to role agent events.
 """
-function subscribe_event_handle(agent::AgentInterface, role::Any, event::DataType, event_handler::Any) end
+function subscribe_event_handle(agent::AgentInterface, role::Any, event::DataType, condition::Any, event_handler::Any) end
 
 """
 Used internally by the RoleContext to subscribe to role agent events.

@@ -14,7 +14,7 @@ using ..AgentRole
 using ..ContainerAPI
 import ..ContainerAPI.send_message
 
-import ..AgentAPI.subscribe_message_handle, ..AgentAPI.subscribe_send_handle
+import ..AgentAPI.subscribe_message_handle, ..AgentAPI.subscribe_send_handle, ..AgentAPI.subscribe_event_handle, ..AgentAPI.emit_event_handle, ..AgentAPI.get_model_handle
 import Dates
 import ..Mango:
     schedule, stop_task, stop_all_tasks, wait_for_all_tasks, stop_and_wait_for_all_tasks
@@ -35,7 +35,7 @@ struct AgentRoleHandler
     roles::Vector{Role}
     handle_message_subs::Vector{Tuple{Role,Function,Function}}
     send_message_subs::Vector{Tuple{Role,Function}}
-    event_subs::Dict{DataType,Vector{Tuple{Role,Function}}}
+    event_subs::Dict{DataType,Vector{Tuple{Role,Function,Function}}}
     models::Dict{DataType,Any}
 end
 
@@ -187,7 +187,7 @@ end
 Return all roles of the given agent
 """
 function roles(agent::Agent)
-    return agent.roles
+    return agent.role_handler.roles
 end
 
 """
@@ -224,19 +224,26 @@ end
 """
 Internal implementation of the agent API.
 """
-function subscribe_event_handle(agent::Agent, role::Role, event::DataType, event_handler::Any)
+function subscribe_event_handle(agent::Agent, role::Role, event::DataType, condition::Function, event_handler::Function)
     if !haskey(agent.role_handler.event_subs, event)
         agent.role_handler.event_subs[event] = Vector()
     end
-    push!(agent.role_handler.event_subs[event], (role, event_handler))
+    push!(agent.role_handler.event_subs[event], (role, condition, event_handler))
 end
 
 """
 Internal implementation of the agent API.
 """
 function emit_event_handle(agent::Agent, src::Role, event::Any)
-    for (role, func) in agent.role_handler.event_subs[typeof(event)]
-        func(role, event, src)
+    if haskey(agent.role_handler.event_subs, typeof(event))
+        for (role, condition, func) in agent.role_handler.event_subs[typeof(event)]
+            if condition(src, event)
+                func(role, src, event)
+            end
+        end
+    end
+    for role in roles(agent)
+        handle_event(role, src, event)
     end
 end
 
