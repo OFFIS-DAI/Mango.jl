@@ -158,6 +158,28 @@ function subscribe_send(role::Role, handler::Function)
 end
 
 """
+Subscribe to specific types of events.
+"""
+function subscribe_event(role::Role, event::DataType, event_handler::Any)
+    subscribe_event_handle(role.context.agent, role, event, event_handler)
+end
+
+"""
+Emit an event to their subscriber
+"""
+function emit_event(role::Role, event::Any)
+    emit_event_handle(role.context.agent, role, event)
+end
+
+"""
+Get a shared model from the pool. If the model does not exist yet, it will be created.
+Only types with default constructor are allowed!
+"""
+function get_model(role::Role, type::DataType)
+    get_model_handle(roelecontext.agent, role, type)
+end
+
+"""
 Delegates to the scheduler `Scheduler`
 """
 function schedule(f::Function, role::Role, data::TaskData)
@@ -173,7 +195,7 @@ function send_message(
     role::Role,
     content::Any,
     receiver_id::String,
-    receiver_addr::Any = nothing;
+    receiver_addr::Any=nothing;
     kwargs...,
 )
     return send_message(role.context.agent, content, receiver_id, receiver_addr; kwargs...)

@@ -35,6 +35,8 @@ struct AgentRoleHandler
     roles::Vector{Role}
     handle_message_subs::Vector{Tuple{Role,Function,Function}}
     send_message_subs::Vector{Tuple{Role,Function}}
+    event_subs::Dict{DataType,Vector{Tuple{Role,Function}}}
+    models::Dict{DataType,Any}
 end
 
 """
@@ -57,7 +59,7 @@ AGENT_BASELINE_FIELDS.
 AGENT_BASELINE_DEFAULTS::Vector = [
     () -> ReentrantLock(),
     () -> nothing,
-    () -> AgentRoleHandler(Vector(), Vector(), Vector()),
+    () -> AgentRoleHandler(Vector(), Vector(), Vector(), Dict(), Dict()),
     () -> Scheduler(),
     () -> nothing,
 ]
@@ -217,6 +219,35 @@ Internal implementation of the agent API.
 """
 function subscribe_send_handle(agent::Agent, role::Role, handler::Function)
     push!(agent.role_handler.send_message_subs, (role, handler))
+end
+
+"""
+Internal implementation of the agent API.
+"""
+function subscribe_event_handle(agent::Agent, role::Role, event::DataType, event_handler::Any)
+    if !haskey(agent.role_handler.event_subs, event)
+        agent.role_handler.event_subs[event] = Vector()
+    end
+    push!(agent.role_handler.event_subs[event], (role, event_handler))
+end
+
+"""
+Internal implementation of the agent API.
+"""
+function emit_event_handle(agent::Agent, src::Role, event::Any)
+    for (role, func) in agent.role_handler.event_subs[typeof(event)]
+        func(role, event, src)
+    end
+end
+
+"""
+Internal implementation of the agent API.
+"""
+function get_model_handle(agent::Agent, type::DataType)
+    if !haskey(agent.role_handler.models, type)
+        agent.role_handler.models[type] = type()
+    end
+    return agent.role_handler.models[type]
 end
 
 """

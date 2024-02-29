@@ -27,6 +27,21 @@ Used internally by the RoleContext to subscribe send handler to the agent.
 function subscribe_send_handle(agent::AgentInterface, role::Any, handler::Any) end
 
 """
+Used internally by the RoleContext to subscribe to role agent events.
+"""
+function subscribe_event_handle(agent::AgentInterface, role::Any, event::DataType, event_handler::Any) end
+
+"""
+Used internally by the RoleContext to subscribe to role agent events.
+"""
+function emit_event_handle(agent::AgentInterface, role::Any, event::Any) end
+
+"""
+Used internally by the RoleContext to subscribe to role agent events.
+"""
+function get_model_handle(agent::AgentInterface, type::DataType) end
+
+"""
 API Definition for the role context
 """
 function send_message(
