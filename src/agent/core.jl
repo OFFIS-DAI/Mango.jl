@@ -224,26 +224,26 @@ end
 """
 Internal implementation of the agent API.
 """
-function subscribe_event_handle(agent::Agent, role::Role, event::DataType, condition::Function, event_handler::Function)
+function subscribe_event_handle(agent::Agent, role::Role, event_type::Any, event_handler::Function; condition::Function=(a, b) => true)
     if !haskey(agent.role_handler.event_subs, event)
-        agent.role_handler.event_subs[event] = Vector()
+        agent.role_handler.event_subs[event_type] = Vector()
     end
-    push!(agent.role_handler.event_subs[event], (role, condition, event_handler))
+    push!(agent.role_handler.event_subs[event_type], (role, condition, event_handler))
 end
 
 """
 Internal implementation of the agent API.
 """
-function emit_event_handle(agent::Agent, src::Role, event::Any)
-    if haskey(agent.role_handler.event_subs, typeof(event))
+function emit_event_handle(agent::Agent, src::Role, event::Any; event_type::Any=nothing)
+    if haskey(agent.role_handler.event_subs, !isnothing(event_type) ? event_type : typeof(event))
         for (role, condition, func) in agent.role_handler.event_subs[typeof(event)]
             if condition(src, event)
-                func(role, src, event)
+                func(role, src, event, event_type)
             end
         end
     end
     for role in roles(agent)
-        handle_event(role, src, event)
+        handle_event(role, src, event, event_type=event_type)
     end
 end
 

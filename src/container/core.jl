@@ -157,11 +157,12 @@ True if the message has been sent successfully, false otherwise.
 function send_message(
     container::Container,
     content::Any,
-    receiver_id::String,
-    receiver_addr::Any=nothing,
+    agent_adress::AgentAdress,
     sender_id::Union{Nothing,String}=nothing;
     kwargs...,
 )
+    receiver_id = agent_adress.aid
+    receiver_addr = agent_adress.address
 
     meta = OrderedDict{String,Any}()
     for (key, value) in kwargs

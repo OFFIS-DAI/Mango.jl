@@ -1,7 +1,7 @@
 
 module ProtocolCore
 
-export Protocol, send, start, close, id, AgentAdress, AIDAgentAdress
+export Protocol, send, start, close, id, AgentAdress
 
 """
 Type for all implementations of protocols, acts like an interface. A protocol defines the way message are processed and especially sent and received 
@@ -17,14 +17,6 @@ Every protocol has to define two methods.
          respectively how to dispatch the received message to the correct agent
 """
 abstract type Protocol{T} end
-
-"""
-Default AgentAdress base type, where the agent identifier is based on the container created agent id (aid).
-"""
-struct AgentAdress{T}
-    aid::String
-    address::T
-end
 
 """
 Send the message `message` to the agent known by the adress `destination`. How the message is exactly handled is 

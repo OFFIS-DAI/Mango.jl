@@ -119,7 +119,7 @@ end
 """
 Default function for arriving events, which get dispatched to the role.
 """
-function handle_event(role::Role, src::Role, event::Any)
+function handle_event(role::Role, src::Role, event::Any; event_type::DataType)
     # do nothing by default
 end
 
@@ -174,8 +174,8 @@ end
 """
 Emit an event to their subscriber
 """
-function emit_event(role::Role, event::Any)
-    emit_event_handle(role.context.agent, role, event)
+function emit_event(role::Role, event::Any; event_type::Any=nothing)
+    emit_event_handle(role.context.agent, role, event, event_type=event_type)
 end
 
 """
@@ -201,11 +201,10 @@ internal meta data of the message.
 function send_message(
     role::Role,
     content::Any,
-    receiver_id::String,
-    receiver_addr::Any=nothing;
+    agent_adress::AgentAdress{T};
     kwargs...,
-)
-    return send_message(role.context.agent, content, receiver_id, receiver_addr; kwargs...)
+) where {T}
+    return send_message(role.context.agent, content, agent_adress; kwargs...)
 end
 
 end

@@ -29,12 +29,12 @@ function subscribe_send_handle(agent::AgentInterface, role::Any, handler::Any) e
 """
 Used internally by the RoleContext to subscribe to role agent events.
 """
-function subscribe_event_handle(agent::AgentInterface, role::Any, event::DataType, condition::Any, event_handler::Any) end
+function subscribe_event_handle(agent::AgentInterface, role::Any, event_type::Any, condition::Any, event_handler::Any) end
 
 """
 Used internally by the RoleContext to subscribe to role agent events.
 """
-function emit_event_handle(agent::AgentInterface, role::Any, event::Any) end
+function emit_event_handle(agent::AgentInterface, role::Any, event::Any; event_type::Any=nothing) end
 
 """
 Used internally by the RoleContext to subscribe to role agent events.
@@ -47,10 +47,9 @@ API Definition for the role context
 function send_message(
     agent::AgentInterface,
     content::Any,
-    receiver_id::String,
-    receiver_addr::Any=nothing;
+    agent_adress::AgentAdress{T};
     kwargs...
-)
+) where {T}
     @warn "The API send_message definition has been called, this should never happen. There is most likely an import error."
 end
 
