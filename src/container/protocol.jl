@@ -1,7 +1,7 @@
 
 module ProtocolCore
 
-export Protocol, send, start, close, id, AgentAdress
+export Protocol, send, start, close, id
 
 """
 Type for all implementations of protocols, acts like an interface. A protocol defines the way message are processed and especially sent and received 

@@ -12,7 +12,7 @@ export @agent,
 using ..Mango
 using ..AgentRole
 using ..ContainerAPI
-import ..ContainerAPI.send_message
+import ..ContainerAPI.send_message, ..ContainerAPI.protocol_addr
 
 import ..AgentAPI.subscribe_message_handle, ..AgentAPI.subscribe_send_handle, ..AgentAPI.subscribe_event_handle, ..AgentAPI.emit_event_handle, ..AgentAPI.get_model_handle
 import Dates
@@ -225,7 +225,7 @@ end
 Internal implementation of the agent API.
 """
 function subscribe_event_handle(agent::Agent, role::Role, event_type::Any, event_handler::Function; condition::Function=(a, b) => true)
-    if !haskey(agent.role_handler.event_subs, event)
+    if !haskey(agent.role_handler.event_subs, event_type)
         agent.role_handler.event_subs[event_type] = Vector()
     end
     push!(agent.role_handler.event_subs[event_type], (role, condition, event_handler))
@@ -235,8 +235,9 @@ end
 Internal implementation of the agent API.
 """
 function emit_event_handle(agent::Agent, src::Role, event::Any; event_type::Any=nothing)
-    if haskey(agent.role_handler.event_subs, !isnothing(event_type) ? event_type : typeof(event))
-        for (role, condition, func) in agent.role_handler.event_subs[typeof(event)]
+    key = !isnothing(event_type) ? event_type : typeof(event)
+    if haskey(agent.role_handler.event_subs, key)
+        for (role, condition, func) in agent.role_handler.event_subs[key]
             if condition(src, event)
                 func(role, src, event, event_type)
             end
@@ -292,6 +293,19 @@ function stop_all_tasks(agent::Agent)
     stop_all_tasks(agent.scheduler)
 end
 
+"""
+Create AgentAddress for this agent
+"""
+function address_handle(agent::Agent)
+    return AgentAddress(protocol_addr(agent.context.container), aid(agent))
+end
+
+"""
+Shorter Alias
+"""
+function address(agent::Agent)
+    return address_handle(agent)
+end
 
 """
 Send a message using the context to the agent with the receiver id `receiver_id` at the address `receiver_addr`. 
@@ -301,18 +315,16 @@ internal meta data of the message.
 function send_message(
     agent::Agent,
     content::Any,
-    receiver_id::String,
-    receiver_addr::Any=nothing;
+    agent_adress::AgentAddress;
     kwargs...,
 )
     for (role, handler) in agent.role_handler.send_message_subs
-        handler(role, content, receiver_id, receiver_addr; kwargs...)
+        handler(role, content, agent_adress; kwargs...)
     end
     return ContainerAPI.send_message(
         agent.context.container,
         content,
-        receiver_id,
-        receiver_addr,
+        agent_adress,
         agent.aid;
         kwargs...,
     )

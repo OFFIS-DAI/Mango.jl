@@ -1,5 +1,5 @@
 module ContainerCore
-export Container, register, send_message, start, shutdown
+export Container, register, send_message, start, shutdown, protocol_addr
 
 
 using ..ContainerAPI
@@ -7,7 +7,7 @@ using ..AgentCore: Agent, AgentContext, dispatch_message, stop_and_wait_for_all_
 using ..ProtocolCore
 using ..EncodeDecode
 
-import ..ContainerAPI.send_message
+import ..ContainerAPI.send_message, ..ContainerAPI.protocol_addr
 
 import ..AgentCore: shutdown
 
@@ -58,6 +58,13 @@ function process_message(container::Container, msg_data::Any, sender_addr::Any)
         meta[SENDER_ADDR] = parse_id(container.protocol, meta[SENDER_ADDR])
     end
     forward_message(container, content, meta)
+end
+
+"""
+Get protocol addr part
+"""
+function protocol_addr(container::Container) 
+    return id(container.protocol)
 end
 
 """
@@ -157,7 +164,7 @@ True if the message has been sent successfully, false otherwise.
 function send_message(
     container::Container,
     content::Any,
-    agent_adress::AgentAdress,
+    agent_adress::AgentAddress,
     sender_id::Union{Nothing,String}=nothing;
     kwargs...,
 )

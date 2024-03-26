@@ -1,5 +1,7 @@
 module ContainerAPI
-export ContainerInterface, send_message
+export ContainerInterface, send_message, protocol_addr, AgentAddress
+
+using Parameters
 
 """
 Supertype of every container implementation. This acts as an interface to be used by the agents
@@ -8,11 +10,11 @@ in their contexts.
 abstract type ContainerInterface end
 
 """
-Default AgentAdress base type, where the agent identifier is based on the container created agent id (aid).
+Default AgentAddress base type, where the agent identifier is based on the container created agent id (aid).
 """
-struct AgentAdress{T}
+@with_kw struct AgentAddress
     aid::String
-    address::T
+    address::Any = nothing
 end
 
 """
@@ -27,12 +29,16 @@ module.
 function send_message(
     container::ContainerInterface,
     content::Any,
-    agent_adress::AgentAdress{T},
+    agent_adress::AgentAddress,
     sender_id::Union{Nothing,String}=nothing;
     kwargs...
-) where {T}
+)
     @warn "The API send_message definition has been called, this should never happen. There is most likely an import error."
 end
 
+"""
+Used by the agent to get the protocol addr part
+"""
+function protocol_addr(container::ContainerInterface) end
 
 end
