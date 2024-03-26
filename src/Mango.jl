@@ -5,6 +5,7 @@ module Mango
 
 export @agent,
     @role,
+    @shared,
     Role,
     Agent,
     Container,
@@ -16,9 +17,15 @@ export @agent,
     add,
     subscribe_message,
     subscribe_send,
+    emit_event,
+    get_model,
+    subscribe_event,
     TCPProtocol,
     start,
-    shutdown
+    shutdown,
+    AgentAddress,
+    address, 
+    aid
 
 include("util/scheduling.jl")
 include("util/encode_decode.jl")

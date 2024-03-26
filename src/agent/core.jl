@@ -7,14 +7,15 @@ export @agent,
     add,
     schedule,
     stop_and_wait_for_all_tasks,
-    shutdown
+    shutdown,
+    aid
 
 using ..Mango
 using ..AgentRole
 using ..ContainerAPI
-import ..ContainerAPI.send_message
+import ..ContainerAPI.send_message, ..ContainerAPI.protocol_addr
 
-import ..AgentAPI.subscribe_message_handle, ..AgentAPI.subscribe_send_handle
+import ..AgentAPI.subscribe_message_handle, ..AgentAPI.subscribe_send_handle, ..AgentAPI.subscribe_event_handle, ..AgentAPI.emit_event_handle, ..AgentAPI.get_model_handle, ..AgentAPI.address
 import Dates
 import ..Mango:
     schedule, stop_task, stop_all_tasks, wait_for_all_tasks, stop_and_wait_for_all_tasks
@@ -35,6 +36,8 @@ struct AgentRoleHandler
     roles::Vector{Role}
     handle_message_subs::Vector{Tuple{Role,Function,Function}}
     send_message_subs::Vector{Tuple{Role,Function}}
+    event_subs::Dict{DataType,Vector{Tuple{Role,Function,Function}}}
+    models::Dict{DataType,Any}
 end
 
 """
@@ -57,7 +60,7 @@ AGENT_BASELINE_FIELDS.
 AGENT_BASELINE_DEFAULTS::Vector = [
     () -> ReentrantLock(),
     () -> nothing,
-    () -> AgentRoleHandler(Vector(), Vector(), Vector()),
+    () -> AgentRoleHandler(Vector(), Vector(), Vector(), Dict(), Dict()),
     () -> Scheduler(),
     () -> nothing,
 ]
@@ -185,7 +188,7 @@ end
 Return all roles of the given agent
 """
 function roles(agent::Agent)
-    return agent.roles
+    return agent.role_handler.roles
 end
 
 """
@@ -217,6 +220,43 @@ Internal implementation of the agent API.
 """
 function subscribe_send_handle(agent::Agent, role::Role, handler::Function)
     push!(agent.role_handler.send_message_subs, (role, handler))
+end
+
+"""
+Internal implementation of the agent API.
+"""
+function subscribe_event_handle(agent::Agent, role::Role, event_type::Any, event_handler::Function; condition::Function=(a, b) => true)
+    if !haskey(agent.role_handler.event_subs, event_type)
+        agent.role_handler.event_subs[event_type] = Vector()
+    end
+    push!(agent.role_handler.event_subs[event_type], (role, condition, event_handler))
+end
+
+"""
+Internal implementation of the agent API.
+"""
+function emit_event_handle(agent::Agent, src::Role, event::Any; event_type::Any=nothing)
+    key = !isnothing(event_type) ? event_type : typeof(event)
+    if haskey(agent.role_handler.event_subs, key)
+        for (role, condition, func) in agent.role_handler.event_subs[key]
+            if condition(src, event)
+                func(role, src, event, event_type)
+            end
+        end
+    end
+    for role in roles(agent)
+        handle_event(role, src, event, event_type=event_type)
+    end
+end
+
+"""
+Internal implementation of the agent API.
+"""
+function get_model_handle(agent::Agent, type::DataType)
+    if !haskey(agent.role_handler.models, type)
+        agent.role_handler.models[type] = type()
+    end
+    return agent.role_handler.models[type]
 end
 
 """
@@ -254,6 +294,16 @@ function stop_all_tasks(agent::Agent)
     stop_all_tasks(agent.scheduler)
 end
 
+"""
+Shorter Alias
+"""
+function address(agent::Agent)
+    addr::Any = nothing
+    if !isnothing(agent.context)
+        addr = protocol_addr(agent.context.container)
+    end
+    return AgentAddress(aid=aid(agent), address=addr)
+end
 
 """
 Send a message using the context to the agent with the receiver id `receiver_id` at the address `receiver_addr`. 
@@ -263,18 +313,16 @@ internal meta data of the message.
 function send_message(
     agent::Agent,
     content::Any,
-    receiver_id::String,
-    receiver_addr::Any=nothing;
+    agent_adress::AgentAddress;
     kwargs...,
 )
     for (role, handler) in agent.role_handler.send_message_subs
-        handler(role, content, receiver_id, receiver_addr; kwargs...)
+        handler(role, content, agent_adress; kwargs...)
     end
     return ContainerAPI.send_message(
         agent.context.container,
         content,
-        receiver_id,
-        receiver_addr,
+        agent_adress,
         agent.aid;
         kwargs...,
     )

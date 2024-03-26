@@ -32,7 +32,7 @@ end
     register(container, agent1)
     register(container, agent2)
 
-    wait(send_message(container, "Hello Roles, this is RSc!", agent2.aid))
+    wait(send_message(container, "Hello Roles, this is RSc!", AgentAddress(aid=agent2.aid)))
 
     @test agent2.role_handler.roles[1] === role1
     @test agent2.counter == 10
@@ -53,7 +53,7 @@ end
     register(container, agent1)
     register(container, agent2)
 
-    wait(send_message(container, "Hello Roles, this is RSc!", agent2.aid))
+    wait(send_message(container, "Hello Roles, this is RSc!", AgentAddress(aid=agent2.aid)))
 
     @test agent2.role_handler.roles[1] === role1
     @test agent2.role_handler.roles[1].counter == 15
@@ -62,8 +62,7 @@ end
 function on_send_message(
     role::MyRole,
     content::Any,
-    receiver_id::String,
-    receiver_addr::Any;
+    agent_adress::AgentAddress;
     kwargs...,
 )
     role.invoked = true
@@ -79,7 +78,7 @@ end
     register(container, agent1)
     register(container, agent2)
 
-    wait(send_message(agent2, "Hello Roles, this is RSc!", agent1.aid))
+    wait(send_message(agent2, "Hello Roles, this is RSc!", AgentAddress(aid=agent1.aid)))
 
     @test agent2.role_handler.roles[1] === role1
     @test agent2.role_handler.roles[1].invoked
@@ -92,7 +91,7 @@ end
     register(container, agent1)
     register(container, agent2)
 
-    wait(send_message(agent1, "Hello Agents, this is RSc!", agent2.aid))
+    wait(send_message(agent1, "Hello Agents, this is RSc!", AgentAddress(aid=agent2.aid)))
 
     @test agent2.counter == 10
 end
@@ -104,7 +103,7 @@ end
     register(container, agent1)
     register(container, agent2)
 
-    wait(send_message(agent1, "Hello Agents, this is RSc!", agent2.aid; kw = 1, kw2 = 2))
+    wait(send_message(agent1, "Hello Agents, this is RSc!", AgentAddress(aid=agent2.aid); kw = 1, kw2 = 2))
 
     @test agent2.counter == 10
 end
@@ -120,7 +119,7 @@ end
     register(container, agent1)
     register(container, agent2)
 
-    wait(send_message(role2, "Hello Roles, this is RSc!", agent2.aid))
+    wait(send_message(role2, "Hello Roles, this is RSc!", AgentAddress(aid=agent2.aid)))
 
     @test agent2.role_handler.roles[1] === role1
     @test agent2.counter == 10
