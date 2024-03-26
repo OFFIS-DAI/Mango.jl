@@ -1,9 +1,9 @@
 module AgentRole
 export Role,
-    handle_message, handle_event, RoleContext, @role, @shared, subscribe_message, subscribe_send, bind_context, emit_event, get_model, subscribe_event
+    handle_message, handle_event, RoleContext, @role, @shared, subscribe_message, subscribe_send, bind_context, emit_event, get_model, subscribe_event, address
 
 using ..AgentAPI
-import ..AgentAPI.send_message
+import ..AgentAPI.send_message, ..AgentAPI.address
 import ..Mango: schedule
 using ..Mango
 
@@ -239,7 +239,7 @@ end
 Get AgentAddress of the parent agent
 """
 function address(role::Role)
-    return address_handle(role.context.agent)
+    return address(role.context.agent)
 end
 
 """

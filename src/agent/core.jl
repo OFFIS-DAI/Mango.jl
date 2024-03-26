@@ -7,14 +7,15 @@ export @agent,
     add,
     schedule,
     stop_and_wait_for_all_tasks,
-    shutdown
+    shutdown,
+    aid
 
 using ..Mango
 using ..AgentRole
 using ..ContainerAPI
 import ..ContainerAPI.send_message, ..ContainerAPI.protocol_addr
 
-import ..AgentAPI.subscribe_message_handle, ..AgentAPI.subscribe_send_handle, ..AgentAPI.subscribe_event_handle, ..AgentAPI.emit_event_handle, ..AgentAPI.get_model_handle
+import ..AgentAPI.subscribe_message_handle, ..AgentAPI.subscribe_send_handle, ..AgentAPI.subscribe_event_handle, ..AgentAPI.emit_event_handle, ..AgentAPI.get_model_handle, ..AgentAPI.address
 import Dates
 import ..Mango:
     schedule, stop_task, stop_all_tasks, wait_for_all_tasks, stop_and_wait_for_all_tasks
@@ -294,17 +295,14 @@ function stop_all_tasks(agent::Agent)
 end
 
 """
-Create AgentAddress for this agent
-"""
-function address_handle(agent::Agent)
-    return AgentAddress(protocol_addr(agent.context.container), aid(agent))
-end
-
-"""
 Shorter Alias
 """
 function address(agent::Agent)
-    return address_handle(agent)
+    addr::Any = nothing
+    if !isnothing(agent.context)
+        addr = protocol_addr(agent.context.container)
+    end
+    return AgentAddress(aid=aid(agent), address=addr)
 end
 
 """

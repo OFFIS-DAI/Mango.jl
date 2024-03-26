@@ -23,7 +23,9 @@ export @agent,
     TCPProtocol,
     start,
     shutdown,
-    AgentAddress
+    AgentAddress,
+    address, 
+    aid
 
 include("util/scheduling.jl")
 include("util/encode_decode.jl")

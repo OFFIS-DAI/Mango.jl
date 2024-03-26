@@ -120,3 +120,29 @@ end
     @test role1.shared_event === role2.shared_event
 end
 
+
+@testset "RoleSchedulerInstantThread" begin
+    agent = RoleTestAgent(0)
+    role1 = RoleTestRole(0, nothing)
+    add(agent, role1)
+    result = 0
+
+    schedule(role1, InstantTaskData()) do
+        result = 10
+    end
+    stop_and_wait_for_all_tasks(agent.scheduler)
+
+    @test result == 10
+end
+
+
+@testset "RoleGetAddress" begin
+    agent = RoleTestAgent(0)
+    role1 = RoleTestRole(0, nothing)
+    add(agent, role1)
+    
+    addr = address(role1)
+
+    @test addr.aid == aid(agent)
+    @test isnothing(addr.address)
+end

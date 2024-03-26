@@ -13,7 +13,7 @@ abstract type ContainerInterface end
 Default AgentAddress base type, where the agent identifier is based on the container created agent id (aid).
 """
 @with_kw struct AgentAddress
-    aid::String
+    aid::Union{String,Nothing}
     address::Any = nothing
 end
 
