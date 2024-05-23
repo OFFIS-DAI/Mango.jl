@@ -23,7 +23,7 @@ wait(Threads.@spawn start(container2))
 
 ## 2. Defining Ping Pong Agents
 
-Let's define agent structs to represent the ping pong agents. Every new agent struct should be defined using the @agent macro to ensure compatibility to the mango container:
+Let's define agent structs to represent the ping pong agents. Every new agent struct should be defined using the @agent macro to ensure compatibility with the mango container:
 
 ```julia
 using Mango
