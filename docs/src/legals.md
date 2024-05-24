@@ -17,7 +17,8 @@ Internet: [www.offis.de](http://www.offis.de)
 
 Prof. Dr. Sebastian Lehnhoff (Chairman)  
 Prof. Dr. techn. Susanne Boll-Westermann  
-Prof. Dr.-Ing. Andreas Hein  
+Prof. Dr.-Ing. Andreas Hein
+Prof. Dr.-Ing. Astrid Nieße
 
 
 **Register Court**
