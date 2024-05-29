@@ -82,7 +82,7 @@ The TCP Protocol in Mango.jl is a communication protocol used to exchange messag
 
 The `TCPProtocol` struct represents the TCP Protocol within Mango.jl. It encapsulates the necessary functionalities for communication via TCP connections. Key features of the `TCPProtocol` struct are:
 
-- `address`: The `InetAddr` representing the address on which the TCP server listens.
+- `address`: The `InetAddr` represents the address on which the TCP server listens.
 - `server`: A `TCPServer` instance used for accepting incoming connections.
 
 ### 3. Usage

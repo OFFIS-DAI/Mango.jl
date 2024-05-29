@@ -2,7 +2,7 @@
 
 ## Welcome to mango's documentation!
 
-Mango.jl allows the user to create simple agents with little effort and in the same time offers options to structure agents with complex behaviour. The main features of mango are listed below.
+Mango.jl allows the user to create simple agents with little effort and at the same time offers options to structure agents with complex behaviour. The main features of mango are listed below.
 
 Mango.jl as a package is partly based on the ideas of [mango-agents](https://mango-agents.readthedocs.io), but will also contain new concepts and techniques. It was made with the picture of scalable agent simulations in mind.
 

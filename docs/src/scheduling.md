@@ -119,7 +119,7 @@ wait_for_all_tasks(scheduler::Scheduler)
 
 ### stop_task
 
-The `stop_task` function send the stop signal to a task `t`. This will result in its completion once their next execution cycle is finished. If `t` is not stopable this will output a warning.
+The `stop_task` function sends the stop signal to a task `t`. This will result in its completion once the next execution cycle is finished. If `t` is not stopable this will output a warning.
 
 #### Signature
 
@@ -129,7 +129,7 @@ stop_task(scheduler::Scheduler, t::Task)
 
 ### stop_all_tasks 
 
-The `stop_all_tasks` function send the stop signal to all stopable tasks. This will result in their completion once their next execution cycle is finished.
+The `stop_all_tasks` function sends the stop signal to all stopable tasks. This will result in their completion once the next execution cycle is finished.
 
 #### Signature
 
@@ -139,7 +139,7 @@ stop_all_tasks(scheduler::Scheduler)
 
 ### stop_and_wait_for_all_tasks 
 
-The `stop_and_wait_for_all_tasks` function send the stop signal to all stopable tasks. It then waits for all scheduled tasks to finish.
+The `stop_and_wait_for_all_tasks` function sends the stop signal to all stopable tasks. It then waits for all scheduled tasks to finish.
 
 #### Signature
 
