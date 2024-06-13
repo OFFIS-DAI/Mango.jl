@@ -13,12 +13,16 @@ export @agent,
 using ..Mango
 using ..AgentRole
 using ..ContainerAPI
+using UUIDs
 import ..ContainerAPI.send_message, ..ContainerAPI.protocol_addr
 
 import ..AgentAPI.subscribe_message_handle, ..AgentAPI.subscribe_send_handle, ..AgentAPI.subscribe_event_handle, ..AgentAPI.emit_event_handle, ..AgentAPI.get_model_handle, ..AgentAPI.address
 import Dates
 import ..Mango:
     schedule, stop_task, stop_all_tasks, wait_for_all_tasks, stop_and_wait_for_all_tasks
+
+
+TRANSACTION_KEY = "transaction_id"
 
 """
 Context of the agent. Represents the environment for the specific agent. Therefore it includes a 
@@ -50,6 +54,7 @@ AGENT_BASELINE_FIELDS::Vector = [
     :(role_handler::Union{AgentRoleHandler}),
     :(scheduler::Scheduler),
     :(aid::Union{Nothing,String}),
+    :(transaction_handler::Dict{UUID,Function}),
 ]
 
 """
@@ -63,6 +68,7 @@ AGENT_BASELINE_DEFAULTS::Vector = [
     () -> AgentRoleHandler(Vector(), Vector(), Vector(), Dict(), Dict()),
     () -> Scheduler(),
     () -> nothing,
+    () -> Dict(),
 ]
 
 """
@@ -142,17 +148,22 @@ Internal API used by the container to dispatch an incoming message to the agent.
 In this function the message will be handed over to the different handlers in the
 agent.
 """
-function dispatch_message(agent::Agent, message::Any, meta::Any)
+function dispatch_message(agent::Agent, message::Any, meta::Dict)
     lock(agent.lock) do
-        for role in agent.role_handler.roles
-            handle_message(role, message, meta)
-        end
-        for (role, call, condition) in agent.role_handler.handle_message_subs
-            if condition(message, meta)
-                call(role, message, meta)
+        if TRANSACTION_KEY in meta && meta[TRANSACTION_KEY] in agent.transaction_handler
+            caller, response_handler = agent.transaction_handler[meta[TRANSACTION_KEY]]
+            response_handler(caller, message, meta)
+        else
+            for role in agent.role_handler.roles
+                handle_message(role, message, meta)
             end
+            for (role, call, condition) in agent.role_handler.handle_message_subs
+                if condition(message, meta)
+                    call(role, message, meta)
+                end
+            end
+            handle_message(agent, message, meta)
         end
-        handle_message(agent, message, meta)
     end
 end
 
@@ -326,6 +337,36 @@ function send_message(
         agent.aid;
         kwargs...,
     )
+end
+
+"""
+Send a message using the context to the agent with the receiver id `receiver_id` at the address `receiver_addr`. 
+This method will always set a sender_id. Additionally, further keyword arguments can be defines to fill the 
+internal meta data of the message.
+
+Furthermore, message sent with this method will be wrapped in a data object which annotates the message with a 
+transactional id, to be able to track this specific agent discussion. For this it is possible to define a response_handler,
+to which a functin can be assigned, which handles the answer to this message call. To continue the conversation the
+transaction id has to be tr by kwargs in the response handler 
+"""
+function send_tracked_message(
+    agent::Agent,
+    content::Any,
+    agent_address::AgentAddress;
+    response_handler::Function=(agent,message,meta)->nothing,
+    calling_object::Any=nothing,
+    kwargs...
+)
+    transaction_id = uuid1()
+    if TRANSACTION_KEY in kwargs
+        transaction_id = kwargs[TRANSACTION_KEY]
+    end
+    caller = agent
+    if !isnothing(calling_object)
+        caller = calling_objecte
+    end
+    agent.transaction_handler[transaction_id] = (caller, response_handler)
+    send_message(agent, content, agent_address; transaction_id=transaction_id, kwargs...)
 end
 
 end

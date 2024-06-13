@@ -256,4 +256,15 @@ function send_message(
     return send_message(role.context.agent, content, agent_adress; kwargs...)
 end
 
+
+function send_tracked_message(
+    role::Role,
+    content::Any,
+    agent_adress::AgentAddress;
+    response_handler::Function=(role,message,meta)->nothing,
+    kwargs...,
+)
+    return send_tracked_message(role.context.agent, content, agent_adress; response_handler=response_handler, calling_object=role, kwargs...)
+end
+
 end

@@ -30,7 +30,7 @@ function subscribe_send_handle(agent::AgentInterface, role::Any, handler::Any) e
 """
 Used internally by the RoleContext to subscribe to role agent events.
 """
-function subscribe_event_handle(agent::AgentInterface, role::Any, event_type::Any, event_handler::Any; condition::Function=(a, b) => true) end
+function subscribe_event_handle(agent::AgentInterface, role::Any, event_type::Any, event_handler::Any; condition::Function=(a, b)->true) end
 
 """
 Used internally by the RoleContext to subscribe to role agent events.
@@ -53,10 +53,21 @@ API Definition for the role context
 function send_message(
     agent::AgentInterface,
     content::Any,
-    agent_adress::AgentAddress;
+    agent_address::AgentAddress;
     kwargs...
 )
     @warn "The API send_message definition has been called, this should never happen. There is most likely an import error."
+end
+
+function send_tracked_message(
+    agent::AgentInterface,
+    content::Any,
+    agent_address::AgentAddress;
+    response_handler::Function=(agent,message,meta)->nothing,
+    calling_object::Any=nothing,
+    kwargs...
+)
+    @warn "The API send_tracked_message definition has been called, this should never happen. There is most likely an import error."
 end
 
 end
