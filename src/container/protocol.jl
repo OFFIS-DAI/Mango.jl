@@ -49,5 +49,6 @@ Parse different types to the correct type (if required). Should be implemented i
 function parse_id(protocol::Protocol{T}, id_data::Any)::T where {T} end
 
 include("./tcp.jl")
+include("./mqtt.jl")
 
 end
