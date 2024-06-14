@@ -8,7 +8,8 @@ export @agent,
     schedule,
     stop_and_wait_for_all_tasks,
     shutdown,
-    aid
+    aid,
+    send_tracked_message
 
 using ..Mango
 using ..AgentRole

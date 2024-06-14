@@ -3,7 +3,7 @@ export Role,
     handle_message, handle_event, RoleContext, @role, @shared, subscribe_message, subscribe_send, bind_context, emit_event, get_model, subscribe_event, address
 
 using ..AgentAPI
-import ..AgentAPI.send_message, ..AgentAPI.address
+import ..AgentAPI.send_message, ..AgentAPI.address, ..AgentAPI.send_tracked_message
 import ..Mango: schedule
 using ..Mango
 
@@ -204,6 +204,13 @@ message sending. The hook in function will be called every time a message is sen
 """
 function subscribe_send(role::Role, handler::Function)
     subscribe_send_handle(role.context.agent, role, handler)
+end
+
+"""
+Subscribe to specific types of events.
+"""
+function subscribe_event(role::Role, event::DataType, event_handler::Any)
+    subscribe_event_handle(role.context.agent, role, event, event_handler; condition=()->true)
 end
 
 """
