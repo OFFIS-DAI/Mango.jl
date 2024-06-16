@@ -24,6 +24,11 @@ SENDER_ID::String = "sender_id"
 # prefix for the generated aid's
 AGENT_PREFIX::String = "agent"
 
+# id key for mqtt broker
+BROKER::String = "broker"
+# id key for mqtt topic
+TOPIC::String = "topic"
+
 """
 The default container struct, representing the container as actor. The container is implemented
 by composition. This means the container consists of different implementations of base types, which
@@ -189,6 +194,40 @@ function send_message(
     return Threads.@spawn send(
         container.protocol,
         receiver_addr,
+        container.codec[1](to_external_message(content, meta)),
+    )
+end
+
+
+"""
+Send message version for MQTT topics. 
+Note that there is no local message forwarding here because messages always get
+pushed to a broker and are not directly addressed to an agennt.
+"""
+function send_message(
+    container::Container,
+    content::Any,
+    mqtt_address::MQTTAddress,
+    kwargs...,
+)
+    broker = mqtt_address.broker
+    topic = mqtt_address.topic
+
+    meta = OrderedDict{String,Any}()
+    for (key, value) in kwargs
+        meta[string(key)] = value
+    end
+    meta[BROKER] = broker
+    meta[TOPIC] = topic
+
+    if !isnothing(container.protocol)
+        meta[SENDER_ADDR] = id(container.protocol)
+    end
+
+
+    return Threads.@spawn send(
+        container.protocol,
+        topic,
         container.codec[1](to_external_message(content, meta)),
     )
 end

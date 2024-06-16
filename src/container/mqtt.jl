@@ -31,9 +31,23 @@ end
 function init(protocol::MQTTProtocol, stop_check::Function, data_handler::Function)
     tasks = []
 
-    listen_task = errormonitor(
-        Threads.@spawn begin
-
+    listen_task = errormonitor(Threads.@spawn begin
+            try
+                # TODO add onmessage callback somehow
+                # TODO for some reason resolution of the type for the loop call errors here
+                # without this print... Have to find out why.
+                println(protocol.client)
+                Mosquitto.loop_forever2(protocol.client)
+            catch err
+                if isa(err, InterruptException) || isa(err, Base.IOError)
+                    # nothing
+                else
+                    @error "Caught an unexpected error in listen" exception =
+                        (err, catch_backtrace())
+                end
+            finally
+                close(protocol)
+            end
         end
     )
 
