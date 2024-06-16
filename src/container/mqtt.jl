@@ -76,7 +76,7 @@ function get_messages_channel(protocol::MQTTProtocol)
 end
 
 function subscribe(protocol::MQTTProtocol, topic::String; qos::Int=1)
-    subscribe(protocol.client, topic; qos)
+    Mosquitto.subscribe(protocol.client, topic; qos)
 end
 
 function loop_forever(protcol::MQTTProtocol)
