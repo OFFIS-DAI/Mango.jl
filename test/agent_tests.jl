@@ -137,3 +137,35 @@ end
 
     @test result == 10
 end
+
+
+@agent struct MyRespondingAgent
+    counter::Integer
+    other::AgentAddress
+end
+@agent struct MyTrackedAgent
+    counter::Integer
+end
+
+
+function handle_message(agent::MyRespondingAgent, message::Any, meta::Any)
+    agent.counter += 10
+    wait(reply_to(agent, "Hello Agents, this is DialogRespondingRico", meta))
+end
+
+function handle_response(agent::MyTrackedAgent, message::Any, meta::Any)
+    agent.counter = 1337
+end
+
+@testset "AgentDialog" begin
+    container = Container()
+    agent1 = MyTrackedAgent(0)
+    agent2 = MyRespondingAgent(0, AgentAddress(aid=agent1.aid))
+    register(container, agent1)
+    register(container, agent2)
+
+    wait(send_tracked_message(agent1, "Hello Agent, this is DialogRico", AgentAddress(aid=agent2.aid); response_handler=handle_response))
+
+    @test agent2.counter == 10
+    @test agent1.counter == 1337
+end

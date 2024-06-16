@@ -8,8 +8,7 @@ export @agent,
     schedule,
     stop_and_wait_for_all_tasks,
     shutdown,
-    aid,
-    send_tracked_message
+    aid
 
 using ..Mango
 using ..AgentRole
@@ -17,13 +16,11 @@ using ..ContainerAPI
 using UUIDs
 import ..ContainerAPI.send_message, ..ContainerAPI.protocol_addr
 
-import ..AgentAPI.subscribe_message_handle, ..AgentAPI.subscribe_send_handle, ..AgentAPI.subscribe_event_handle, ..AgentAPI.emit_event_handle, ..AgentAPI.get_model_handle, ..AgentAPI.address
+import ..AgentAPI.subscribe_message_handle, ..AgentAPI.subscribe_send_handle, ..AgentAPI.subscribe_event_handle, ..AgentAPI.emit_event_handle, ..AgentAPI.get_model_handle, ..AgentAPI.address, ..AgentAPI.reply_to, ..AgentAPI.send_tracked_message
 import Dates
 import ..Mango:
     schedule, stop_task, stop_all_tasks, wait_for_all_tasks, stop_and_wait_for_all_tasks
 
-
-TRANSACTION_KEY = "transaction_id"
 
 """
 Context of the agent. Represents the environment for the specific agent. Therefore it includes a 
@@ -55,7 +52,7 @@ AGENT_BASELINE_FIELDS::Vector = [
     :(role_handler::Union{AgentRoleHandler}),
     :(scheduler::Scheduler),
     :(aid::Union{Nothing,String}),
-    :(transaction_handler::Dict{UUID,Function}),
+    :(transaction_handler::Dict{String,Tuple}),
 ]
 
 """
@@ -149,10 +146,10 @@ Internal API used by the container to dispatch an incoming message to the agent.
 In this function the message will be handed over to the different handlers in the
 agent.
 """
-function dispatch_message(agent::Agent, message::Any, meta::Dict)
+function dispatch_message(agent::Agent, message::Any, meta::AbstractDict)
     lock(agent.lock) do
-        if TRANSACTION_KEY in meta && meta[TRANSACTION_KEY] in agent.transaction_handler
-            caller, response_handler = agent.transaction_handler[meta[TRANSACTION_KEY]]
+        if haskey(meta, TRACKING_ID) && haskey(agent.transaction_handler, meta[TRACKING_ID])
+            caller, response_handler = agent.transaction_handler[meta[TRACKING_ID]]
             response_handler(caller, message, meta)
         else
             for role in agent.role_handler.roles
@@ -358,16 +355,34 @@ function send_tracked_message(
     calling_object::Any=nothing,
     kwargs...
 )
-    transaction_id = uuid1()
-    if TRANSACTION_KEY in kwargs
-        transaction_id = kwargs[TRANSACTION_KEY]
+    tracking_id = nothing
+    if !isnothing(response_handler)
+        tracking_id = string(uuid1())
+        if !isnothing(agent_address.tracking_id)
+            tracking_id = agent_address.tracking_id
+        end
+        caller = agent
+        if !isnothing(calling_object)
+            caller = calling_objecte
+        end
+        agent.transaction_handler[tracking_id] = (caller, response_handler)
     end
-    caller = agent
-    if !isnothing(calling_object)
-        caller = calling_objecte
-    end
-    agent.transaction_handler[transaction_id] = (caller, response_handler)
-    send_message(agent, content, agent_address; transaction_id=transaction_id, kwargs...)
+    return send_message(agent, content, AgentAddress(agent_address.aid, agent_address.address, tracking_id); kwargs...)
+end
+
+function reply_to(agent::Agent,
+    content::Any,
+    received_meta::AbstractDict;
+    response_handler::Function=(agent,message,meta)->nothing,
+    calling_object::Any=nothing,
+    kwargs...)
+    target_meta = Dict(received_meta)
+    return send_tracked_message(agent, content, AgentAddress(target_meta[SENDER_ID], 
+                                              target_meta[SENDER_ADDR], 
+                                              target_meta[TRACKING_ID]); 
+                                              response_handler=response_handler,
+                                              calling_object=calling_object,
+                                              kwargs...)
 end
 
 end

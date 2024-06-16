@@ -1,5 +1,5 @@
 module AgentAPI
-export Agent, AgentInterface, subscribe_message_handle, subscribe_send_handle, subscribe_event_handle, emit_event_handle, get_model_handle, send_message, address
+export Agent, AgentInterface, subscribe_message_handle, subscribe_send_handle, subscribe_event_handle, emit_event_handle, get_model_handle, send_message, send_tracked_message, reply_to, address
 
 import ..ContainerAPI.send_message
 using ..ContainerAPI
@@ -68,6 +68,17 @@ function send_tracked_message(
     kwargs...
 )
     @warn "The API send_tracked_message definition has been called, this should never happen. There is most likely an import error."
+end
+
+"""
+API Definition for directly replying to a message
+"""
+function reply_to(
+    agent::AgentInterface,
+    content::Any,
+    received_meta::AbstractDict
+)
+    @warn "The API reply_to definition has been called, this should never happen. There is most likely an import error."
 end
 
 end
