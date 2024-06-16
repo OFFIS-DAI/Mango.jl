@@ -1,5 +1,5 @@
 module ContainerAPI
-export ContainerInterface, send_message, protocol_addr, AgentAddress
+export ContainerInterface, send_message, protocol_addr, AgentAddress, MQTTAddress
 
 using Parameters
 
@@ -11,10 +11,20 @@ abstract type ContainerInterface end
 
 """
 Default AgentAddress base type, where the agent identifier is based on the container created agent id (aid).
+Used with the TCP protocol.
 """
 @with_kw struct AgentAddress
     aid::Union{String,Nothing}
     address::Any = nothing
+end
+
+"""
+Connection information for an MQTT topic on a given broker. 
+Used with the MQTT protocol. 
+"""
+@with_kw struct MQTTAddress
+    broker::Any = nothing
+    topic::String
 end
 
 """

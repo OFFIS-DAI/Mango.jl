@@ -25,6 +25,7 @@ export @agent,
     start,
     shutdown,
     AgentAddress,
+    MQTTAddress,
     address,
     aid
 

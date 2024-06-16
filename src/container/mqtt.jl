@@ -19,12 +19,25 @@ mutable struct MQTTProtocol <: Protocol{String}
     broker_addr::InetAddr
 
     function MQTTProtocol(client_id::String, broker_addr::InetAddr)
-        return new(Client(; id=client_id), broker_addr)
+        println("used this constructor")
+
+        # Have to cast types for the MQTT client constructor.
+        # TODO: maybe suggest a constructor using InetAddr to the Mosquitto repo?
+        c = Client(string(broker_addr.host), Int64(broker_addr.port); id=client_id)
+        return new(c, broker_addr)
     end
 end
 
 function init(protocol::MQTTProtocol, stop_check::Function, data_handler::Function)
+    tasks = []
 
+    listen_task = errormonitor(
+        Threads.@spawn begin
+
+        end
+    )
+
+    return listen_task, tasks
 end
 
 function send(protocol::MQTTProtocol, destination::String, message::Any)
