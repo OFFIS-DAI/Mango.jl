@@ -1,5 +1,5 @@
 module AgentAPI
-export Agent, AgentInterface, subscribe_message_handle, subscribe_send_handle, subscribe_event_handle, emit_event_handle, get_model_handle, send_message, send_tracked_message, reply_to, address
+export Agent, AgentInterface, subscribe_message_handle, subscribe_send_handle, subscribe_event_handle, emit_event_handle, get_model_handle, send_message, send_tracked_message, reply_to, address, aid
 
 import ..ContainerAPI.send_message
 using ..ContainerAPI
@@ -46,6 +46,11 @@ function get_model_handle(agent::AgentInterface, type::DataType) end
 Used internally by the role to get the AgentAddress
 """
 function address(agent::AgentInterface) end
+
+"""
+Used internally by the role to get the AID
+"""
+function aid(agent::AgentInterface) end
 
 """
 API Definition for the role context

@@ -62,6 +62,9 @@ end
 Get protocol addr part
 """
 function protocol_addr(container::Container) 
+    if isnothing(container.protocol)
+        return nothing
+    end
     return id(container.protocol)
 end
 

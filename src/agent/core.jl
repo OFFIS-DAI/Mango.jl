@@ -7,8 +7,7 @@ export @agent,
     add,
     schedule,
     stop_and_wait_for_all_tasks,
-    shutdown,
-    aid
+    shutdown
 
 using ..Mango
 using ..AgentRole
@@ -16,7 +15,7 @@ using ..ContainerAPI
 using UUIDs
 import ..ContainerAPI.send_message, ..ContainerAPI.protocol_addr
 
-import ..AgentAPI.subscribe_message_handle, ..AgentAPI.subscribe_send_handle, ..AgentAPI.subscribe_event_handle, ..AgentAPI.emit_event_handle, ..AgentAPI.get_model_handle, ..AgentAPI.address, ..AgentAPI.reply_to, ..AgentAPI.send_tracked_message
+import ..AgentAPI.aid, ..AgentAPI.subscribe_message_handle, ..AgentAPI.subscribe_send_handle, ..AgentAPI.subscribe_event_handle, ..AgentAPI.emit_event_handle, ..AgentAPI.get_model_handle, ..AgentAPI.address, ..AgentAPI.reply_to, ..AgentAPI.send_tracked_message
 import Dates
 import ..Mango:
     schedule, stop_task, stop_all_tasks, wait_for_all_tasks, stop_and_wait_for_all_tasks
@@ -363,7 +362,7 @@ function send_tracked_message(
         end
         caller = agent
         if !isnothing(calling_object)
-            caller = calling_objecte
+            caller = calling_object
         end
         agent.transaction_handler[tracking_id] = (caller, response_handler)
     end
