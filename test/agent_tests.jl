@@ -1,6 +1,7 @@
 using Mango
 using Test
 using Parameters
+using TestItems
 
 import Mango.AgentCore.handle_message
 
@@ -139,6 +140,7 @@ end
 end
 
 
+
 @agent struct MyRespondingAgent
     counter::Integer
     other::AgentAddress
@@ -146,7 +148,6 @@ end
 @agent struct MyTrackedAgent
     counter::Integer
 end
-
 
 function handle_message(agent::MyRespondingAgent, message::Any, meta::Any)
     agent.counter += 10
@@ -158,6 +159,7 @@ function handle_response(agent::MyTrackedAgent, message::Any, meta::Any)
 end
 
 @testset "AgentDialog" begin
+
     container = Container()
     agent1 = MyTrackedAgent(0)
     agent2 = MyRespondingAgent(0, AgentAddress(aid=agent1.aid))
