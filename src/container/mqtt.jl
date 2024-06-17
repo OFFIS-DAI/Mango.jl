@@ -17,27 +17,34 @@ using Sockets: InetAddr
 mutable struct MQTTProtocol <: Protocol{String}
     client::Client
     broker_addr::InetAddr
+    connected::Bool
+    msg_channel::Channel
+    conn_channel::Channel
 
     function MQTTProtocol(client_id::String, broker_addr::InetAddr)
-        println("used this constructor")
-
         # Have to cast types for the MQTT client constructor.
         # TODO: maybe suggest a constructor using InetAddr to the Mosquitto repo?
         c = Client(string(broker_addr.host), Int64(broker_addr.port); id=client_id)
-        return new(c, broker_addr)
+        msg_channel = get_messages_channel(c)
+        conn_channel = get_connect_channel(c)
+        return new(c, broker_addr, false, msg_channel, conn_channel)
     end
 end
 
 function init(protocol::MQTTProtocol, stop_check::Function, data_handler::Function)
     tasks = []
-
-    listen_task = errormonitor(Threads.@spawn begin
+    listen_task = errormonitor(
+        Threads.@spawn begin
             try
-                # TODO add onmessage callback somehow
-                # TODO for some reason resolution of the type for the loop call errors here
-                # without this print... Have to find out why.
-                println(protocol.client)
-                Mosquitto.loop_forever2(protocol.client)
+                Mosquitto.loop_start(protocol.client) 
+
+                # listen for incoming messages and run callback
+                while true
+                    temp = take!(protocol.msg_channel)
+                    topic = temp.topic
+                    message = temp.payload
+                    Threads.@spawn data_handler(message, topic)
+                end
             catch err
                 if isa(err, InterruptException) || isa(err, Base.IOError)
                     # nothing
@@ -50,6 +57,8 @@ function init(protocol::MQTTProtocol, stop_check::Function, data_handler::Functi
             end
         end
     )
+    
+    
 
     return listen_task, tasks
 end
@@ -63,27 +72,30 @@ function id(protocol::MQTTProtocol)
 end
 
 function is_connected(protocol::MQTTProtocol)::Bool
+    connect_channel = get_connect_channel(protocol.client)
 
-end
+    while !isempty(connect_channel)
+        conncb = take!(connect_channel)
 
-function has_message(protocol::MQTTProtocol)::Bool
-    msg_channel = get_messages_channel(protocol.client)
-    return !isempty(msg_channel)
-end
+        if conncb.val == 1
+            protocol.connected = true
+        elseif conncb.val == 0
+            protocol.connected = false
+        end
+    end
 
-function get_messages_channel(protocol::MQTTProtocol)
-    return get_messages_channel(protocol.client)
+    return protocol.connected
 end
 
 function subscribe(protocol::MQTTProtocol, topic::String; qos::Int=1)
     Mosquitto.subscribe(protocol.client, topic; qos)
 end
 
-function loop_forever(protcol::MQTTProtocol)
-    Mosquitto.loop_forever2(protocol.client)
-end
-
 function close(protocol::MQTTProtocol)
     disconnect(protocol.client)
-    loop(protocol.client)
+    Mosquitto.loop_stop(protocol.client)
+end
+
+function parse_id(_::MQTTProtocol, id::Any)::String
+    return string(id)
 end

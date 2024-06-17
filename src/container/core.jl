@@ -138,7 +138,7 @@ At this point it has already been evaluated the message has to be routed to an a
 the container. 
 """
 function forward_message(container::Container, msg::Any, meta::AbstractDict)
-    receiver_id = meta[RECEIVER_ID]
+    receiver_id = RECEIVER_ID in keys(meta) ? meta[RECEIVER_ID] : nothing
 
     if isnothing(receiver_id)
         @warn "Got a message missing an agent id!"
@@ -223,7 +223,6 @@ function send_message(
     if !isnothing(container.protocol)
         meta[SENDER_ADDR] = id(container.protocol)
     end
-
 
     return Threads.@spawn send(
         container.protocol,
