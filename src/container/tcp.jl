@@ -58,7 +58,7 @@ function acquire_tcp_connection(tcp_pool::TCPConnectionPool, key::InetAddr)::TCP
         forcenew=false,
         isvalid=c -> is_valid(c, tcp_pool.keep_alive_time_ms),
     ) do
-        return (Sockets.connect(key.host, key.port), Dates.now())
+        return (connect(key.host, key.port), Dates.now())
     end
     return connection
 end
