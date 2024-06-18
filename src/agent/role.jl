@@ -3,7 +3,7 @@ export Role,
     handle_message, handle_event, RoleContext, @role, @shared, subscribe_message, subscribe_send, bind_context, emit_event, get_model, subscribe_event, address
 
 using ..AgentAPI
-import ..AgentAPI.send_message, ..AgentAPI.address
+import ..AgentAPI.send_message, ..AgentAPI.address, ..AgentAPI.send_tracked_message, ..AgentAPI.reply_to, ..AgentAPI.aid
 import ..Mango: schedule
 using ..Mango
 
@@ -209,6 +209,13 @@ end
 """
 Subscribe to specific types of events.
 """
+function subscribe_event(role::Role, event::DataType, event_handler::Any)
+    subscribe_event_handle(role.context.agent, role, event, event_handler; condition=()->true)
+end
+
+"""
+Subscribe to specific types of events.
+"""
 function subscribe_event(role::Role, event::DataType, event_handler::Any, condition::Function)
     subscribe_event_handle(role.context.agent, role, event, event_handler; condition=condition)
 end
@@ -236,6 +243,13 @@ function schedule(f::Function, role::Role, data::TaskData)
 end
 
 """
+Get AID of the parent agent
+"""
+function aid(role::Role)
+    return address(role.context.agent).aid
+end
+
+"""
 Get AgentAddress of the parent agent
 """
 function address(role::Role)
@@ -254,6 +268,25 @@ function send_message(
     kwargs...,
 )
     return send_message(role.context.agent, content, agent_adress; kwargs...)
+end
+
+
+function send_tracked_message(
+    role::Role,
+    content::Any,
+    agent_adress::AgentAddress;
+    response_handler::Function=(role,message,meta)->nothing,
+    kwargs...,
+)
+    return send_tracked_message(role.context.agent, content, agent_adress; response_handler=response_handler, calling_object=role, kwargs...)
+end
+
+function reply_to(role::Role,
+    content::Any,
+    received_meta::AbstractDict;
+    response_handler::Function=(agent,message,meta)->nothing,
+    kwargs...)
+    return reply_to(role.context.agent, content, received_meta; response_handler=response_handler, calling_object=role, kwargs...)
 end
 
 end

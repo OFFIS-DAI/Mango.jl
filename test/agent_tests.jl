@@ -1,6 +1,7 @@
 using Mango
 using Test
 using Parameters
+using TestItems
 
 import Mango.AgentCore.handle_message
 
@@ -136,4 +137,71 @@ end
     stop_and_wait_for_all_tasks(agent)
 
     @test result == 10
+end
+
+
+
+@agent struct MyRespondingAgent
+    counter::Integer
+    other::AgentAddress
+end
+@agent struct MyTrackedAgent
+    counter::Integer
+end
+
+function handle_message(agent::MyRespondingAgent, message::Any, meta::Any)
+    agent.counter += 10
+    wait(reply_to(agent, "Hello Agents, this is DialogRespondingRico", meta))
+end
+
+function handle_response(agent::MyTrackedAgent, message::Any, meta::Any)
+    agent.counter = 1337
+end
+
+@testset "AgentDialog" begin
+
+    container = Container()
+    agent1 = MyTrackedAgent(0)
+    agent2 = MyRespondingAgent(0, AgentAddress(aid=agent1.aid))
+    register(container, agent1)
+    register(container, agent2)
+
+    wait(send_tracked_message(agent1, "Hello Agent, this is DialogRico", AgentAddress(aid=agent2.aid); response_handler=handle_response))
+
+    @test agent2.counter == 10
+    @test agent1.counter == 1337
+end
+
+
+@role struct MyTrackedRole
+    counter::Integer
+end
+@role struct MyRespondingRole
+    counter::Integer
+end
+
+function handle_message(role::MyRespondingRole, message::Any, meta::Any)
+    role.counter += 10
+    wait(reply_to(role, "Hello Roles, this is DialogRespondingRico", meta))
+end
+
+function handle_response(role::MyTrackedRole, message::Any, meta::Any)
+    role.counter = 1337
+end
+
+@testset "RoleAgentDialog" begin
+    container = Container()
+    agent1 = MyAgent(0)
+    agent2 = MyAgent(0)
+    role1 = MyTrackedRole(0)
+    role2 = MyRespondingRole(0)
+    add(agent2, role1)
+    add(agent1, role2)
+    register(container, agent1)
+    register(container, agent2)
+
+    wait(send_tracked_message(role1, "Hello Agent, this is DialogRico", AgentAddress(aid=aid(role2)); response_handler=handle_response))
+
+    @test role2.counter == 10
+    @test role1.counter == 1337
 end

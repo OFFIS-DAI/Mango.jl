@@ -2,7 +2,7 @@ name = "Mango"
 uuid = "5e49fdec-d473-4d14-b295-7bff2fcf1925"
 authors = ["OFFIS e.V."]
 repo = "https://github.com/OFFIS-DAI/Mango.jl"
-version = "0.2.1"
+version = "0.2.2"
 
 [deps]
 ConcurrentCollections = "5060bff5-0b44-40c5-b522-fcd3ca5cecdd"
@@ -14,6 +14,8 @@ LightBSON = "a4a7f996-b3a6-4de6-b9db-2fa5f350df41"
 OrderedCollections = "bac558e1-5e72-5ebc-8fee-abe8a469f55d"
 Parameters = "d96e819e-fc66-5662-9728-84c9c7592b0a"
 Sockets = "6462fe0b-24de-5631-8697-dd941f90decc"
+TestItems = "1c621080-faea-4a02-84b6-bbd5e436b8fe"
+UUIDs = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
 
 [compat]
 ConcurrentCollections = "~0.1"

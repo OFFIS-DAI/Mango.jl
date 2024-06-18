@@ -107,3 +107,55 @@ end
 
     @test ping_agent.counter >= 5
 end
+
+
+@agent struct MyRespondingAgentTCP
+    counter::Integer
+end
+@agent struct MyTrackedAgentTCP
+    counter::Integer
+end
+
+function handle_message(agent::MyRespondingAgentTCP, message::Any, meta::Any)
+    agent.counter += 10
+    reply_to(agent, "Hello Agents, this is DialogRespondingRico", meta)
+end
+
+function handle_response(agent::MyTrackedAgentTCP, message::Any, meta::Any)
+    agent.counter = 1337
+end
+
+@testset "TCPTrackedMessages" begin
+
+    container = Container()
+    container.protocol = TCPProtocol(address=InetAddr(ip"127.0.0.1", 2939))
+    container2 = Container()
+    container2.protocol = TCPProtocol(address=InetAddr(ip"127.0.0.1", 2940))
+
+    tracked_agent = MyTrackedAgentTCP(0)
+    responding_agent = MyRespondingAgentTCP(0)
+
+    register(container2, tracked_agent)
+    register(container, responding_agent)
+
+    wait(Threads.@spawn start(container))
+    wait(Threads.@spawn start(container2))
+
+    wait(send_tracked_message(tracked_agent, "Hello Agent, this is DialogRico", AgentAddress(aid=responding_agent.aid, address=InetAddr(ip"127.0.0.1", 2939)); 
+                              response_handler=handle_response))
+
+    wait(Threads.@spawn begin
+        while tracked_agent.counter == 0
+            sleep(1)
+        end
+    end)
+                              
+    @sync begin
+        Threads.@spawn shutdown(container)
+        Threads.@spawn shutdown(container2)
+    end
+
+
+    @test responding_agent.counter == 10
+    @test tracked_agent.counter == 1337
+end
