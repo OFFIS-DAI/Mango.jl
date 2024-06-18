@@ -132,7 +132,9 @@ function register(
     agent.context = AgentContext(container)
     container.agent_counter += 1
 
-    notify_register(container.protocol, actual_aid; kwargs...)
+    if !isnothing(container.protocol)
+        notify_register(container.protocol, actual_aid; kwargs...)
+    end
     return agent.aid
 end
 
@@ -147,6 +149,7 @@ function forward_message(container::Container, msg::Any, meta::AbstractDict; rec
         receivers = RECEIVER_ID in keys(meta) ? [meta[RECEIVER_ID]] : nothing
     end
     
+    send_tasks = []
 
     if isnothing(receivers)
         @warn "Got a message missing an agent id!"
@@ -156,12 +159,15 @@ function forward_message(container::Container, msg::Any, meta::AbstractDict; rec
                 @warn "Container $(container.agents) has no agent with id: $receiver"
             else
                 agent = container.agents[receiver]
-                Threads.@spawn dispatch_message(agent, msg, meta)
+                # Threads.@spawn dispatch_message(agent, msg, meta)
+                push!(send_tasks, Threads.@spawn dispatch_message(agent, msg, meta))
             end
         end
     end
 
-    return 0
+    # return the single wait task syncing all sends 
+    # so we can wait for the full message action to be done outside
+    return @sync(send_tasks)[1]
 end
 
 function to_external_message(content::Any, meta::AbstractDict)
