@@ -20,6 +20,7 @@ mutable struct MQTTProtocol <: Protocol{String}
     connected::Bool
     msg_channel::Channel
     conn_channel::Channel
+    topic_to_aid::Dict{String, Vector{String}}
 
     function MQTTProtocol(client_id::String, broker_addr::InetAddr)
         # Have to cast types for the MQTT client constructor.
@@ -27,7 +28,7 @@ mutable struct MQTTProtocol <: Protocol{String}
         c = Client(string(broker_addr.host), Int64(broker_addr.port); id=client_id)
         msg_channel = get_messages_channel(c)
         conn_channel = get_connect_channel(c)
-        return new(c, broker_addr, false, msg_channel, conn_channel)
+        return new(c, broker_addr, false, msg_channel, conn_channel, Dict{String, Vector{String}}())
     end
 end
 
@@ -43,7 +44,9 @@ function init(protocol::MQTTProtocol, stop_check::Function, data_handler::Functi
                     temp = take!(protocol.msg_channel)
                     topic = temp.topic
                     message = temp.payload
-                    Threads.@spawn data_handler(message, topic)
+
+                    # guaranteed to be a key in the dict unless something went seriously wrong on registration
+                    Threads.@spawn data_handler(message, topic; receivers=protocol.topic_to_aid[topic])
                 end
             catch err
                 if isa(err, InterruptException) || isa(err, Base.IOError)
@@ -98,4 +101,21 @@ end
 
 function parse_id(_::MQTTProtocol, id::Any)::String
     return string(id)
+end
+
+function notify_register(protocol::MQTTProtocol, aid::String; kwargs...)
+    topics = :topics in keys(kwargs) ? kwargs[:topics] : []
+
+    for topic ∈ topics
+        if topic ∉ keys(protocol.topic_to_aid)
+            protocol.topic_to_aid[topic] = [aid]
+            subscribe(protocol, topic)
+            continue
+        end
+
+        if aid ∉ protocol.topic_to_aid[topic]
+            push!(protocol.topic_to_aid[topic], aid)
+        end
+    end
+    
 end

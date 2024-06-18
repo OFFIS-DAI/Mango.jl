@@ -56,13 +56,13 @@ end
 """
 Process the message data after rawly receiving them.
 """
-function process_message(container::Container, msg_data::Any, sender_addr::Any)
+function process_message(container::Container, msg_data::Any, sender_addr::Any; receivers=nothing)
     msg = container.codec[2](msg_data)
     content, meta = msg["content"], msg["meta"]
     if haskey(meta, SENDER_ADDR)
         meta[SENDER_ADDR] = parse_id(container.protocol, meta[SENDER_ADDR])
     end
-    forward_message(container, content, meta)
+    forward_message(container, content, meta; receivers=receivers)
 end
 
 """
@@ -80,7 +80,7 @@ function start(container::Container)
     container.loop, container.tasks = init(
         container.protocol,
         () -> container.shutdown,
-        (msg_data, sender_addr) -> process_message(container, msg_data, sender_addr),
+        (msg_data, sender_addr; receivers=nothing) -> process_message(container, msg_data, sender_addr; receivers=receivers),
     )
 end
 
@@ -119,16 +119,19 @@ The actually used aid will be returned.
 function register(
     container::Container,
     agent::Agent,
-    suggested_aid::Union{String,Nothing}=nothing,
+    suggested_aid::Union{String,Nothing}=nothing;
+    kwargs...
 )
     actual_aid::String = "$AGENT_PREFIX$(container.agent_counter)"
-    if isnothing(suggested_aid) && haskey(container.agents, suggested_aid)
+    if !isnothing(suggested_aid) && !haskey(container.agents, suggested_aid)
         actual_aid = suggested_aid
     end
     container.agents[actual_aid] = agent
     agent.aid = actual_aid
     agent.context = AgentContext(container)
     container.agent_counter += 1
+
+    notify_register(container.protocol, actual_aid; kwargs...)
     return agent.aid
 end
 
@@ -137,19 +140,27 @@ Internal function of the container, which forward the message to the correct age
 At this point it has already been evaluated the message has to be routed to an agent in control of
 the container. 
 """
-function forward_message(container::Container, msg::Any, meta::AbstractDict)
-    receiver_id = RECEIVER_ID in keys(meta) ? meta[RECEIVER_ID] : nothing
+function forward_message(container::Container, msg::Any, meta::AbstractDict; receivers=nothing)
+    # if not multicast: single cast
+    if isnothing(receivers)
+        receivers = RECEIVER_ID in keys(meta) ? [meta[RECEIVER_ID]] : nothing
+    end
+    
 
-    if isnothing(receiver_id)
+    if isnothing(receivers)
         @warn "Got a message missing an agent id!"
     else
-        if !haskey(container.agents, meta[RECEIVER_ID])
-            @warn "Container $(container.agents) has no agent with id: $receiver_id"
-        else
-            agent = container.agents[receiver_id]
-            return Threads.@spawn dispatch_message(agent, msg, meta)
+        for receiver in receivers
+            if !haskey(container.agents, receiver)
+                @warn "Container $(container.agents) has no agent with id: $receiver"
+            else
+                agent = container.agents[receiver]
+                Threads.@spawn dispatch_message(agent, msg, meta)
+            end
         end
     end
+
+    return 0
 end
 
 function to_external_message(content::Any, meta::AbstractDict)

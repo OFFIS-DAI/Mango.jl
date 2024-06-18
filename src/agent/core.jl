@@ -328,4 +328,21 @@ function send_message(
     )
 end
 
+function send_message(
+    agent::Agent,
+    content::Any,
+    mqtt_address::MQTTAddress;
+    kwargs...,
+)
+    for (role, handler) in agent.role_handler.send_message_subs
+        handler(role, content, mqtt_address; kwargs...)
+    end
+    return ContainerAPI.send_message(
+        agent.context.container,
+        content,
+        mqtt_address;
+        kwargs...,
+    )
+end
+
 end
