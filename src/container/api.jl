@@ -1,7 +1,14 @@
 module ContainerAPI
-export ContainerInterface, send_message, protocol_addr, AgentAddress, MQTTAddress
 
+export ContainerInterface, send_message, protocol_addr, AgentAddress, MQTTAddress, SENDER_ADDR, SENDER_ID, TRACKING_ID
 using Parameters
+
+# id key for the sender address
+SENDER_ADDR::String = "sender_addr"
+# id key for the sender 
+SENDER_ID::String = "sender_id"
+# id key for the tracking number used for dialogs
+TRACKING_ID::String = "tracking_id"
 
 """
 Supertype of every container implementation. This acts as an interface to be used by the agents
@@ -16,6 +23,7 @@ Used with the TCP protocol.
 @with_kw struct AgentAddress
     aid::Union{String,Nothing}
     address::Any = nothing
+    tracking_id::Union{String,Nothing} = nothing
 end
 
 """

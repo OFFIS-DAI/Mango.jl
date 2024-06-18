@@ -17,10 +17,6 @@ using Base.Threads
 
 # id key for the receiver
 RECEIVER_ID::String = "receiver_id"
-# id key for the sender address
-SENDER_ADDR::String = "sender_addr"
-# id key for the sender 
-SENDER_ID::String = "sender_id"
 # prefix for the generated aid's
 AGENT_PREFIX::String = "agent"
 
@@ -61,6 +57,8 @@ function process_message(container::Container, msg_data::Any, sender_addr::Any; 
     content, meta = msg["content"], msg["meta"]
     if haskey(meta, SENDER_ADDR)
         meta[SENDER_ADDR] = parse_id(container.protocol, meta[SENDER_ADDR])
+    else
+        meta[SENDER_ADDR] = nothing
     end
     forward_message(container, content, meta; receivers=receivers)
 end
@@ -69,6 +67,9 @@ end
 Get protocol addr part
 """
 function protocol_addr(container::Container) 
+    if isnothing(container.protocol)
+        return nothing
+    end
     return id(container.protocol)
 end
 
@@ -186,6 +187,7 @@ function send_message(
 )
     receiver_id = agent_adress.aid
     receiver_addr = agent_adress.address
+    tracking_id = agent_adress.tracking_id
 
     meta = OrderedDict{String,Any}()
     for (key, value) in kwargs
@@ -193,9 +195,12 @@ function send_message(
     end
     meta[RECEIVER_ID] = receiver_id
     meta[SENDER_ID] = sender_id
+    meta[TRACKING_ID] = tracking_id
 
     if !isnothing(container.protocol)
         meta[SENDER_ADDR] = id(container.protocol)
+    else
+        meta[SENDER_ADDR] = nothing
     end
 
     if isnothing(receiver_addr) || receiver_addr == id(container.protocol)

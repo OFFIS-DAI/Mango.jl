@@ -105,10 +105,30 @@ end
 agent = MyAgent("")
 role = MyAgent("")
 
-send_message(agent, "Message", "receiver_id", "receiver_addr")
-send_message(role, "Message", "receiver_id", "receiver_addr")
+send_message(agent, "Message", AgentAddress("receiver_id", "receiver_addr", "optional tracking id"))
+send_message(role, "Message", AgentAddress("receiver_id", "receiver_addr", "optional tracking id"))
 ```
 
+Further, there are two specialized methods for sending methods, (1) `send_tracked_message` and (2) `reply_to`.
+
+(1) This function can be used to send a message with an automatically generated tracking id (uuid1) and it also accepts a response handler, which will
+    automatically be called when a response arrives to the tracked message (care to include the tracking id when responding or just use `reply_to`).
+(2) Convenience function to respond to a received message without the need to create the AgentAddress by yourself.
+
+```julia
+agent1 = MyAgent("")
+agent2 = MyAgent("")
+
+function handle_message(agent::MyAgent, message::Any, meta::Any)
+    # agent 2
+    reply_to(agent, "Hello Agent, this is a response", meta) # (2)
+end
+function handle_response(agent::MyAgent, message::Any, meta::Any)
+    # agent 1
+end
+
+send_tracked_message(agent1, "Hello Agent, this is a tracked message", AgentAddress(aid=agent2.aid); response_handler=handle_response) # (1)
+```
 
 ## 4. Task Scheduling
 
