@@ -75,10 +75,8 @@ function id(protocol::MQTTProtocol)
 end
 
 function is_connected(protocol::MQTTProtocol)::Bool
-    connect_channel = get_connect_channel(protocol.client)
-
-    while !isempty(connect_channel)
-        conncb = take!(connect_channel)
+    while !isempty(protocol.conn_channel)
+        conncb = take!(protocol.conn_channel)
 
         if conncb.val == 1
             protocol.connected = true
@@ -95,8 +93,10 @@ function subscribe(protocol::MQTTProtocol, topic::String; qos::Int=1)
 end
 
 function close(protocol::MQTTProtocol)
-    disconnect(protocol.client)
-    Mosquitto.loop_stop(protocol.client)
+    if is_connected(protocol)
+        disconnect(protocol.client)
+        Mosquitto.loop_stop(protocol.client)
+    end
 end
 
 function parse_id(_::MQTTProtocol, id::Any)::String

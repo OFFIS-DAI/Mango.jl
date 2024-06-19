@@ -159,7 +159,6 @@ function forward_message(container::Container, msg::Any, meta::AbstractDict; rec
                 @warn "Container $(container.agents) has no agent with id: $receiver"
             else
                 agent = container.agents[receiver]
-                # Threads.@spawn dispatch_message(agent, msg, meta)
                 push!(send_tasks, Threads.@spawn dispatch_message(agent, msg, meta))
             end
         end
