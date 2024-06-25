@@ -25,6 +25,7 @@ jobs:
           ports: '1883:1883 8883:8883'
           container-name: 'mqtt'
 
+      - uses: actions/checkout@v4
       - uses: ./github/actions/test_action
         with:
           version: ${{ matrix.julia-version }}
