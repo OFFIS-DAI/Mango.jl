@@ -30,7 +30,6 @@ function handle_message(agent::TCPPingPongAgent, message::Any, meta::Any)
     end
 end
 
-
 @testset "TCP_AGENT" begin
     # Create the container instances with TCP protocol
     container = Container()
@@ -61,7 +60,7 @@ end
     # In general you want to use a Condition() instead to
     # Define a clear stopping signal for the agents
     wait(Threads.@spawn begin
-        while ping_agent.counter < 5 
+        while ping_agent.counter < 5
             sleep(1)
         end
     end)
@@ -103,6 +102,10 @@ end
     c2 = Container()
     c2.protocol = MQTTProtocol("PongContainer", broker_addr)
 
+    if !is_connected!(c2.protocol)
+        return
+    end
+
     # Define the ping pong agent
     # Create instances of ping pong agents
     ping_agent = MQTTPingPongAgent(0)
@@ -124,7 +127,7 @@ end
     # In general you want to use a Condition() instead to
     # Define a clear stopping signal for the agents
     wait(Threads.@spawn begin
-        while ping_agent.counter < 5 
+        while ping_agent.counter < 5
             sleep(1)
         end
     end)

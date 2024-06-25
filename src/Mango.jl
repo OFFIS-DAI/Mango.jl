@@ -28,6 +28,7 @@ export @agent,
     shutdown,
     AgentAddress,
     MQTTAddress,
+    is_connected!,
     subscribe,
     address,
     aid

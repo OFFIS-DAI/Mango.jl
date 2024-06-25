@@ -6,7 +6,8 @@ export MQTTProtocol,
     has_message,
     get_messages_channel,
     disconnect,
-    subscribe
+    subscribe,
+    is_connected!
 
 using Mosquitto
 using Sockets: InetAddr
@@ -19,14 +20,14 @@ mutable struct MQTTProtocol <: Protocol{String}
     connected::Bool
     msg_channel::Channel
     conn_channel::Channel
-    topic_to_aid::Dict{String, Vector{String}}
+    topic_to_aid::Dict{String,Vector{String}}
 
     function MQTTProtocol(client_id::String, broker_addr::InetAddr)
         # Have to cast types for the MQTT client constructor.
         c = Client(string(broker_addr.host), Int64(broker_addr.port); id=client_id)
         msg_channel = get_messages_channel(c)
         conn_channel = get_connect_channel(c)
-        return new(c, broker_addr, false, msg_channel, conn_channel, Dict{String, Vector{String}}())
+        return new(c, broker_addr, false, msg_channel, conn_channel, Dict{String,Vector{String}}())
     end
 end
 
@@ -43,7 +44,7 @@ function init(protocol::MQTTProtocol, stop_check::Function, data_handler::Functi
     listen_task = errormonitor(
         Threads.@spawn begin
             try
-                Mosquitto.loop_start(protocol.client) 
+                Mosquitto.loop_start(protocol.client)
 
                 # listen for incoming messages and run callback
                 while true
@@ -66,7 +67,7 @@ function init(protocol::MQTTProtocol, stop_check::Function, data_handler::Functi
             end
         end
     )
-    
+
     return listen_task, tasks
 end
 
