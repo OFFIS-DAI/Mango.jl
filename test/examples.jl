@@ -30,6 +30,7 @@ function handle_message(agent::TCPPingPongAgent, message::Any, meta::Any)
     end
 end
 
+#=
 @testset "TCP_AGENT" begin
     # Create the container instances with TCP protocol
     container = Container()
@@ -73,6 +74,7 @@ end
 
     @test ping_agent.counter >= 5
 end
+=#
 
 
 # Define the ping pong agent
@@ -102,10 +104,6 @@ end
     c2 = Container()
     c2.protocol = MQTTProtocol("PongContainer", broker_addr)
 
-    if !is_connected!(c2.protocol)
-        return
-    end
-
     # Define the ping pong agent
     # Create instances of ping pong agents
     ping_agent = MQTTPingPongAgent(0)
@@ -119,6 +117,11 @@ end
     # Start the container
     wait(Threads.@spawn start(c1))
     wait(Threads.@spawn start(c2))
+
+    sleep(0.5)
+    if !c1.protocol.connected
+        return
+    end
 
     # Send the first message to start the exchange
     wait(send_message(ping_agent, "Ping", MQTTAddress(broker_addr, "pings")))

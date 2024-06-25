@@ -6,8 +6,7 @@ export MQTTProtocol,
     has_message,
     get_messages_channel,
     disconnect,
-    subscribe,
-    is_connected!
+    subscribe
 
 using Mosquitto
 using Sockets: InetAddr
@@ -48,12 +47,28 @@ function init(protocol::MQTTProtocol, stop_check::Function, data_handler::Functi
 
                 # listen for incoming messages and run callback
                 while true
-                    temp = take!(protocol.msg_channel)
-                    topic = temp.topic
-                    message = temp.payload
+                    # handle incoming content messages
+                    while !isempty(protocol.msg_channel)
+                        msg = take!(protocol.msg_channel)
+                        topic = msg.topic
+                        message = msg.payload
 
-                    # guaranteed to be a key in the dict unless something went seriously wrong on registration
-                    Threads.@spawn data_handler(message, topic; receivers=protocol.topic_to_aid[topic])
+                        # guaranteed to be a key in the dict unless something went seriously wrong on registration
+                        Threads.@spawn data_handler(message, topic; receivers=protocol.topic_to_aid[topic])
+                    end
+
+                    # handle incoming connection status updates
+                    while !isempty(protocol.conn_channel)
+                        conncb = take!(protocol.conn_channel)
+
+                        if conncb.val == 1
+                            protocol.connected = true
+                        elseif conncb.val == 0
+                            protocol.connected = false
+                        end
+                    end
+
+                    yield()
                 end
             catch err
                 if isa(err, InterruptException) || isa(err, Base.IOError)
@@ -89,26 +104,6 @@ function id(protocol::MQTTProtocol)
 end
 
 """
-Polls the connection channel and updates the protocols internal connection flag accordingly.
-
-# Returns
-The connection status as bool.
-"""
-function is_connected!(protocol::MQTTProtocol)::Bool
-    while !isempty(protocol.conn_channel)
-        conncb = take!(protocol.conn_channel)
-
-        if conncb.val == 1
-            protocol.connected = true
-        elseif conncb.val == 0
-            protocol.connected = false
-        end
-    end
-
-    return protocol.connected
-end
-
-"""
 Subscribe the MQTT client of the protocol to `topic`.
 """
 function subscribe(protocol::MQTTProtocol, topic::String; qos::Int=1)
@@ -119,7 +114,7 @@ end
 Disconnect the client from the broker and stop the message loop.
 """
 function close(protocol::MQTTProtocol)
-    if is_connected!(protocol)
+    if protocol.connected
         disconnect(protocol.client)
         Mosquitto.loop_stop(protocol.client)
     end

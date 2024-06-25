@@ -220,12 +220,6 @@ end
     c2 = Container()
     p2 = MQTTProtocol("C2", broker_addr)
 
-    # there is no broker running but we don't 
-    # want to fail the test for this reason
-    if !is_connected!(p2)
-        return
-    end
-
     c1.protocol = p1
     c2.protocol = p2
 
@@ -257,6 +251,11 @@ end
     # start listen loop
     wait(Threads.@spawn start(c1))
     wait(Threads.@spawn start(c2))
+
+    sleep(0.5)
+    if !c1.protocol.connected
+        return
+    end
 
     # check loopback message on C1 --- should reach a1 and a2
     # NOTE: we sleep after send_message because handle_message logic happens on receive and there is no
