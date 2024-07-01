@@ -39,7 +39,7 @@ ROLE_BASELINE_DEFAULTS::Vector = [
 ]
 
 """
-Macro for defining an role struct. Expects a struct definition
+Macro for defining a role struct. Expects a struct definition
 as argument.
     
 The macro does 3 things:

@@ -48,6 +48,15 @@ using .AgentCore
 include("container/protocol.jl")
 using .ProtocolCore
 
+include("simulation/communication.jl")
+using .CommunicationSimulation
+
+include("simulation/tasks.jl")
+using .TaskSimulation
+
+include("container/simulation.jl")
+using .SimulationContainerCore
+
 include("container/core.jl")
 using .ContainerCore
 
