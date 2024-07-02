@@ -1,6 +1,6 @@
 module AgentRole
 export Role,
-    handle_message, handle_event, RoleContext, @role, @shared, subscribe_message, subscribe_send, bind_context, emit_event, get_model, subscribe_event, address
+    handle_message, handle_event, RoleContext, @role, @shared, subscribe_message, subscribe_send, bind_context, emit_event, get_model, subscribe_event, address, setup
 
 using ..AgentAPI
 import ..AgentAPI.send_message, ..AgentAPI.address, ..AgentAPI.send_tracked_message, ..AgentAPI.reply_to, ..AgentAPI.aid

@@ -61,7 +61,7 @@ add(my_agent, role2)
 # Now you can interact with the roles as needed
 ```
 
-Additionally, roles can define the `setup` function to define actions to take when the roles are added to the agent. It is also possible to subscribe to specific messages using a boolean expression with the `subscribe(role::Role, handler::Function, condition::Function)` function. With the @role macro the role context is added to the role, which contains the reference to the agent. However, it is recommended to use the equivalent methods defined on the role to execute actions like scheduling and sending messages.
+Additionally, roles can define the `setup` function to define actions to take when the roles are added to the agent. It is also possible to subscribe to specific messages using a boolean expression with the `subscribe(role::Role, handler::Function, condition::Function)` function. With the @role macro, the role context is added to the role, which contains the reference to the agent. However, it is recommended to use the equivalent methods defined on the role to execute actions like scheduling and sending messages.
 
 ## 3. Message Handling
 
@@ -132,7 +132,7 @@ send_tracked_message(agent1, "Hello Agent, this is a tracked message", AgentAddr
 
 ## 4. Task Scheduling
 
-Agents can schedule tasks using the `schedule` function, which delegates to the `Mango.schedule` function. You can wait for all scheduled tasks to complete using `wait_for_all_tasks`. Here's how to schedule tasks:
+Agents can schedule tasks using the `schedule` function, which delegates to the `Mango.schedule` function. You can wait for all scheduled tasks to be completed using `wait_for_all_tasks`. Here's how to schedule tasks:
 
 ```julia
 using Mango
