@@ -23,7 +23,7 @@ using Parameters
 
 @with_kw struct Clock
     simulation_time::DateTime
-    conditions::Vector{Tuple{Condition,DateTime}} = Vector{Tuple{Condition,DateTime}}()
+    conditions::Vector{Tuple{Condition,Dates.DateTime}} = Vector{Tuple{Condition,Dates.DateTime}}()
 end
 
 function sleep(clock::Clock, time_s::Float64)
