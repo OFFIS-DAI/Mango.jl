@@ -27,7 +27,8 @@ export @agent,
     shutdown,
     AgentAddress,
     address, 
-    aid
+    aid,
+    setup
 
 include("util/scheduling.jl")
 include("util/encode_decode.jl")
