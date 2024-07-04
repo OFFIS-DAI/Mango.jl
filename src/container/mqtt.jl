@@ -11,12 +11,13 @@ export MQTTProtocol,
 using Mosquitto
 using Sockets: InetAddr
 
-# TODO TLS and connection handling for that
+
 
 mutable struct MQTTProtocol <: Protocol{String}
     client::Client
     broker_addr::InetAddr
     connected::Bool
+    active::Bool
     msg_channel::Channel
     conn_channel::Channel
     topic_to_aid::Dict{String,Vector{String}}
@@ -26,7 +27,7 @@ mutable struct MQTTProtocol <: Protocol{String}
         c = Client(string(broker_addr.host), Int64(broker_addr.port); id=client_id)
         msg_channel = get_messages_channel(c)
         conn_channel = get_connect_channel(c)
-        return new(c, broker_addr, false, msg_channel, conn_channel, Dict{String,Vector{String}}())
+        return new(c, broker_addr, false, false, msg_channel, conn_channel, Dict{String,Vector{String}}())
     end
 end
 
@@ -66,9 +67,10 @@ and processes their contents.
 """
 function run_mosquitto_loop(protocol::MQTTProtocol, data_handler::Function)
     Mosquitto.loop_start(protocol.client)
+    protocol.active = true
 
     # listen for incoming messages and run callback
-    while true
+    while protocol.active
         handle_msg_channel(protocol, data_handler)
         handle_conn_channel(protocol)
         yield()
@@ -138,6 +140,8 @@ function close(protocol::MQTTProtocol)
         disconnect(protocol.client)
         Mosquitto.loop_stop(protocol.client)
     end
+
+    protocol.active = false
 end
 
 function parse_id(_::MQTTProtocol, id::Any)::String
