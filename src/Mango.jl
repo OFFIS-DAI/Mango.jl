@@ -23,6 +23,7 @@ export @agent,
     get_model,
     subscribe_event,
     TCPProtocol,
+    MQTTProtocol,
     start,
     shutdown,
     AgentAddress,
@@ -30,6 +31,8 @@ export @agent,
     aid,
     setup,
     handle_event
+    MQTTAddress,
+    subscribe,
 
 include("util/scheduling.jl")
 include("util/encode_decode.jl")

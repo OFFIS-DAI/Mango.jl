@@ -2,12 +2,15 @@ using Mango
 using Test
 using Parameters
 using TestItems
+using Sockets: InetAddr, @ip_str
 
 import Mango.AgentCore.handle_message
 
 @agent struct MyAgent
     counter::Integer
+    got_msg::Bool
 end
+MyAgent(c::Integer) = MyAgent(c, false)
 
 @role struct MyRole
     counter::Integer
@@ -18,6 +21,7 @@ MyRole(counter::Integer) = MyRole(counter, false)
 
 function handle_message(agent::MyAgent, message::Any, meta::Any)
     agent.counter += 10
+    agent.got_msg = true
 end
 
 function handle_message(role::MyRole, message::Any, meta::Any)
@@ -104,7 +108,7 @@ end
     register(container, agent1)
     register(container, agent2)
 
-    wait(send_message(agent1, "Hello Agents, this is RSc!", AgentAddress(aid=agent2.aid); kw = 1, kw2 = 2))
+    wait(send_message(agent1, "Hello Agents, this is RSc!", AgentAddress(aid=agent2.aid); kw=1, kw2=2))
 
     @test agent2.counter == 10
 end
@@ -204,4 +208,92 @@ end
 
     @test role2.counter == 10
     @test role1.counter == 1337
+end
+
+
+@testset "AgentMQTTMessaging" begin
+    broker_addr = InetAddr(ip"127.0.0.1", 1883)
+
+    c1 = Container()
+    p1 = MQTTProtocol("C1", broker_addr)
+
+    c2 = Container()
+    p2 = MQTTProtocol("C2", broker_addr)
+
+    c1.protocol = p1
+    c2.protocol = p2
+
+    # topic names
+    ALL_AGENTS = "all"
+    NO_AGENTS = "no"
+    SET_A = "set_a"
+    SET_B = "set_b"
+
+    a1 = MyAgent(0)
+    a2 = MyAgent(0)
+
+    b1 = MyAgent(0)
+
+    # no subs agent
+    b2 = MyAgent(0)
+
+    register(c1, a1; topics=[SET_A, ALL_AGENTS])
+    register(c1, a2; topics=[SET_A, ALL_AGENTS])
+    register(c2, b1; topics=[SET_B, ALL_AGENTS])
+    register(c2, b2; topics=[])
+
+    reset_events() = begin
+        for a in [a1, a2, b1, b2]
+            a.got_msg = false
+        end
+    end
+
+    # start listen loop
+    wait(Threads.@spawn start(c1))
+    wait(Threads.@spawn start(c2))
+
+    sleep(0.5)
+    if !c1.protocol.connected
+        return
+    end
+
+    # check loopback message on C1 --- should reach a1 and a2
+    # NOTE: we sleep after send_message because handle_message logic happens on receive and there is no
+    # loopback shortcut for MQTT messages like there is for TCP.
+    # This means we have to wait for the message to return to us from the broker.
+    wait(send_message(a1, "Test", MQTTAddress(broker_addr, SET_A)))
+    timedwait(() -> a1.got_msg, 0.5)
+    timedwait(() -> a2.got_msg, 0.5)
+    reset_events()
+    @test (a1.counter == a1.counter == 10) && (b1.counter == b2.counter == 0)
+
+    # check SET_A message on c2
+    wait(send_message(b1, "Test", MQTTAddress(broker_addr, SET_A)))
+    timedwait(() -> a1.got_msg, 0.5)
+    timedwait(() -> a2.got_msg, 0.5)
+    reset_events()
+    @test (a1.counter == a1.counter == 20) && (b1.counter == b2.counter == 0)
+
+    # check SET_B message
+    wait(send_message(a1, "Test", MQTTAddress(broker_addr, SET_B)))
+    timedwait(() -> b1.got_msg, 0.5)
+    reset_events()
+    @test (a1.counter == a1.counter == 20) && b1.counter == 10 && b2.counter == 0
+
+    # check ALL_AGENTS message
+    wait(send_message(a1, "Test", MQTTAddress(broker_addr, NO_AGENTS)))
+    # check NO_AGENTS message
+    wait(send_message(a1, "Test", MQTTAddress(broker_addr, ALL_AGENTS)))
+
+    # both conditions checked here because for no_agents we have nothing nice to wait on
+    # and the resulting counts should be the same in both cases
+    timedwait(() -> a1.got_msg, 0.5)
+    timedwait(() -> a2.got_msg, 0.5)
+    timedwait(() -> b1.got_msg, 0.5)
+    reset_events()
+    @test (a1.counter == a1.counter == 30) && b1.counter == 20 && b2.counter == 0
+
+    # shutdown
+    wait(Threads.@spawn shutdown(c1))
+    wait(Threads.@spawn shutdown(c2))
 end
