@@ -73,11 +73,13 @@ Starts the container and initialized all its components. After the call the cont
 start to act as the communication layer.
 """
 function start(container::Container)
-    container.loop, container.tasks = init(
-        container.protocol,
-        () -> container.shutdown,
-        (msg_data, sender_addr) -> process_message(container, msg_data, sender_addr),
-    )
+    if !isnothing(container.protocol)
+        container.loop, container.tasks = init(
+            container.protocol,
+            () -> container.shutdown,
+            (msg_data, sender_addr) -> process_message(container, msg_data, sender_addr),
+            )
+    end
 end
 
 """

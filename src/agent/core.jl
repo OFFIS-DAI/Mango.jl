@@ -37,7 +37,7 @@ struct AgentRoleHandler
     roles::Vector{Role}
     handle_message_subs::Vector{Tuple{Role,Function,Function}}
     send_message_subs::Vector{Tuple{Role,Function}}
-    event_subs::Dict{DataType,Vector{Tuple{Role,Function,Function}}}
+    event_subs::Dict{Any,Vector{Tuple{Role,Function,Function}}}
     models::Dict{DataType,Any}
 end
 

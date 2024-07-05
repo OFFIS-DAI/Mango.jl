@@ -28,7 +28,8 @@ export @agent,
     AgentAddress,
     address, 
     aid,
-    setup
+    setup,
+    handle_event
 
 include("util/scheduling.jl")
 include("util/encode_decode.jl")

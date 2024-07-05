@@ -209,15 +209,15 @@ end
 """
 Subscribe to specific types of events.
 """
-function subscribe_event(role::Role, event::DataType, event_handler::Any)
-    subscribe_event_handle(role.context.agent, role, event, event_handler; condition=()->true)
+function subscribe_event(role::Role, event_type::Any, event_handler::Any)
+    subscribe_event_handle(role.context.agent, role, event_type, event_handler; condition=()->true)
 end
 
 """
 Subscribe to specific types of events.
 """
-function subscribe_event(role::Role, event::DataType, event_handler::Any, condition::Function)
-    subscribe_event_handle(role.context.agent, role, event, event_handler; condition=condition)
+function subscribe_event(role::Role, event_type::Any, event_handler::Any, condition::Function)
+    subscribe_event_handle(role.context.agent, role, event_type, event_handler; condition=condition)
 end
 
 """
