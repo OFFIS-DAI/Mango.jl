@@ -1,5 +1,5 @@
 
-export TCPAddress, TCPProtocol, send, init, close, id, parse_id
+export TCPAddress, TCPProtocol, send, init, close, id, parse_id, acquire_tcp_connection, release_tcp_connection
 
 using Sockets:
     connect,
@@ -65,7 +65,7 @@ function is_valid(connection::Tuple{TCPSocket,Dates.DateTime}, keep_alive_time_m
     return true
 end
 
-function acquire_tcp_connection(tcp_pool::TCPConnectionPool, key::InetAddr)::TCPSocket
+function acquire_tcp_connection(tcp_pool::TCPConnectionPool, key::InetAddr)::Union{TCPSocket,Nothing}
     readlock(tcp_pool.lock)
     
     if tcp_pool.closed
@@ -120,7 +120,6 @@ function send(protocol::TCPProtocol, destination::InetAddr, message::Vector{UInt
 
     @debug "Release $(destination.host):$(destination.port)"
     release_tcp_connection(protocol.pool, destination, connection)
-    
 
     return true
 end
