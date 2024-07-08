@@ -19,22 +19,24 @@ using ConcurrentUtilities: Pool, acquire, release, drain!, ReadWriteLock, readlo
 
 import Dates
 import Base.close
-using .Threads
+
+mutable struct AtomicCounter
+    @atomic counter::Int
+end
 
 @with_kw mutable struct TCPConnectionPool
-    keep_alive_time_ms::Int
-    @atomic acquired_connections::Int
+    keep_alive_time_ms::Int32
     connections::Pool{InetAddr,Tuple{TCPSocket,Dates.DateTime}} =
         Pool{InetAddr,Tuple{TCPSocket,Dates.DateTime}}(100)
     lock::ReadWriteLock = ReadWriteLock()
     closed::Bool = false
+    acquired_connections::AtomicCounter = AtomicCounter(0)
 end
-TCPConnectionPool(keep_alive_time_ms::Int) = TCPConnectionPool(keep_alive_time_ms=keep_alive_time_ms, acquired_connections=0)
 
 @with_kw mutable struct TCPProtocol <: Protocol{InetAddr}
     address::InetAddr
     server::Union{Nothing,TCPServer} = nothing
-    pool::TCPConnectionPool = TCPConnectionPool(100000)
+    pool::TCPConnectionPool = TCPConnectionPool(keep_alive_time_ms=100000)
 end
 
 function close(pool::TCPConnectionPool)
@@ -44,7 +46,7 @@ function close(pool::TCPConnectionPool)
 
     # Waiting until all acquired connections are released
     wait(Threads.@spawn begin
-        while pool.acquired_connections > 0
+        while pool.acquired_connections.counter > 0
             sleep(0.0001)
         end
     end)
@@ -85,7 +87,7 @@ function acquire_tcp_connection(tcp_pool::TCPConnectionPool, key::InetAddr)::Uni
         return result
     end
 
-    @atomic tcp_pool.acquired_connections += 1
+    @atomic tcp_pool.acquired_connections.counter += 1
 
     readunlock(tcp_pool.lock)
     
@@ -98,7 +100,7 @@ function release_tcp_connection(
     connection::TCPSocket,
 )
     release(tcp_pool.connections, key, (connection, Dates.now()))
-    @atomic tcp_pool.acquired_connections -= 1
+    @atomic tcp_pool.acquired_connections.counter -= 1
 end
 
 """
