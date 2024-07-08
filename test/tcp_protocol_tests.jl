@@ -38,12 +38,10 @@ end
     )
 
     connection = acquire_tcp_connection(protocol.pool, addr)
-    release_tcp_connection(protocol.pool, addr, connection)
-    #=
     task = Threads.@spawn begin
-        #sleep(0.1)
+        sleep(0.1)
+        release_tcp_connection(protocol.pool, addr, connection)
     end
-    =#
     close(protocol)
     
     @test length(protocol.pool.connections.keyedvalues[InetAddr(ip"127.0.0.1", 5555)]) == 0
