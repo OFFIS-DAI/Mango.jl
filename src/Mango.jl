@@ -30,9 +30,9 @@ export @agent,
     address, 
     aid,
     setup,
-    handle_event
+    handle_event,
     MQTTAddress,
-    subscribe,
+    subscribe
 
 include("util/scheduling.jl")
 include("util/encode_decode.jl")

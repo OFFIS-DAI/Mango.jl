@@ -30,7 +30,6 @@ function handle_message(agent::TCPPingPongAgent, message::Any, meta::Any)
     end
 end
 
-#=
 @testset "TCP_AGENT" begin
     # Create the container instances with TCP protocol
     container = Container()
@@ -74,7 +73,6 @@ end
 
     @test ping_agent.counter >= 5
 end
-=#
 
 
 # Define the ping pong agent
