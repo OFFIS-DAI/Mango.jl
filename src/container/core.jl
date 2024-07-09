@@ -78,11 +78,13 @@ Starts the container and initialized all its components. After the call the cont
 start to act as the communication layer.
 """
 function start(container::Container)
-    container.loop, container.tasks = init(
-        container.protocol,
-        () -> container.shutdown,
-        (msg_data, sender_addr; receivers=nothing) -> process_message(container, msg_data, sender_addr; receivers=receivers),
-    )
+    if !isnothing(container.protocol)
+        container.loop, container.tasks = init(
+            container.protocol,
+            () -> container.shutdown,
+            (msg_data, sender_addr; receivers=nothing) -> process_message(container, msg_data, sender_addr; receivers=receivers),
+        )
+    end
 end
 
 """
@@ -91,7 +93,6 @@ Shut down the container. It is always necessary to call it for freeing bound res
 function shutdown(container::Container)
     container.shutdown = true
     close(container.protocol)
-
     for task in container.tasks
         wait(task)
     end

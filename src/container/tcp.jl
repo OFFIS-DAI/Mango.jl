@@ -1,5 +1,5 @@
 
-export TCPAddress, TCPProtocol, send, init, close, id, parse_id
+export TCPAddress, TCPProtocol, send, init, close, id, parse_id, acquire_tcp_connection, release_tcp_connection
 
 using Sockets:
     connect,
@@ -15,17 +15,22 @@ using Sockets:
     InetAddr
 using Parameters
 
-
-
-using ConcurrentUtilities: Pool, acquire, release, drain!
+using ConcurrentUtilities: Pool, acquire, release, drain!, ReadWriteLock, readlock, readunlock, lock, unlock
 
 import Dates
 import Base.close
 
-@with_kw struct TCPConnectionPool
+mutable struct AtomicCounter
+    @atomic counter::Int
+end
+
+@with_kw mutable struct TCPConnectionPool
     keep_alive_time_ms::Int32
     connections::Pool{InetAddr,Tuple{TCPSocket,Dates.DateTime}} =
         Pool{InetAddr,Tuple{TCPSocket,Dates.DateTime}}(100)
+    lock::ReadWriteLock = ReadWriteLock()
+    closed::Bool = false
+    acquired_connections::AtomicCounter = AtomicCounter(0)
 end
 
 @with_kw mutable struct TCPProtocol <: Protocol{InetAddr}
@@ -35,12 +40,25 @@ end
 end
 
 function close(pool::TCPConnectionPool)
+    lock(pool.lock)
+    
+    pool.closed = true
+
+    # Waiting until all acquired connections are released
+    wait(Threads.@spawn begin
+        while pool.acquired_connections.counter > 0
+            sleep(0.0001)
+        end
+    end)
+
     for (_, v) in pool.connections.keyedvalues
         for (connection, __) in v
             close(connection)
         end
     end
     drain!(pool.connections)
+    
+    unlock(pool.lock)
 end
 
 function is_valid(connection::Tuple{TCPSocket,Dates.DateTime}, keep_alive_time_ms::Int32)
@@ -51,15 +69,28 @@ function is_valid(connection::Tuple{TCPSocket,Dates.DateTime}, keep_alive_time_m
     return true
 end
 
-function acquire_tcp_connection(tcp_pool::TCPConnectionPool, key::InetAddr)::TCPSocket
+function acquire_tcp_connection(tcp_pool::TCPConnectionPool, key::InetAddr)::Union{TCPSocket,Nothing}
+    readlock(tcp_pool.lock)
+    
+    if tcp_pool.closed
+        readunlock(tcp_pool.lock)
+        return nothing
+    end
+    
     connection, _ = acquire(
         tcp_pool.connections,
         key,
         forcenew=false,
         isvalid=c -> is_valid(c, tcp_pool.keep_alive_time_ms),
-    ) do
-        return (connect(key.host, key.port), Dates.now())
+        ) do
+        result = (connect(key.host, key.port), Dates.now())
+        return result
     end
+
+    @atomic tcp_pool.acquired_connections.counter += 1
+
+    readunlock(tcp_pool.lock)
+    
     return connection
 end
 
@@ -69,6 +100,7 @@ function release_tcp_connection(
     connection::TCPSocket,
 )
     release(tcp_pool.connections, key, (connection, Dates.now()))
+    @atomic tcp_pool.acquired_connections.counter -= 1
 end
 
 """
@@ -81,7 +113,10 @@ Return true if successfull.
 function send(protocol::TCPProtocol, destination::InetAddr, message::Vector{UInt8})
     @debug "Attempt to connect to $(destination.host):$(destination.port)"
     connection = acquire_tcp_connection(protocol.pool, destination)
-
+    if isnothing(connection)
+        return false
+    end
+    
     length_bytes = reinterpret(UInt8, [length(message)])
 
     write(connection, [length_bytes; message])

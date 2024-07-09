@@ -1,6 +1,6 @@
 module AgentRole
 export Role,
-    handle_message, handle_event, RoleContext, @role, @shared, subscribe_message, subscribe_send, bind_context, emit_event, get_model, subscribe_event, address
+    handle_message, handle_event, RoleContext, @role, @shared, subscribe_message, subscribe_send, bind_context, emit_event, get_model, subscribe_event, address, setup
 
 using ..AgentAPI
 import ..AgentAPI.send_message, ..AgentAPI.address, ..AgentAPI.send_tracked_message, ..AgentAPI.reply_to, ..AgentAPI.aid
@@ -209,15 +209,15 @@ end
 """
 Subscribe to specific types of events.
 """
-function subscribe_event(role::Role, event::DataType, event_handler::Any)
-    subscribe_event_handle(role.context.agent, role, event, event_handler; condition=()->true)
+function subscribe_event(role::Role, event_type::Any, event_handler::Any)
+    subscribe_event_handle(role.context.agent, role, event_type, event_handler; condition=()->true)
 end
 
 """
 Subscribe to specific types of events.
 """
-function subscribe_event(role::Role, event::DataType, event_handler::Any, condition::Function)
-    subscribe_event_handle(role.context.agent, role, event, event_handler; condition=condition)
+function subscribe_event(role::Role, event_type::Any, event_handler::Any, condition::Function)
+    subscribe_event_handle(role.context.agent, role, event_type, event_handler; condition=condition)
 end
 
 """

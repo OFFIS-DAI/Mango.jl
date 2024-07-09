@@ -27,10 +27,12 @@ export @agent,
     start,
     shutdown,
     AgentAddress,
+    address, 
+    aid,
+    setup,
+    handle_event,
     MQTTAddress,
-    subscribe,
-    address,
-    aid
+    subscribe
 
 include("util/scheduling.jl")
 include("util/encode_decode.jl")
