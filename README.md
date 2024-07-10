@@ -1,6 +1,6 @@
 
-[![logo](docs/src/Logo_mango_ohne_sub.svg#gh-light-mode-only)](https://offis-dai.github.io/Mango.jl/stable/)
-[![logo](docs/src/Logo_mango_ohne_sub_white.svg#gh-dark-mode-only)](https://offis-dai.github.io/Mango.jl/stable/)
+![logo](docs/src/Logo_mango_ohne_sub.svg#gh-light-mode-only)
+![logo](docs/src/Logo_mango_ohne_sub_white.svg#gh-dark-mode-only)
 
 **Note:** _This project is still in an early development stage. 
 We appreciate constructive feedback and suggestions for improvement._
