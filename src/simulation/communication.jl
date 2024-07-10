@@ -1,35 +1,44 @@
-module CommunicationSimulation
+module CommunicationSimulationModule
 
-# Communication Sim
-abstract type CommunicationSim end
+# Communication Sim Interface
+abstract type CommunicationSimulation end
 
 struct PackageResult
     reached::Bool
     delay::UInt64    
 end
 
-@with_kw struct CommunicationSimResult 
-    package_to_result::Dict{UUID, PackageResult} = Dict()
-    state_changed::Bool = false
+struct CommunicationSimulationResult 
+    package_results::Vector{PackageResult}
 end
 
 struct MessagePackage
     aid_one::String
     aid_two::String
     sent_date::DateTime
-    content::Vector{UInt8}
-    package_id::UUID
+    content::Any
 end
 
-function simulate(communication_sim::CommunicationSim, message_package::MessagePackage) end
-function step(communication_sim::CommunicationSim)::CommunicationSimResult end
-function package_for(communication_sim::CommunicationSim, id::UUID)::MessagePackage end
-
-struct SimpleCommunicationSim <: CommunicationSim
+function calculate_communication(communication_sim::CommunicationSimulation, clock::Clock, messages::Vector{MessagePackage})::CommunicationSimulationResult 
+    throw(ErrorException("Please implement calculate_communication(...)"))
 end
 
-
-function step(com_sim::SimpleCommunicationSim)::CommunicationSimResult 
-    result = CommunicationSimResult()
+# Default Implementation Communication Sim
+@with_kw struct SimpleCommunicationSimulation <: CommunicationSimulation
+    delay_directed_edge_vector::Dict{Tuple{String, String},Float64} = Dict()
 end
+
+function calculate_communication(communication_sim::SimpleCommunicationSimulation, clock::Clock, messages::Vector{MessagePackage})::CommunicationSimulationResult 
+    results::Vector{PackageResult} = Vector()
+    for message in messages
+        key = (message.aid_one, message.aid_two)
+        delay = 0
+        if haskey(communication_sim.delay_directed_edge_vector, key)
+            delay = communication_sim.delay_directed_edge_vector[key]
+        end
+        push!(results, PackageResult(true, delay))
+    end
+    return CommunicationSimulationResult(package_results)
+end
+
 end

@@ -14,6 +14,7 @@ We appreciate constructive feedback and suggestions for improvement._
 -->  
 
 
+![logo](docs/src/Logo_mango_ohne_sub.svg)
 
 
 [Docs](https://offis-dai.github.io/Mango.jl/stable)

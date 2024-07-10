@@ -22,7 +22,7 @@ using ConcurrentCollections
 using Parameters
 
 @with_kw struct Clock
-    simulation_time::DateTime
+    simulation_time::Dates.DateTime
     conditions::Vector{Tuple{Condition,Dates.DateTime}} = Vector{Tuple{Condition,Dates.DateTime}}()
 end
 
