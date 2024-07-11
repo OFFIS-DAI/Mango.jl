@@ -29,7 +29,7 @@ struct AgentRoleHandler
     roles::Vector{Role}
     handle_message_subs::Vector{Tuple{Role,Function,Function}}
     send_message_subs::Vector{Tuple{Role,Function}}
-    event_subs::Dict{DataType,Vector{Tuple{Role,Function,Function}}}
+    event_subs::Dict{Any,Vector{Tuple{Role,Function,Function}}}
     models::Dict{DataType,Any}
 end
 
@@ -324,6 +324,23 @@ function send_message(
         content,
         agent_adress,
         agent.aid;
+        kwargs...,
+    )
+end
+
+function send_message(
+    agent::Agent,
+    content::Any,
+    mqtt_address::MQTTAddress;
+    kwargs...,
+)
+    for (role, handler) in agent.role_handler.send_message_subs
+        handler(role, content, mqtt_address; kwargs...)
+    end
+    return send_message(
+        agent.context.container,
+        content,
+        mqtt_address;
         kwargs...,
     )
 end

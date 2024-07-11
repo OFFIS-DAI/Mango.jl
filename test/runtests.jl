@@ -7,4 +7,6 @@ using Test
     include("container_tests.jl")
     include("encode_decode_tests.jl")
     include("simulation_container_tests.jl")
+    include("examples.jl")
+    include("tcp_protocol_tests.jl")
 end

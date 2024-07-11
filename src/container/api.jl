@@ -1,4 +1,5 @@
-export ContainerInterface, send_message, protocol_addr, AgentAddress
+
+export ContainerInterface, send_message, protocol_addr, Address, AgentAddress, MQTTAddress, SENDER_ADDR, SENDER_ID, TRACKING_ID
 
 # id key for the sender address
 SENDER_ADDR::String = "sender_addr"
@@ -14,18 +15,32 @@ in their contexts.
 abstract type ContainerInterface end
 
 """
-Default AgentAddress base type, where the agent identifier is based on the container created agent id (aid).
+Supertype of all address types
 """
-@kwdef struct AgentAddress
+abstract type Address end
+
+"""
+Default AgentAddress base type, where the agent identifier is based on the container created agent id (aid).
+Used with the TCP protocol.
+"""
+@kwdef struct AgentAddress <: Address
     aid::Union{String,Nothing}
     address::Any = nothing
     tracking_id::Union{String,Nothing} = nothing
 end
 
 """
+Connection information for an MQTT topic on a given broker. 
+Used with the MQTT protocol. 
+"""
+@kwdef struct MQTTAddress <: Address
+    broker::Any = nothing
+    topic::String
+end
+
+"""
 Send a message `message using the given container `container`
-to the agent with the receiver id `receiver_id` at the address `receiver_addr`. If you want
-to be able to receive an answer, a sender_id can be defined. Additionally, further keyword
+to the given address. Additionally, further keyword
 arguments can be defines to fill the internal meta data of the message.
 
 This only defines the function API, the actual implementation is done in the core container
@@ -34,7 +49,7 @@ module.
 function send_message(
     container::ContainerInterface,
     content::Any,
-    agent_adress::AgentAddress,
+    address::Address,
     sender_id::Union{Nothing,String}=nothing;
     kwargs...
 )

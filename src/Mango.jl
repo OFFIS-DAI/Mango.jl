@@ -13,6 +13,9 @@ include("agent/core.jl")
 
 include("container/protocol.jl")
 include("container/tcp.jl")
+include("container/mqtt.jl")
+
+
 include("simulation/communication.jl")
 include("simulation/tasks.jl")
 include("container/simulation.jl")
