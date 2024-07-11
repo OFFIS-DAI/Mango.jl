@@ -4,7 +4,6 @@ This is to catch example code breaking on changes to the framework.
 """
 
 using Mango
-using Mango.ProtocolCore
 using Test
 using Parameters
 using TestItems
