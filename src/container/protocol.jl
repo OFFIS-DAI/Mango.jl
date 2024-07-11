@@ -1,7 +1,4 @@
-
-module ProtocolCore
-
-export Protocol, send, start, close, id
+export Protocol, send, close, id
 
 """
 Type for all implementations of protocols, acts like an interface. A protocol defines the way message are processed and especially sent and received 
@@ -47,7 +44,3 @@ function id(protocol::Protocol{T}) where {T} end
 Parse different types to the correct type (if required). Should be implemented if the id type is not trivial.
 """
 function parse_id(protocol::Protocol{T}, id_data::Any)::T where {T} end
-
-include("./tcp.jl")
-
-end

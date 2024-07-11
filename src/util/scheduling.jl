@@ -1,4 +1,3 @@
-
 export TaskData,
     PeriodicTaskData,
     InstantTaskData,
@@ -16,14 +15,13 @@ export TaskData,
     Clock,
     continue_tasks
 
-import Dates
-import Base.schedule, Base.sleep
+using Dates
 using ConcurrentCollections
-using Parameters
+import Base.schedule, Base.sleep
 
-@with_kw struct Clock
-    simulation_time::Dates.DateTime
-    conditions::Vector{Tuple{Condition,Dates.DateTime}} = Vector{Tuple{Condition,Dates.DateTime}}()
+@kwdef mutable struct Clock
+    simulation_time::DateTime
+    conditions::Vector{Tuple{Condition,DateTime}} = Vector{Tuple{Condition,DateTime}}()
 end
 
 function sleep(clock::Clock, time_s::Float64)
@@ -50,7 +48,7 @@ function tasks(scheduler::AbstractScheduler)
     throw("unimplemented")
 end
     
-@with_kw struct Scheduler <: AbstractScheduler
+@kwdef struct Scheduler <: AbstractScheduler
     tasks::AbstractDict{Task,TaskData} = ConcurrentDict{Task,TaskData}()
 end
 

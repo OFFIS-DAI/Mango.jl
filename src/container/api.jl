@@ -1,7 +1,4 @@
-module ContainerAPI
-export ContainerInterface, send_message, protocol_addr, AgentAddress, SENDER_ADDR, SENDER_ID, TRACKING_ID
-
-using Parameters
+export ContainerInterface, send_message, protocol_addr, AgentAddress
 
 # id key for the sender address
 SENDER_ADDR::String = "sender_addr"
@@ -19,7 +16,7 @@ abstract type ContainerInterface end
 """
 Default AgentAddress base type, where the agent identifier is based on the container created agent id (aid).
 """
-@with_kw struct AgentAddress
+@kwdef struct AgentAddress
     aid::Union{String,Nothing}
     address::Any = nothing
     tracking_id::Union{String,Nothing} = nothing
@@ -48,5 +45,3 @@ end
 Used by the agent to get the protocol addr part
 """
 function protocol_addr(container::ContainerInterface) end
-
-end

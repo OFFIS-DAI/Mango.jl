@@ -1,5 +1,4 @@
-
-export TCPAddress, TCPProtocol, send, init, close, id, parse_id
+export TCPProtocol, send, init, close, id, parse_id
 
 using Sockets:
     connect,
@@ -22,13 +21,13 @@ using ConcurrentUtilities: Pool, acquire, release, drain!
 import Dates
 import Base.close
 
-@with_kw struct TCPConnectionPool
+@kwdef struct TCPConnectionPool
     keep_alive_time_ms::Int32
     connections::Pool{InetAddr,Tuple{TCPSocket,Dates.DateTime}} =
         Pool{InetAddr,Tuple{TCPSocket,Dates.DateTime}}(100)
 end
 
-@with_kw mutable struct TCPProtocol <: Protocol{InetAddr}
+@kwdef mutable struct TCPProtocol <: Protocol{InetAddr}
     address::InetAddr
     server::Union{Nothing,TCPServer} = nothing
     pool::TCPConnectionPool = TCPConnectionPool(keep_alive_time_ms=100000)

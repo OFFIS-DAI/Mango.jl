@@ -3,7 +3,7 @@ using Test
 using Parameters
 using TestItems
 
-import Mango.AgentCore.handle_message
+import Mango.handle_message
 
 @agent struct MyAgent
     counter::Integer

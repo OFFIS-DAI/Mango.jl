@@ -6,4 +6,5 @@ using Test
     include("role_tests.jl")
     include("container_tests.jl")
     include("encode_decode_tests.jl")
+    include("simulation_container_tests.jl")
 end

@@ -1,15 +1,4 @@
-module ContainerCore
 export Container, register, send_message, start, shutdown, protocol_addr
-
-
-using ..ContainerAPI
-using ..AgentCore: Agent, AgentContext, dispatch_message, stop_and_wait_for_all_tasks
-using ..ProtocolCore
-using ..EncodeDecode
-
-import ..ContainerAPI.send_message, ..ContainerAPI.protocol_addr
-
-import ..AgentCore: shutdown
 
 using Parameters
 using OrderedCollections
@@ -26,11 +15,11 @@ by composition. This means the container consists of different implementations o
 define the behavior of the container itself. That being said, the same container generally
 able to send messages via different protocols using different codecs.
 """
-@with_kw mutable struct Container <: ContainerInterface
+@kwdef mutable struct Container <: ContainerInterface
     agents::Dict{String,Agent} = Dict()
     agent_counter::Integer = 0
     protocol::Union{Nothing,Protocol} = nothing
-    codec::Any = (EncodeDecode.encode, EncodeDecode.decode)
+    codec::Any = (encode, decode)
     shutdown::Bool = false
     loop::Any = nothing
     tasks::Any = nothing
@@ -196,6 +185,4 @@ function send_message(
         receiver_addr,
         container.codec[1](to_external_message(content, meta)),
     )
-end
-
 end

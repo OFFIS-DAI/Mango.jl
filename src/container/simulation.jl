@@ -1,30 +1,18 @@
-module SimulationContainerCore
-export SimulationContainer, register, send_message, shutdown, protocol_addr
+export SimulationContainer, register, send_message, shutdown, protocol_addr, create_simulation_container, step_simulation, SimulationResult, CommunicationSimulationResult, TaskSimulationResult
 
-
-using ..ContainerAPI
-using ..AgentCore: Agent, AgentContext, dispatch_message, stop_and_wait_for_all_tasks
-
-import ..ContainerAPI.send_message, ..ContainerAPI.protocol_addr
-import ..AgentCore: shutdown
-
-using Parameters
-using OrderedCollections
 using Base.Threads
 using Dates
 using ConcurrentCollections
-
-using ..TaskSimulationModule
-using ..CommunicationSimulationModule
+using OrderedCollections
 
 # id key for the receiver
 RECEIVER_ID::String = "receiver_id"
 # prefix for the generated aid's
 AGENT_PREFIX::String = "agent"
 
-function create_simulation_container(start_time::DateTime, communication_sim::Union{Nothing,CommunicationSim}=nothing, task_sim::Union{Nothing,TaskSimulation}=nothing) 
+function create_simulation_container(start_time::DateTime; communication_sim::Union{Nothing,CommunicationSimulation}=nothing, task_sim::Union{Nothing,TaskSimulation}=nothing) 
     container = SimulationContainer()
-    container.clock = Clock(start_time)
+    container.clock = Clock(simulation_time=start_time)
     if !isnothing(communication_sim)
         container.communication_sim = communication_sim
     end
@@ -34,26 +22,30 @@ function create_simulation_container(start_time::DateTime, communication_sim::Un
     return container
 end
 
-@with_kw mutable struct SimulationContainer <: ContainerInterface
+@kwdef mutable struct SimulationContainer <: ContainerInterface
     agents::Dict{String,Agent} = Dict()
-    communication_sim::CommunicationSim = SimpleCommunicationSimulation()
+    communication_sim::CommunicationSimulation = SimpleCommunicationSimulation()
     task_sim::TaskSimulation = SimpleTaskSimulation()
     agent_counter::Integer = 0
     shutdown::Bool = false
-    clock::Clock = Clock(DateTime(0))
-    message_queue::ConcurrentQueue{Tuple{Any,AbstractDict}} = ConcurrentQueue{Tuple{Any,AbstractDict}}()
+    clock::Clock = Clock(simulation_time=DateTime(0))
+    message_queue::ConcurrentQueue{Tuple{Any,AbstractDict,DateTime}} = ConcurrentQueue{Tuple{Any,AbstractDict,DateTime}}()
 end
 
-@with_kw struct CommunicationSimulationResult
-    results::Vector{CommunicationIterationResult} = Vector()
+struct MessagingIterationResult
+    communication_result::CommunicationSimulationResult
+    state_changed::Bool
 end
-@with_kw struct TaskSimulationResult
+@kwdef struct MessagingSimulationResult
+    results::Vector{MessagingIterationResult} = Vector()
+end
+@kwdef struct TaskSimulationResult
     results::Vector{TaskIterationResult} = Vector()
 end
 
 struct SimulationResult
-    time_elapsed::Float64
-    communication_result::CommunicationSimulationResult
+    time_elapsed::Real
+    messasing_result::MessagingSimulationResult
     task_result::TaskSimulationResult
 end
 
@@ -63,52 +55,71 @@ function to_message_package(message_tuple::Tuple{Any, AbstractDict}, simulation_
     return MessagePackage(sender_aid, receiver_aid, simulation_time, message_tuple)
 end
 
-function to_cs_input(message_queue::ConcurrentQueue{Tuple{Any,AbstractDict}}, simulation_time::DateTime)::Vector{MessagePackage}
+function to_cs_input(message_queue::ConcurrentQueue{Tuple{Any,AbstractDict,DateTime}})::Vector{MessagePackage}
     messages_packages = Vector()
-    while !empty(message_queue)
-        message = pop!(message_queue)
-        push(messages_packages, to_message_package(message, simulation_time))
+    while true
+        message = maybepopfirst!(message_queue)
+        if isnothing(message)
+            break
+        end
+        content, meta, time = something(message)
+        push!(messages_packages, to_message_package((content, meta), time))
     end
     return messages_packages
 end
 
-function cs_step_iteration(container::SimulationContainer, step_size_s::Float64)::CommunicationSimulationResult
-    message_packages = to_cs_input(container.message_queue, container.clock.simulation_time)
-    comm_result::CommunicationIterationResult = calculate_communication(container.communication_sim, 
-                            container.clock, 
-                            message_packages)
-    for (mp, pr) in sort(zip(message_packages, comm_result.package_results), by=t->t[2].delay)
-        if step_size_s >= pr.delay && pr.reached
-            process_message(container, mp.content[1], mp.content[2])
-        else
-            # process it later
-            push!(container.message_queue, mp.content)
-        end
+function count_nodes(queue::ConcurrentQueue{T})::Real where T
+    next = queue.head.next
+    count = 0
+    while !isnothing(next)
+        next = next.next
+        count += 1
     end
+    return count
 end
 
-function step(container::SimulationContainer, step_size_s::Float64=900.0)::SimulationResult
-    empty = false
+function cs_step_iteration(container::SimulationContainer, step_size_s::Real)::MessagingIterationResult
+    message_packages = to_cs_input(container.message_queue)
+    communication_result::CommunicationSimulationResult = calculate_communication(container.communication_sim, 
+                            container.clock, 
+                            message_packages)
+    later_count = 0
+    @sync begin
+        for (mp, pr) in sort([z for z in zip(message_packages, communication_result.package_results)], by=t->t[1].sent_date + Second(t[2].delay_s))
+            if mp.sent_date + Second(pr.delay_s) <= container.clock.simulation_time + Second(step_size_s) && pr.reached
+                Threads.@spawn process_message(container, mp.content[1], mp.content[2])
+            else
+                # process it later
+                push!(container.message_queue, (mp.content[1], mp.content[2], mp.sent_date))
+                later_count += 1
+            end
+        end
+    end
+    return MessagingIterationResult(communication_result, count_nodes(container.message_queue) - later_count > 0)
+end
+
+function step_simulation(container::SimulationContainer, step_size_s::Real=900.0)::SimulationResult
+    state_changed = true
     
     task_sim_result = TaskSimulationResult()
-    comm_sim_result = CommunicationSimulationResult()
+    messaging_sim_result = MessagingSimulationResult()
     elapsed = @elapsed begin 
-        while !empty
+        while state_changed
             task_iter_result = nothing
             comm_iter_result = nothing
             @sync begin 
-                Threads.@spawn task_iter_result = step_iteration(container.task_sim)
+                Threads.@spawn task_iter_result = step_iteration(container.task_sim, container.clock)
                 Threads.@spawn comm_iter_result = cs_step_iteration(container, step_size_s)
             end
             push!(task_sim_result.results, task_iter_result)
-            push!(comm_sim_result.results, comm_iter_result)
-            empty = comm_iter_result.state_changed || task_iter_result.state_changed
+            push!(messaging_sim_result.results, comm_iter_result)
+            state_changed = comm_iter_result.state_changed || task_iter_result.state_changed
         end
     end
     
-    container.clock += Second(step_size_s)
+    container.clock.simulation_time += Second(step_size_s)
 
-    return SimulationResult(elapsed, comm_sim_result, task_sim_result)
+    return SimulationResult(elapsed, messaging_sim_result, task_sim_result)
 end
 
 """
@@ -121,7 +132,7 @@ end
 """
 Shut down the container. It is always necessary to call it for freeing bound resources
 """
-function shutdown(container::Container)
+function shutdown(container::SimulationContainer)
     container.shutdown = true
     
     for agent in values(container.agents)
@@ -173,7 +184,7 @@ function process_message(container::SimulationContainer, msg::Any, meta::Abstrac
         @warn "Container $(container.agents) has no agent with id: $receiver_id"
     else
         agent = container.agents[receiver_id]
-        return Threads.@spawn dispatch_message(agent, msg, meta)
+        return dispatch_message(agent, msg, meta)
     end
 end
 
@@ -184,7 +195,7 @@ At this point it has already been evaluated the message has to be routed to an a
 the container. 
 """
 function forward_message(container::SimulationContainer, msg::Any, meta::AbstractDict)
-    push!(container.message_queue, (msg, meta))
+    push!(container.message_queue, (msg, meta, container.clock.simulation_time))
 end
 
 """
@@ -218,6 +229,4 @@ function send_message(
     meta[SENDER_ADDR] = nothing
 
     return forward_message(container, content, meta)
-end
-
 end

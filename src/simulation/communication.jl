@@ -1,11 +1,13 @@
-module CommunicationSimulationModule
+export CommunicationSimulation, PackageResult, CommunicationSimulationResult, MessagePackage, calculate_communication, SimpleCommunicationSimulation
+
+using Dates
 
 # Communication Sim Interface
 abstract type CommunicationSimulation end
 
 struct PackageResult
     reached::Bool
-    delay::UInt64    
+    delay_s::UInt64    
 end
 
 struct CommunicationSimulationResult 
@@ -13,8 +15,8 @@ struct CommunicationSimulationResult
 end
 
 struct MessagePackage
-    aid_one::String
-    aid_two::String
+    sender_id::Union{String,Nothing}
+    receiver_id::String
     sent_date::DateTime
     content::Any
 end
@@ -24,21 +26,20 @@ function calculate_communication(communication_sim::CommunicationSimulation, clo
 end
 
 # Default Implementation Communication Sim
-@with_kw struct SimpleCommunicationSimulation <: CommunicationSimulation
-    delay_directed_edge_vector::Dict{Tuple{String, String},Float64} = Dict()
+@kwdef struct SimpleCommunicationSimulation <: CommunicationSimulation
+    default_delay_s::Int = 0
+    delay_s_directed_edge_vector::Dict{Tuple{String, String},Float64} = Dict()
 end
 
 function calculate_communication(communication_sim::SimpleCommunicationSimulation, clock::Clock, messages::Vector{MessagePackage})::CommunicationSimulationResult 
     results::Vector{PackageResult} = Vector()
     for message in messages
-        key = (message.aid_one, message.aid_two)
-        delay = 0
-        if haskey(communication_sim.delay_directed_edge_vector, key)
-            delay = communication_sim.delay_directed_edge_vector[key]
+        key = (message.sender_id, message.receiver_id)
+        delay_s = communication_sim.default_delay_s
+        if haskey(communication_sim.delay_s_directed_edge_vector, key)
+            delay_s = communication_sim.delay_s_directed_edge_vector[key]
         end
-        push!(results, PackageResult(true, delay))
+        push!(results, PackageResult(true, delay_s))
     end
-    return CommunicationSimulationResult(package_results)
-end
-
+    return CommunicationSimulationResult(results)
 end

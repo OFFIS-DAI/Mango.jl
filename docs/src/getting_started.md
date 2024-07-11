@@ -36,10 +36,10 @@ end
 
 ## 3. Sending and Handling Messages
 
-Ping pong agents can exchange messages and they can keep track of the number of messages received. Let's implement message handling for the agents. To achieve this a new method `handle_message` from `Mango.AgentCore` has to be added:
+Ping pong agents can exchange messages and they can keep track of the number of messages received. Let's implement message handling for the agents. To achieve this a new method `handle_message` from `Mango` has to be added:
 
 ```julia
-import Mango.AgentCore.handle_message
+import Mango.handle_message
 
 # Override the default handle_message function for ping pong agents
 function handle_message(agent::PingPongAgent, message::Any, meta::Dict)

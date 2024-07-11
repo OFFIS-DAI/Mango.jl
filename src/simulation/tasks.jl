@@ -1,6 +1,8 @@
-module TaskSimulationModule
+export TaskIterationResult, TaskResult, TaskSimulation, create_agent_scheduler, step_iteration, SimulationScheduler, SimpleTaskSimulation
 
 using UUIDs
+using Dates
+using ConcurrentCollections
 
 # Interface Definition
 struct TaskResult
@@ -9,7 +11,7 @@ struct TaskResult
     raw_result::Any
 end
 
-@with_kw struct TaskIterationResult 
+@kwdef struct TaskIterationResult 
     task_to_result::Dict{UUID, TaskResult} = Dict()
     state_changed::Bool = false
 end
@@ -24,7 +26,7 @@ function step_iteration(task_sim::TaskSimulation, clock::Clock)::TaskIterationRe
 end
 
 # Scheduler Definition
-@with_kw struct SimulationScheduler <: AbstractScheduler
+@kwdef struct SimulationScheduler <: AbstractScheduler
     tasks::AbstractDict{Task,TaskData} = ConcurrentDict{Task,TaskData}()
     queue::ConcurrentQueue{Tuple{Function,TaskData,Condition}} = ConcurrentQueue{Tuple{Function,TaskData,Condition}}()
 end
@@ -40,7 +42,7 @@ function schedule(f::Function, scheduler::SimulationScheduler, data::TaskData)
 end
 
 # Default Implementation of Interface
-@with_kw struct SimpleTaskSimulation 
+@kwdef struct SimpleTaskSimulation <: TaskSimulation
     agent_schedulers::Vector{SimulationScheduler} = Vector{SimulationScheduler}()
 end
 
@@ -53,18 +55,19 @@ end
 function step_iteration(task_sim::SimpleTaskSimulation, clock::Clock)::TaskIterationResult 
     result = TaskIterationResult()
     for scheduler in task_sim.agent_schedulers
-        while !empty(scheduler.queue)
-            next_task = pop!(schedule.queue)
+        while true
+            next_task = maybepopfirst!(scheduler.queue)
+            if isnothing(next_task)
+                break
+            end 
             before = length(scheduler.queue)
             
             out = wait(schedule(next_task[1], scheduler, next_task[2]))
             notify(next_task[3])
 
             result.state_changed = before > length(scheduler.queue)
-            result.task_to_result[uuid4()] = TaskResult(true, clock.simulation_tim, out)
+            result.task_to_result[uuid4()] = TaskResult(true, clock.simulation_time, out)
         end
     end
     return result
-end
-
 end

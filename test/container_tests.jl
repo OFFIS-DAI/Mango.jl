@@ -5,7 +5,7 @@ using Sockets: InetAddr, @ip_str
 using Base.Threads
 using OrderedCollections
 
-import Mango.AgentCore.handle_message
+import Mango.handle_message
 
 
 function handle_message(agent::MyAgent, message::Any, meta::AbstractDict)
