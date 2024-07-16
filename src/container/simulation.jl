@@ -23,8 +23,8 @@ function create_simulation_container(start_time::DateTime; communication_sim::Un
 end
 
 @kwdef mutable struct SimulationContainer <: ContainerInterface
-    clock::Clock
-    task_sim::TaskSimulation
+    clock::Clock=Clock(DateTime(0))
+    task_sim::TaskSimulation=SimpleTaskSimulation(clock=clock)
     agents::Dict{String,Agent} = Dict()
     agent_counter::Integer = 0
     shutdown::Bool = false
@@ -32,12 +32,6 @@ end
     message_queue::ConcurrentQueue{Tuple{Any,AbstractDict,DateTime}} = ConcurrentQueue{Tuple{Any,AbstractDict,DateTime}}()
     
 end
-
-function SimulationContainer()
-    clck = Clock(simulation_time=DateTime(0))
-    return SimulationContainer(clock=clck, task_sim=SimpleTaskSimulation(clock=clck))
-end
-
 
 struct MessagingIterationResult
     communication_result::CommunicationSimulationResult
