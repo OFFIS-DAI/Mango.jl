@@ -167,10 +167,6 @@ function handle_message(agent::SimSchedulingAgent, message::Any, meta::AbstractD
 end
 
 @testset "SimulationWithSpecificDelaysAndScheduledTasks" begin
-    using Logging
-
-    debug_logger = ConsoleLogger(stderr, Logging.Debug)
-    global_logger(debug_logger)
 
     com_sim = SimpleCommunicationSimulation(default_delay_s=0)
     container = create_simulation_container(DateTime(0), communication_sim=com_sim)
