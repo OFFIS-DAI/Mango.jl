@@ -27,8 +27,8 @@ end
 
 # Default Implementation Communication Sim
 @kwdef struct SimpleCommunicationSimulation <: CommunicationSimulation
-    default_delay_s::Int = 0
-    delay_s_directed_edge_vector::Dict{Tuple{String, String},Float64} = Dict()
+    default_delay_s::Real = 0
+    delay_s_directed_edge_vector::Dict{Tuple{Union{String,Nothing}, String},Real} = Dict()
 end
 
 function calculate_communication(communication_sim::SimpleCommunicationSimulation, clock::Clock, messages::Vector{MessagePackage})::CommunicationSimulationResult 

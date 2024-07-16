@@ -12,7 +12,7 @@ AGENT_PREFIX::String = "agent"
 
 function create_simulation_container(start_time::DateTime; communication_sim::Union{Nothing,CommunicationSimulation}=nothing, task_sim::Union{Nothing,TaskSimulation}=nothing) 
     container = SimulationContainer()
-    container.clock = Clock(simulation_time=start_time)
+    container.clock.simulation_time = start_time
     if !isnothing(communication_sim)
         container.communication_sim = communication_sim
     end
@@ -23,14 +23,21 @@ function create_simulation_container(start_time::DateTime; communication_sim::Un
 end
 
 @kwdef mutable struct SimulationContainer <: ContainerInterface
+    clock::Clock
+    task_sim::TaskSimulation
     agents::Dict{String,Agent} = Dict()
-    communication_sim::CommunicationSimulation = SimpleCommunicationSimulation()
-    task_sim::TaskSimulation = SimpleTaskSimulation()
     agent_counter::Integer = 0
     shutdown::Bool = false
-    clock::Clock = Clock(simulation_time=DateTime(0))
+    communication_sim::CommunicationSimulation = SimpleCommunicationSimulation()
     message_queue::ConcurrentQueue{Tuple{Any,AbstractDict,DateTime}} = ConcurrentQueue{Tuple{Any,AbstractDict,DateTime}}()
+    
 end
+
+function SimulationContainer()
+    clck = Clock(simulation_time=DateTime(0))
+    return SimulationContainer(clock=clck, task_sim=SimpleTaskSimulation(clock=clck))
+end
+
 
 struct MessagingIterationResult
     communication_result::CommunicationSimulationResult
@@ -68,15 +75,6 @@ function to_cs_input(message_queue::ConcurrentQueue{Tuple{Any,AbstractDict,DateT
     return messages_packages
 end
 
-function count_nodes(queue::ConcurrentQueue{T})::Real where T
-    next = queue.head.next
-    count = 0
-    while !isnothing(next)
-        next = next.next
-        count += 1
-    end
-    return count
-end
 
 function cs_step_iteration(container::SimulationContainer, step_size_s::Real)::MessagingIterationResult
     message_packages = to_cs_input(container.message_queue)
@@ -85,8 +83,8 @@ function cs_step_iteration(container::SimulationContainer, step_size_s::Real)::M
                             message_packages)
     later_count = 0
     @sync begin
-        for (mp, pr) in sort([z for z in zip(message_packages, communication_result.package_results)], by=t->t[1].sent_date + Second(t[2].delay_s))
-            if mp.sent_date + Second(pr.delay_s) <= container.clock.simulation_time + Second(step_size_s) && pr.reached
+        for (mp, pr) in sort([z for z in zip(message_packages, communication_result.package_results)], by=t->add_seconds(t[1].sent_date, t[2].delay_s))
+            if add_seconds(mp.sent_date, pr.delay_s) <= add_seconds(container.clock.simulation_time, step_size_s) && pr.reached
                 Threads.@spawn process_message(container, mp.content[1], mp.content[2])
             else
                 # process it later
@@ -100,25 +98,32 @@ end
 
 function step_simulation(container::SimulationContainer, step_size_s::Real=900.0)::SimulationResult
     state_changed = true
-    
+
+    @debug "Time" container.clock
+
     task_sim_result = TaskSimulationResult()
     messaging_sim_result = MessagingSimulationResult()
     elapsed = @elapsed begin 
         while state_changed
+            @debug "Start simulation iteration"
             task_iter_result = nothing
             comm_iter_result = nothing
             @sync begin 
-                Threads.@spawn task_iter_result = step_iteration(container.task_sim, container.clock)
+                Threads.@spawn task_iter_result = step_iteration(container.task_sim, step_size_s)
                 Threads.@spawn comm_iter_result = cs_step_iteration(container, step_size_s)
             end
             push!(task_sim_result.results, task_iter_result)
             push!(messaging_sim_result.results, comm_iter_result)
             state_changed = comm_iter_result.state_changed || task_iter_result.state_changed
+            @debug "Finish simulation iteration" state_changed
         end
     end
+    @debug "The simulation iteration needed $elapsed seconds"
     
-    container.clock.simulation_time += Second(step_size_s)
-
+    container.clock.simulation_time = add_seconds(container.clock.simulation_time, step_size_s)
+    
+    @debug "new time", container.clock.simulation_time
+    
     return SimulationResult(elapsed, messaging_sim_result, task_sim_result)
 end
 
@@ -162,7 +167,7 @@ function register(
     suggested_aid::Union{String,Nothing}=nothing,
 )
     actual_aid::String = "$AGENT_PREFIX$(container.agent_counter)"
-    if isnothing(suggested_aid) && haskey(container.agents, suggested_aid)
+    if !isnothing(suggested_aid) && !haskey(container.agents, suggested_aid)
         actual_aid = suggested_aid
     end
     container.agents[actual_aid] = agent
@@ -181,7 +186,7 @@ function process_message(container::SimulationContainer, msg::Any, meta::Abstrac
     receiver_id = meta[RECEIVER_ID]
 
     if !haskey(container.agents, meta[RECEIVER_ID])
-        @warn "Container $(container.agents) has no agent with id: $receiver_id"
+        @warn "Container $(keys(container.agents)) has no agent with id: $receiver_id"
     else
         agent = container.agents[receiver_id]
         return dispatch_message(agent, msg, meta)

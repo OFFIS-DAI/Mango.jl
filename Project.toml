@@ -5,6 +5,7 @@ repo = "https://github.com/OFFIS-DAI/Mango.jl"
 version = "0.2.2"
 
 [deps]
+Bijections = "e2ed5e7c-b2de-5872-ae92-c73ca462fb04"
 ConcurrentCollections = "5060bff5-0b44-40c5-b522-fcd3ca5cecdd"
 ConcurrentUtilities = "f0e56b4a-5159-44fe-b623-3e5288b988bb"
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"

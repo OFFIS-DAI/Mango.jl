@@ -3,6 +3,7 @@ Placeholder for a short summary about mango.
 """
 module Mango
 
+include("util/datastructures_util.jl")
 include("util/scheduling.jl")
 include("util/encode_decode.jl")
 include("container/api.jl")
