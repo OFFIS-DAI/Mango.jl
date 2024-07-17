@@ -75,19 +75,19 @@ function cs_step_iteration(container::SimulationContainer, step_size_s::Real)::M
     communication_result::CommunicationSimulationResult = calculate_communication(container.communication_sim, 
                             container.clock, 
                             message_packages)
-    later_count = 0
+    state_changed = false
     @sync begin
         for (mp, pr) in sort([z for z in zip(message_packages, communication_result.package_results)], by=t->add_seconds(t[1].sent_date, t[2].delay_s))
             if add_seconds(mp.sent_date, pr.delay_s) <= add_seconds(container.clock.simulation_time, step_size_s) && pr.reached
+                state_changed = true
                 Threads.@spawn process_message(container, mp.content[1], mp.content[2])
             else
                 # process it later
                 push!(container.message_queue, (mp.content[1], mp.content[2], mp.sent_date))
-                later_count += 1
             end
         end
     end
-    return MessagingIterationResult(communication_result, count_nodes(container.message_queue) - later_count > 0)
+    return MessagingIterationResult(communication_result, state_changed)
 end
 
 function step_simulation(container::SimulationContainer, step_size_s::Real=900.0)::SimulationResult
@@ -97,15 +97,17 @@ function step_simulation(container::SimulationContainer, step_size_s::Real=900.0
 
     task_sim_result = TaskSimulationResult()
     messaging_sim_result = MessagingSimulationResult()
+    first_step = true
     elapsed = @elapsed begin 
         while state_changed
             @debug "Start simulation iteration"
             task_iter_result = nothing
             comm_iter_result = nothing
             @sync begin 
-                Threads.@spawn task_iter_result = step_iteration(container.task_sim, step_size_s)
+                Threads.@spawn task_iter_result = step_iteration(container.task_sim, step_size_s, first_step)
                 Threads.@spawn comm_iter_result = cs_step_iteration(container, step_size_s)
             end
+            first_step = false
             push!(task_sim_result.results, task_iter_result)
             push!(messaging_sim_result.results, comm_iter_result)
             state_changed = comm_iter_result.state_changed || task_iter_result.state_changed

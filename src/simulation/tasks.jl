@@ -29,9 +29,9 @@ end
 # Scheduler Definition
 @kwdef struct SimulationScheduler <: AbstractScheduler
     clock::Clock
-    conditions::ConcurrentDict{Task,Tuple{Condition,DateTime}} = ConcurrentDict{Task,Tuple{Condition,DateTime}}()
-    tasks::Bijection{Task,TaskData} = Bijection{Task,TaskData}()
-    queue::ConcurrentQueue{Union{Tuple{Function,TaskData,Condition}, Task}} = ConcurrentQueue{Union{Tuple{Function,TaskData,Condition}, Task}}()
+    events::ConcurrentDict{Task,Tuple{Base.Event,DateTime}} = ConcurrentDict{Task,Tuple{Base.Event,DateTime}}()
+    tasks::ConcurrentDict{Task,Tuple{TaskData,Base.Event}} = ConcurrentDict{Task,Tuple{TaskData,Base.Event}}()
+    queue::ConcurrentQueue{Union{Tuple{Function,TaskData,Base.Event}, Task}} = ConcurrentQueue{Union{Tuple{Function,TaskData,Base.Event}, Task}}()
     wait_queue::ConcurrentQueue{Task} = ConcurrentQueue{Task}()
 end
 
@@ -47,26 +47,26 @@ function wait_for_finish_or_sleeping(scheduler::SimulationScheduler, task::Task,
         sleep(check_delay_s)
         remaining -= check_delay_s
         if !istaskdone(task)
-            if haskey(scheduler.conditions, task)
-                condition_time = scheduler.conditions[task]
-                @debug "not done, found condition" condition_time[2] add_seconds(scheduler.clock.simulation_time, step_size_s)
-                if condition_time[2] <= add_seconds(scheduler.clock.simulation_time, step_size_s)
+            if haskey(scheduler.events, task)
+                event_time = scheduler.events[task]
+                @debug "not done, found event" event_time[2] add_seconds(scheduler.clock.simulation_time, step_size_s)
+                if event_time[2] <= add_seconds(scheduler.clock.simulation_time, step_size_s)
                     return WaitResult(true, nothing)
                 else
                     return WaitResult(false, nothing)
                 end
             end
         else
-            return WaitResult(false, task.result)
+            return WaitResult(false, Some(task.result))
         end
     end
     throw("Simulation encountered a task timeout!")
 end
 
 function continue_tasks(scheduler::SimulationScheduler, time::DateTime)
-    for (condition, c_time) in scheduler.conditions
+    for (event, c_time) in scheduler.events
         if c_time <= time
-            notify(condition)
+            notify(event)
         end
     end
 end
@@ -76,14 +76,14 @@ function now(scheduler::SimulationScheduler)
 end
 
 function sleep(scheduler::SimulationScheduler, time_s::Real)
-    condition = Condition()
+    event = Base.Event()
     ctime = scheduler.clock.simulation_time
-    if haskey(scheduler.conditions, current_task())
-        ctime = scheduler.conditions[current_task()][2]
+    if haskey(scheduler.events, current_task())
+        ctime = scheduler.events[current_task()][2]
     end
-    scheduler.conditions[current_task()] = (condition, add_seconds(ctime, time_s))
-    @debug "Sleep task with" current_task() condition add_seconds(ctime, time_s)
-    wait(condition)
+    scheduler.events[current_task()] = (event, add_seconds(ctime, time_s))
+    @debug "Sleep task with" current_task() event add_seconds(ctime, time_s)
+    wait(event)
 end
 
 function wait(scheduler::SimulationScheduler, timer::Timer, delay_s::Real)
@@ -95,14 +95,14 @@ function tasks(scheduler::SimulationScheduler)
 end
 
 function schedule(f::Function, scheduler::SimulationScheduler, data::TaskData)
-    condition = Condition()
-    push!(scheduler.queue, (f, data, condition))
-    return condition
+    event = Base.Event()
+    push!(scheduler.queue, (f, data, event))
+    return event
 end
     
-function do_schedule(f::Function, scheduler::SimulationScheduler, data::TaskData)
+function do_schedule(f::Function, scheduler::SimulationScheduler, data::TaskData, event::Base.Event)
     task = Threads.@spawn execute_task(f, scheduler, data)
-    tasks(scheduler)[task] = data
+    tasks(scheduler)[task] = (data, event)
     return task
 end
 
@@ -129,7 +129,16 @@ function transfer_wait_queue(scheduler::SimulationScheduler)
     end
 end
 
-function step_iteration(task_sim::SimpleTaskSimulation, step_size_s::Real)::TaskIterationResult 
+function step_iteration(task_sim::SimpleTaskSimulation, step_size_s::Real, first_step=false)::TaskIterationResult 
+    
+    # Transfer Tasks from the previous iteration which are still running
+    # Only if, this was the last iteration of a step
+    if first_step
+        for scheduler in task_sim.agent_schedulers
+            transfer_wait_queue(scheduler)
+        end
+    end
+
     result = TaskIterationResult()
     @sync begin 
         for scheduler in task_sim.agent_schedulers
@@ -149,11 +158,11 @@ function step_iteration(task_sim::SimpleTaskSimulation, step_size_s::Real)::Task
                     task = something(next_task)
                     if isa(task, Task)
                         @debug "Continue the old Task!" task
-                        notify(scheduler.conditions[task][1])
+                        notify(scheduler.events[task][1])
                     else 
                         @debug "Processing new Task!"
-                        func,td,condition = task
-                        task = do_schedule(func, scheduler, td)
+                        func,td,event = task
+                        task = do_schedule(func, scheduler, td, event)
                     end
 
                     @debug "Waiting..."
@@ -161,13 +170,13 @@ function step_iteration(task_sim::SimpleTaskSimulation, step_size_s::Real)::Task
                     @debug "Finished..."
 
                     if !isnothing(out.result)
-                        notify(condition)
+                        notify(scheduler.tasks[task][2])
                         result.task_to_result[uuid4()] = TaskResult(true, task_sim.clock.simulation_time, out)
                         
                         # clean up task data
-                        delete!(scheduler.tasks, task)
-                        if haskey(scheduler.conditions, task)
-                            maybepop!(scheduler.conditions, task)
+                        maybepop!(scheduler.tasks, task)
+                        if haskey(scheduler.events, task)
+                            maybepop!(scheduler.events, task)
                         end
                         
                         @debug "A task has been finished" out.result
@@ -180,14 +189,6 @@ function step_iteration(task_sim::SimpleTaskSimulation, step_size_s::Real)::Task
                     end
                 end
             end
-        end
-    end
-    
-    # Transfer Tasks from the previous iteration which are still running
-    # Only if, this was the last iteration of a step
-    if !result.state_changed
-        for scheduler in task_sim.agent_schedulers
-            transfer_wait_queue(scheduler)
         end
     end
     @debug "Done with task iteration"
