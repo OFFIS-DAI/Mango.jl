@@ -178,7 +178,7 @@ end
 Hook-in function, which will be called on shutdown of the roles
 agent.
 """
-function on_shutdown(role::Role)
+function shutdown(role::Role)
     # default nothing
 end
 

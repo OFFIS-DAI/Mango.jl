@@ -1,4 +1,4 @@
-export SimulationContainer, register, send_message, shutdown, protocol_addr, create_simulation_container, step_simulation, SimulationResult, CommunicationSimulationResult, TaskSimulationResult
+export SimulationContainer, register, send_message, shutdown, protocol_addr, create_simulation_container, step_simulation, SimulationResult, CommunicationSimulationResult, TaskSimulationResult, on_step
 
 using Base.Threads
 using Dates
@@ -23,6 +23,7 @@ function create_simulation_container(start_time::DateTime; communication_sim::Un
 end
 
 @kwdef mutable struct SimulationContainer <: ContainerInterface
+    world::World=World()
     clock::Clock=Clock(DateTime(0))
     task_sim::TaskSimulation=SimpleTaskSimulation(clock=clock)
     agents::Dict{String,Agent} = Dict()
@@ -30,7 +31,21 @@ end
     shutdown::Bool = false
     communication_sim::CommunicationSimulation = SimpleCommunicationSimulation()
     message_queue::ConcurrentQueue{Tuple{Any,AbstractDict,DateTime}} = ConcurrentQueue{Tuple{Any,AbstractDict,DateTime}}()
-    
+end
+
+function on_step(role::Agent, world::World, clock::Clock, step_size_s::Real)
+    # default nothing
+end
+
+function on_step(role::Role, world::World, clock::Clock, step_size_s::Real)
+    # default nothing
+end
+
+function step_agent(agent::Agent, world::World, clock::Clock, step_size_s::Real)
+    on_step(agent, world, clock, step_size_s)
+    for role in roles(agent)
+        on_step(role, world, clock, step_size_s)
+    end
 end
 
 struct MessagingIterationResult
@@ -91,6 +106,11 @@ function cs_step_iteration(container::SimulationContainer, step_size_s::Real)::M
 end
 
 function step_simulation(container::SimulationContainer, step_size_s::Real=900.0)::SimulationResult
+    # Init world if uninitialized
+    if !initialized(container.world)
+        initialize(container.world, [v for v in values(container.agents)])
+    end
+
     state_changed = true
 
     @debug "Time" container.clock
@@ -99,6 +119,12 @@ function step_simulation(container::SimulationContainer, step_size_s::Real=900.0
     messaging_sim_result = MessagingSimulationResult()
     first_step = true
     elapsed = @elapsed begin 
+        # first let all agents act on the stepping hook
+        for agent in values(container.agents)
+            step_agent(agent, container.world, container.clock, step_size_s)
+        end
+        # now we process everything which happened in the steps,
+        # tasks and previous iterations
         while state_changed
             @debug "Start simulation iteration"
             task_iter_result = nothing
