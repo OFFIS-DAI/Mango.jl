@@ -1,6 +1,7 @@
 using Test
 
 @testset "Mango Tests" begin
+    include("datastructure_util_tests.jl")
     include("scheduler_tests.jl")
     include("agent_tests.jl")
     include("role_tests.jl")
