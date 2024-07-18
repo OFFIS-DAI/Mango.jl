@@ -63,14 +63,6 @@ function wait_for_finish_or_sleeping(scheduler::SimulationScheduler, task::Task,
     throw("Simulation encountered a task timeout!")
 end
 
-function continue_tasks(scheduler::SimulationScheduler, time::DateTime)
-    for (event, c_time) in scheduler.events
-        if c_time <= time
-            notify(event)
-        end
-    end
-end
-
 function now(scheduler::SimulationScheduler)
     return scheduler.clock.simulation_time
 end
