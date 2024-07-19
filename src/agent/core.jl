@@ -1,4 +1,3 @@
-module AgentCore
 export @agent,
     dispatch_message,
     AgentRoleHandler,
@@ -9,16 +8,9 @@ export @agent,
     stop_and_wait_for_all_tasks,
     shutdown
 
-using ..Mango
-using ..AgentRole
-using ..ContainerAPI
 using UUIDs
-import ..ContainerAPI.send_message, ..ContainerAPI.protocol_addr
 
-import ..AgentAPI.aid, ..AgentAPI.subscribe_message_handle, ..AgentAPI.subscribe_send_handle, ..AgentAPI.subscribe_event_handle, ..AgentAPI.emit_event_handle, ..AgentAPI.get_model_handle, ..AgentAPI.address, ..AgentAPI.reply_to, ..AgentAPI.send_tracked_message
 import Dates
-import ..Mango:
-    schedule, stop_task, stop_all_tasks, wait_for_all_tasks, stop_and_wait_for_all_tasks
 
 
 """
@@ -49,7 +41,7 @@ AGENT_BASELINE_FIELDS::Vector = [
     :(lock::ReentrantLock),
     :(context::Union{Nothing,AgentContext}),
     :(role_handler::Union{AgentRoleHandler}),
-    :(scheduler::Scheduler),
+    :(scheduler::AbstractScheduler),
     :(aid::Union{Nothing,String}),
     :(transaction_handler::Dict{String,Tuple}),
 ]
@@ -233,7 +225,7 @@ end
 """
 Internal implementation of the agent API.
 """
-function subscribe_event_handle(agent::Agent, role::Role, event_type::Any, event_handler::Function; condition::Function=(a, b) => true)
+function subscribe_event_handle(agent::Agent, role::Role, event_type::Any, event_handler::Function; condition::Function=(a, b) -> true)
     if !haskey(agent.role_handler.event_subs, event_type)
         agent.role_handler.event_subs[event_type] = Vector()
     end
@@ -327,7 +319,7 @@ function send_message(
     for (role, handler) in agent.role_handler.send_message_subs
         handler(role, content, agent_adress; kwargs...)
     end
-    return ContainerAPI.send_message(
+    return send_message(
         agent.context.container,
         content,
         agent_adress,
@@ -345,7 +337,7 @@ function send_message(
     for (role, handler) in agent.role_handler.send_message_subs
         handler(role, content, mqtt_address; kwargs...)
     end
-    return ContainerAPI.send_message(
+    return send_message(
         agent.context.container,
         content,
         mqtt_address;
@@ -408,6 +400,4 @@ function reply_to(agent::Agent,
                                               response_handler=response_handler,
                                               calling_object=calling_object,
                                               kwargs...)
-end
-
 end

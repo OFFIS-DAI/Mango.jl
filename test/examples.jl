@@ -9,7 +9,7 @@ using Parameters
 using TestItems
 using Sockets: InetAddr, @ip_str
 
-import Mango.AgentCore.handle_message
+import Mango.handle_message
 
 
 # Define the ping pong agent

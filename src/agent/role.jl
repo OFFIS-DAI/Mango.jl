@@ -1,11 +1,5 @@
-module AgentRole
 export Role,
     handle_message, handle_event, RoleContext, @role, @shared, subscribe_message, subscribe_send, bind_context, emit_event, get_model, subscribe_event, address, setup
-
-using ..AgentAPI
-import ..AgentAPI.send_message, ..AgentAPI.address, ..AgentAPI.send_tracked_message, ..AgentAPI.reply_to, ..AgentAPI.aid
-import ..Mango: schedule
-using ..Mango
 
 
 """
@@ -39,7 +33,7 @@ ROLE_BASELINE_DEFAULTS::Vector = [
 ]
 
 """
-Macro for defining an role struct. Expects a struct definition
+Macro for defining a role struct. Expects a struct definition
 as argument.
     
 The macro does 3 things:
@@ -287,6 +281,4 @@ function reply_to(role::Role,
     response_handler::Function=(agent,message,meta)->nothing,
     kwargs...)
     return reply_to(role.context.agent, content, received_meta; response_handler=response_handler, calling_object=role, kwargs...)
-end
-
 end

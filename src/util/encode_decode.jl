@@ -1,5 +1,3 @@
-# Not called Codecs because Codecs.jl already exists and I didn't want to deal with that for now.
-module EncodeDecode
 using LightBSON
 using OrderedCollections
 export encode, decode
@@ -31,7 +29,4 @@ function decode(
     t::Type = OrderedDict{String,Any},
 )::Union{OrderedDict{String,Any},Any}
     return LightBSON.bson_read(t, buf)
-end
-
-
 end

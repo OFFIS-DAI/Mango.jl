@@ -1,7 +1,5 @@
-module ContainerAPI
 
-export ContainerInterface, send_message, protocol_addr, Adddress, AgentAddress, MQTTAddress, SENDER_ADDR, SENDER_ID, TRACKING_ID
-using Parameters
+export ContainerInterface, send_message, protocol_addr, Address, AgentAddress, MQTTAddress, SENDER_ADDR, SENDER_ID, TRACKING_ID
 
 # id key for the sender address
 SENDER_ADDR::String = "sender_addr"
@@ -25,7 +23,7 @@ abstract type Address end
 Default AgentAddress base type, where the agent identifier is based on the container created agent id (aid).
 Used with the TCP protocol.
 """
-@with_kw struct AgentAddress <: Address
+@kwdef struct AgentAddress <: Address
     aid::Union{String,Nothing}
     address::Any = nothing
     tracking_id::Union{String,Nothing} = nothing
@@ -35,7 +33,7 @@ end
 Connection information for an MQTT topic on a given broker. 
 Used with the MQTT protocol. 
 """
-@with_kw struct MQTTAddress <: Address
+@kwdef struct MQTTAddress <: Address
     broker::Any = nothing
     topic::String
 end
@@ -62,5 +60,3 @@ end
 Used by the agent to get the protocol addr part
 """
 function protocol_addr(container::ContainerInterface) end
-
-end

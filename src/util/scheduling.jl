@@ -1,4 +1,3 @@
-
 export TaskData,
     PeriodicTaskData,
     InstantTaskData,
@@ -11,21 +10,62 @@ export TaskData,
     wait_for_all_tasks,
     stop_and_wait_for_all_tasks,
     schedule,
-    Scheduler
+    Scheduler,
+    AbstractScheduler,
+    Clock,
+    continue_tasks
 
-import Dates
-import Base.schedule
+using Dates
 using ConcurrentCollections
-using Parameters
+
+import Base.schedule, Base.sleep, Base.wait
+
+abstract type AbstractClock end
+
+@kwdef mutable struct Clock <: AbstractClock
+    simulation_time::DateTime
+end
+
+struct DateTimeClock <: AbstractClock
+end
 
 struct Stop end
 struct Continue end
-abstract type TaskData end
 
-@with_kw struct Scheduler
-    tasks::AbstractDict{Task,TaskData} = ConcurrentDict{Task,TaskData}()
+abstract type TaskData end
+abstract type AbstractScheduler end
+
+function now(scheduler::AbstractScheduler)
+    return DateTime.now()
 end
 
+function sleep(scheduler::AbstractScheduler, time_s::Real)
+    return sleep(time_s)
+end
+
+function wait(scheduler::AbstractScheduler, timer::Timer, delay_s::Real)
+    return wait(timer)
+end
+
+function clock(scheduler::AbstractScheduler)
+    throw("unimplemented")
+end
+function tasks(scheduler::AbstractScheduler)
+    throw("unimplemented")
+end
+    
+@kwdef struct Scheduler <: AbstractScheduler
+    tasks::AbstractDict{Task,TaskData} = ConcurrentDict{Task,TaskData}()
+    clock::DateTimeClock = DateTimeClock()
+end
+
+function clock(scheduler::Scheduler)
+    return scheduler.clock
+end
+function tasks(scheduler::Scheduler)
+    return scheduler.tasks
+end
+        
 function is_stopable(data::TaskData)::Bool
     return false
 end
@@ -34,10 +74,10 @@ function stop_single_task(data::TaskData)::Nothing
 end
 
 mutable struct PeriodicTaskData <: TaskData
-    interval_s::Float64
+    interval_s::Real
     timer::Timer
 
-    function PeriodicTaskData(interval_s::Float64)
+    function PeriodicTaskData(interval_s::Real)
         return new(interval_s, Timer(interval_s; interval=interval_s))
     end
 end
@@ -65,43 +105,42 @@ struct ConditionalTaskData <: TaskData
     check_interval_s::Float64
 end
 
-function execute_task(f::Function, data::PeriodicTaskData)
-
+function execute_task(f::Function, scheduler::AbstractScheduler, data::PeriodicTaskData)
     while true
         f()
-        wait(data.timer)
+        wait(scheduler, data.timer, data.interval_s)
     end
 end
 
-function execute_task(f::Function, data::InstantTaskData)
+function execute_task(f::Function, scheduler::AbstractScheduler, data::InstantTaskData)
     f()
 end
 
-function execute_task(f::Function, data::DateTimeTaskData)
-    sleep((data.date - Dates.now()).value / 1000)
+function execute_task(f::Function, scheduler::AbstractScheduler, data::DateTimeTaskData)
+    sleep(scheduler, (data.date - Dates.now()).value / 1000)
     f()
 end
 
-function execute_task(f::Function, data::AwaitableTaskData)
+function execute_task(f::Function, scheduler::AbstractScheduler, data::AwaitableTaskData)
     wait(data.awaitable)
     f()
 end
 
-function execute_task(f::Function, data::ConditionalTaskData)
+function execute_task(f::Function, scheduler::AbstractScheduler, data::ConditionalTaskData)
     while !data.condition()
-        sleep(data.check_interval_s)
+        sleep(scheduler, data.check_interval_s)
     end
     f()
 end
 
-function schedule(f::Function, scheduler::Scheduler, data::TaskData)
-    task = Threads.@spawn execute_task(f, data)
-    scheduler.tasks[task] = data
+function schedule(f::Function, scheduler::AbstractScheduler, data::TaskData)
+    task = Threads.@spawn execute_task(f, scheduler, data)
+    tasks(scheduler)[task] = data
     return task
 end
 
-function stop_task(scheduler::Scheduler, t::Task)
-    data = scheduler.tasks[t]
+function stop_task(scheduler::AbstractScheduler, t::Task)
+    data = tasks(scheduler)[t]
 
     if is_stopable(data)
         stop_single_task(data)
@@ -111,16 +150,16 @@ function stop_task(scheduler::Scheduler, t::Task)
     return nothing
 end
 
-function stop_all_tasks(scheduler::Scheduler)
-    for data in values(scheduler.tasks)
+function stop_all_tasks(scheduler::AbstractScheduler)
+    for data in values(tasks(scheduler))
         if is_stopable(data)
             stop_single_task(data)
         end
     end
 end
 
-function wait_for_all_tasks(scheduler::Scheduler)
-    for task in keys(scheduler.tasks)
+function wait_for_all_tasks(scheduler::AbstractScheduler)
+    for task in keys(tasks(scheduler))
         try
             wait(task)
         catch err
@@ -134,7 +173,7 @@ function wait_for_all_tasks(scheduler::Scheduler)
     end
 end
 
-function stop_and_wait_for_all_tasks(scheduler::Scheduler)
+function stop_and_wait_for_all_tasks(scheduler::AbstractScheduler)
     stop_all_tasks(scheduler)
     wait_for_all_tasks(scheduler)
 end

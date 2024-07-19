@@ -1,6 +1,4 @@
 
-module ProtocolCore
-
 export Protocol, send, start, close, id, notify_register
 
 """
@@ -53,7 +51,3 @@ Protocol specific updates called when a new agent is registered.
 """
 function notify_register(protocol::Protocol{T}, aid::String; kwargs...) where {T} end
 
-include("./tcp.jl")
-include("./mqtt.jl")
-
-end

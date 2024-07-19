@@ -2,7 +2,7 @@ using Mango
 using Test
 using Parameters
 
-import Mango.AgentRole.handle_event
+import Mango.handle_event
 
 @agent struct RoleTestAgent
     counter::Integer

@@ -1,4 +1,9 @@
-# Mango.jl
+
+![logo](docs/src/Logo_mango_ohne_sub.svg#gh-light-mode-only)
+![logo](docs/src/Logo_mango_ohne_sub_white.svg#gh-dark-mode-only)
+
+[Docs](https://offis-dai.github.io/Mango.jl/stable)
+| [Gitlab](https://github.com/OFFIS-DAI/Mango.jl) | [mail](mailto:mango@offis.de)
 
 **Note:** _This project is still in an early development stage. 
 We appreciate constructive feedback and suggestions for improvement._
@@ -15,17 +20,82 @@ We appreciate constructive feedback and suggestions for improvement._
 
 
 
-
-[Docs](https://offis-dai.github.io/Mango.jl/stable)
-| [Gitlab](https://github.com/OFFIS-DAI/Mango.jl) | [mail](mailto:mango@offis.de)
-
-Mango.jl allows the user to create simple agents with little effort and in the same time offers options to structure agents with complex behaviour. The main features of mango are listed below.
+Mango.jl allows the user to create simple agents with little effort and in the same time offers options to structure agents with complex behaviour. The main features of mango are listed below. 
 
 ## Features
 * Container mechanism to speedup local message exchange
 * Structuring complex agents with loose coupling and agent roles
 * Built-in codecs
-* Supports communication between agents directly via TCP
+* Supports communication between agents directly via TCP and MQTT
+* Built-in tasks mechanisms for proactive agent actions
+* Discrete stepping simulation using an external clock to rapidly run simulations over a long time-span
+
+## Example
+
+The following simple showcase demonstrates how you can define agents in Mango. Jl, assign them to containers and send messages via a TCP connection. For more information on the specifics and other features (e.g. MQTT, modular agent using roles, simulation, tasks), please have a look at our [Documentation](https://offis-dai.github.io/Mango.jl/stable)!
+
+```julia
+using Mango
+
+import Mango.handle_message
+
+# Define the agent struct using the @agent macro
+@agent struct PingPongAgent
+    counter::Int
+end
+
+# Define the way the PingPongAgent reacts to incoming messages
+# Here it will reply to incoming "Pong"s with "Ping", and with incoming
+# "Ping"s with "Pong"
+function handle_message(agent::PingPongAgent, message::Any, meta::AbstractDict)
+    if message == "Ping" && agent.counter < 5
+        agent.counter += 1
+        reply_to(agent, "Pong", meta)
+    elseif message == "Pong" && agent.counter < 5
+        agent.counter += 1
+        reply_to(agent, "Ping", meta)
+    end
+end
+
+# Create the container and add the protocol you want to use, here we use
+# a plain TCP protocol and define the address of the containers
+container = Container()
+container.protocol = TCPProtocol(address=InetAddr(ip"127.0.0.1", 2939))
+container2 = Container()
+container2.protocol = TCPProtocol(address=InetAddr(ip"127.0.0.1", 2940))
+
+# Create the agents we defined above
+ping_agent = PingPongAgent(0)
+pong_agent = PingPongAgent(0)
+
+# Registering the agents and the respective container
+# We want to showcase the use of TCP so each agent need to be
+# in its own container, otherwise the agents would communicate
+# without any protocol (with simple function calls internally)
+register(container2, ping_agent)
+register(container, pong_agent)
+
+# Start the containers. At this point the TCP-server is created and bound
+# to their addresses
+wait(Threads.@spawn start(container))
+wait(Threads.@spawn start(container2))
+
+# Send the initial message from the ping_agent to initiate the communication
+wait(send_message(ping_agent, "Ping", AgentAddress(aid=pong_agent.aid, address=InetAddr(ip"127.0.0.1", 2939))))
+
+# Wait until some Pings and Pongs has been exchanged
+wait(Threads.@spawn begin
+    while ping_agent.counter < 5
+        sleep(1)
+    end
+end)
+
+# Gracefully shutdown the container and its containing agents
+@sync begin
+    Threads.@spawn shutdown(container)
+    Threads.@spawn shutdown(container2)
+end
+```
 
 ## License
 Mango.jl is developed and published under the MIT license.

@@ -1,5 +1,5 @@
 
-export TCPAddress, TCPProtocol, send, init, close, id, parse_id, acquire_tcp_connection, release_tcp_connection
+export TCPProtocol, send, init, close, id, parse_id, acquire_tcp_connection, release_tcp_connection
 
 using Sockets:
     connect,
@@ -13,7 +13,6 @@ using Sockets:
     TCPServer,
     @ip_str,
     InetAddr
-using Parameters
 
 using ConcurrentUtilities: Pool, acquire, release, drain!, ReadWriteLock, readlock, readunlock, lock, unlock
 
@@ -24,7 +23,7 @@ mutable struct AtomicCounter
     @atomic counter::Int
 end
 
-@with_kw mutable struct TCPConnectionPool
+@kwdef mutable struct TCPConnectionPool
     keep_alive_time_ms::Int32
     connections::Pool{InetAddr,Tuple{TCPSocket,Dates.DateTime}} =
         Pool{InetAddr,Tuple{TCPSocket,Dates.DateTime}}(100)
@@ -33,7 +32,7 @@ end
     acquired_connections::AtomicCounter = AtomicCounter(0)
 end
 
-@with_kw mutable struct TCPProtocol <: Protocol{InetAddr}
+@kwdef mutable struct TCPProtocol <: Protocol{InetAddr}
     address::InetAddr
     server::Union{Nothing,TCPServer} = nothing
     pool::TCPConnectionPool = TCPConnectionPool(keep_alive_time_ms=100000)
