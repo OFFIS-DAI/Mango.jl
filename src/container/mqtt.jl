@@ -3,7 +3,6 @@ export MQTTProtocol,
     init,
     close,
     id,
-    has_message,
     get_messages_channel,
     disconnect,
     subscribe

@@ -84,9 +84,12 @@ function shutdown(container::Container)
     if !isnothing(container.protocol)
         close(container.protocol)
     end
-    for task in container.tasks
-        wait(task)
+    if !isnothing(container.tasks)
+        for task in container.tasks
+            wait(task)
+        end
     end
+end
 
     for agent in values(container.agents)
         shutdown(agent)
