@@ -81,7 +81,9 @@ Shut down the container. It is always necessary to call it for freeing bound res
 """
 function shutdown(container::Container)
     container.shutdown = true
-    close(container.protocol)
+    if !isnothing(container.protocol)
+        close(container.protocol)
+    end
     for task in container.tasks
         wait(task)
     end
