@@ -89,7 +89,6 @@ function shutdown(container::Container)
             wait(task)
         end
     end
-end
 
     for agent in values(container.agents)
         shutdown(agent)
