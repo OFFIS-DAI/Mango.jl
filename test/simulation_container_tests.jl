@@ -344,9 +344,16 @@ end
     @test agent1.scheduled_counter == 102
     @test agent2.counter == 2
     @test agent2.scheduled_counter == 200
+
+    stepping_result = step_simulation(container)
+
+    @test isnothing(stepping_result)
     
     schedule(agent1, PeriodicTaskData(0.1)) do
         agent1.scheduled_counter += 1
+    end
+    schedule(agent1, PeriodicTaskData(3)) do
+        # nothing
     end
 
     stepping_result = step_simulation(container)
