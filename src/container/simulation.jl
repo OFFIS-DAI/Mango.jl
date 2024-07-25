@@ -9,6 +9,8 @@ using OrderedCollections
 RECEIVER_ID::String = "receiver_id"
 # prefix for the generated aid's
 AGENT_PREFIX::String = "agent"
+# DISCRETE EVENT STEP SIZE
+DISCRETE_EVENT::Real = -1
 
 function create_simulation_container(start_time::DateTime; communication_sim::Union{Nothing,CommunicationSimulation}=nothing, task_sim::Union{Nothing,TaskSimulation}=nothing) 
     container = SimulationContainer()
@@ -63,6 +65,7 @@ struct SimulationResult
     time_elapsed::Real
     messasing_result::MessagingSimulationResult
     task_result::TaskSimulationResult
+    simulation_step_size_s::Real
 end
 
 function to_message_package(message_tuple::Tuple{Any, AbstractDict}, simulation_time::DateTime)::MessagePackage
@@ -71,7 +74,7 @@ function to_message_package(message_tuple::Tuple{Any, AbstractDict}, simulation_
     return MessagePackage(sender_aid, receiver_aid, simulation_time, message_tuple)
 end
 
-function to_cs_input(message_queue::ConcurrentQueue{Tuple{Any,AbstractDict,DateTime}})::Vector{MessagePackage}
+function to_cs_input!(message_queue::ConcurrentQueue{Tuple{Any,AbstractDict,DateTime}})::Vector{MessagePackage}
     messages_packages = Vector()
     while true
         message = maybepopfirst!(message_queue)
@@ -84,12 +87,28 @@ function to_cs_input(message_queue::ConcurrentQueue{Tuple{Any,AbstractDict,DateT
     return messages_packages
 end
 
+function to_cs_input(message_queue::ConcurrentQueue{Tuple{Any,AbstractDict,DateTime}})::Vector{MessagePackage}
+    messages_packages = Vector()
+    next = message_queue.head.next
+    while !isnothing(next)
+        content, meta, time = next.value
+        push!(messages_packages, to_message_package((content, meta), time))
+        next = next.next
+    end
+    return messages_packages
+end
 
-function cs_step_iteration(container::SimulationContainer, step_size_s::Real)::MessagingIterationResult
-    message_packages = to_cs_input(container.message_queue)
-    communication_result::CommunicationSimulationResult = calculate_communication(container.communication_sim, 
+
+function cs_step_iteration(container::SimulationContainer, 
+                           step_size_s::Real, 
+                           pre_communication_result::Union{Nothing,CommunicationSimulationResult})::MessagingIterationResult
+    message_packages = to_cs_input!(container.message_queue)
+    communication_result = pre_communication_result
+    if isnothing(communication_result)
+        communication_result = calculate_communication(container.communication_sim, 
                             container.clock, 
                             message_packages)
+    end
     state_changed = false
     @sync begin
         for (mp, pr) in sort([z for z in zip(message_packages, communication_result.package_results)], by=t->add_seconds(t[1].sent_date, t[2].delay_s))
@@ -105,7 +124,37 @@ function cs_step_iteration(container::SimulationContainer, step_size_s::Real)::M
     return MessagingIterationResult(communication_result, state_changed)
 end
 
-function step_simulation(container::SimulationContainer, step_size_s::Real=900.0)::SimulationResult
+function determine_time_step(container::SimulationContainer)
+    message_packages = to_cs_input(container.message_queue)
+    communication_result = calculate_communication(container.communication_sim, container.clock, message_packages)
+    
+    # earliest message or -1 if no message arrives
+    message_arrival_times = [add_seconds(t[1].sent_date, t[2].delay_s) for t in zip(message_packages, communication_result.package_results)]
+    time_to_next_message_s = nothing
+    if length(message_arrival_times) > 0
+        time_to_next_message_s = (findmin(message_arrival_times)[1] - container.clock.simulation_time).value/1000
+    end
+    @debug "Next message in $time_to_next_message_s"
+
+    # ealiest task or -1 if no task scheduled
+    next_event_s = determine_next_event_time(container.task_sim)
+    
+    @debug "Next event in $next_event_s"
+
+    # check whether one is absent and the other is present
+    if isnothing(time_to_next_message_s) && isnothing(next_event_s)
+        return nothing, communication_result
+    elseif isnothing(next_event_s)
+        return time_to_next_message_s, communication_result
+    elseif isnothing(time_to_next_message_s)
+        return next_event_s, communication_result
+    end
+
+    # return earliest
+    return min(time_to_next_message_s, next_event_s), communication_result
+end
+
+function step_simulation(container::SimulationContainer, step_size_s::Real=DISCRETE_EVENT)::Union{SimulationResult, Nothing}
     # Init world if uninitialized
     if !initialized(container.world)
         initialize(container.world, [v for v in values(container.agents)])
@@ -118,11 +167,20 @@ function step_simulation(container::SimulationContainer, step_size_s::Real=900.0
     task_sim_result = TaskSimulationResult()
     messaging_sim_result = MessagingSimulationResult()
     first_step = true
-    elapsed = @elapsed begin 
-        # first let all agents act on the stepping hook
-        for agent in values(container.agents)
-            step_agent(agent, container.world, container.clock, step_size_s)
+    time_step_s = step_size_s
+    
+    # We are in discrete event mode, so we need to determine
+    # the time until the next event occurs, this time will
+    # be used to execute the time-based simulation
+    comm_result = nothing
+    if time_step_s == DISCRETE_EVENT
+        time_step_s, comm_result = determine_time_step(container)
+        @debug "Determined the size to be $time_step_s" 
+        if isnothing(time_step_s)
+            return nothing
         end
+    end
+    elapsed = @elapsed begin 
         # now we process everything which happened in the steps,
         # tasks and previous iterations
         while state_changed
@@ -130,8 +188,8 @@ function step_simulation(container::SimulationContainer, step_size_s::Real=900.0
             task_iter_result = nothing
             comm_iter_result = nothing
             @sync begin 
-                Threads.@spawn task_iter_result = step_iteration(container.task_sim, step_size_s, first_step)
-                Threads.@spawn comm_iter_result = cs_step_iteration(container, step_size_s)
+                Threads.@spawn comm_iter_result = cs_step_iteration(container, time_step_s, first_step ? comm_result : nothing)
+                Threads.@spawn task_iter_result = step_iteration(container.task_sim, time_step_s, first_step)
             end
             first_step = false
             push!(task_sim_result.results, task_iter_result)
@@ -139,14 +197,19 @@ function step_simulation(container::SimulationContainer, step_size_s::Real=900.0
             state_changed = comm_iter_result.state_changed || task_iter_result.state_changed
             @debug "Finish simulation iteration" state_changed
         end
+        
+        # agents act on the stepping hook
+        for agent in values(container.agents)
+            step_agent(agent, container.world, container.clock, time_step_s)
+        end
     end
     @debug "The simulation iteration needed $elapsed seconds"
     
-    container.clock.simulation_time = add_seconds(container.clock.simulation_time, step_size_s)
+    container.clock.simulation_time = add_seconds(container.clock.simulation_time, time_step_s)
     
     @debug "new time", container.clock.simulation_time
     
-    return SimulationResult(elapsed, messaging_sim_result, task_sim_result)
+    return SimulationResult(elapsed, messaging_sim_result, task_sim_result, time_step_s)
 end
 
 """

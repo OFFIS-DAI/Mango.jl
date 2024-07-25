@@ -153,6 +153,7 @@ function forward_message(container::Container, msg::Any, meta::AbstractDict; rec
                 @warn "Container $(container.agents) has no agent with id: $receiver"
             else
                 agent = container.agents[receiver]
+                @debug "Dispatch a message to agent $(aid(agent))" typeof(msg) get(meta, SENDER_ID, "") protocol_addr(container)
                 push!(send_tasks, Threads.@spawn dispatch_message(agent, msg, meta))
             end
         end
@@ -205,6 +206,8 @@ function send_message(
     if isnothing(receiver_addr) || receiver_addr == id(container.protocol)
         return forward_message(container, content, meta)
     end
+
+    @debug "Send a message to ($receiver_id, $receiver_addr), from $sender_id" typeof(content)
 
     return Threads.@spawn send(
         container.protocol,

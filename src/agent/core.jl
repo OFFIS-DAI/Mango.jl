@@ -141,6 +141,7 @@ function dispatch_message(agent::Agent, message::Any, meta::AbstractDict)
     lock(agent.lock) do
         if haskey(meta, TRACKING_ID) && haskey(agent.transaction_handler, meta[TRACKING_ID])
             caller, response_handler = agent.transaction_handler[meta[TRACKING_ID]]
+            delete!(agent.transaction_handler, meta[TRACKING_ID])
             response_handler(caller, message, meta)
         else
             for role in agent.role_handler.roles
@@ -163,7 +164,7 @@ the multiple dispatch of julia).
 """
 function handle_message(agent::Agent, message::Any, meta::Any)
     # do nothing by default
-    @warn "Default handle message was called. This may be a bug."
+    @debug "Default handle message was called. This may be a bug." typeof(message)
 end
 
 """

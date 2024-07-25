@@ -12,8 +12,7 @@ export TaskData,
     schedule,
     Scheduler,
     AbstractScheduler,
-    Clock,
-    continue_tasks
+    Clock
 
 using Dates
 using ConcurrentCollections
