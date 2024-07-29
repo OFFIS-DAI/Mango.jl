@@ -1,5 +1,5 @@
 export Role,
-    handle_message, handle_event, RoleContext, @role, @shared, subscribe_message, subscribe_send, bind_context, emit_event, get_model, subscribe_event, address, setup
+    handle_message, handle_event, RoleContext, @role, @shared, subscribe_message, subscribe_send, bind_context, emit_event, get_model, subscribe_event, address, setup, on_ready, on_start
 
 
 """
@@ -180,6 +180,24 @@ agent.
 """
 function shutdown(role::Role)
     # default nothing
+end
+
+
+"""
+Lifecycle Hook-in function called when the container of the agent has been started,
+depending on the container type it may not be called (if there is no start at all, 
+f.e. the simulation container)
+"""
+function on_start(role::Role)
+    # do nothing by default
+end
+
+"""
+Lifecycle Hook-in function called when the agent system as a whole is ready, the 
+hook-in has to be manually activated using notify_ready(container::Container)
+"""
+function on_ready(role::Role)
+    # do nothing by default
 end
 
 """

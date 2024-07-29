@@ -1,4 +1,4 @@
-export Container, register, send_message, start, shutdown, protocol_addr
+export Container, register, send_message, start, shutdown, protocol_addr, notify_ready
 
 using Parameters
 using OrderedCollections
@@ -73,6 +73,18 @@ function start(container::Container)
             () -> container.shutdown,
             (msg_data, sender_addr; receivers=nothing) -> process_message(container, msg_data, sender_addr; receivers=receivers),
         )
+    end
+    for agent in values(container.agents)
+        notify_start(agent)
+    end
+end
+
+"""
+Mark the agent system as ready, needs to be detected and called manually!
+"""
+function notify_ready(container::Container)
+    for agent in values(container.agents)
+        notify_ready(agent)
     end
 end
 
