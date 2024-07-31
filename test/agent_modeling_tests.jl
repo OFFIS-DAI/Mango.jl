@@ -67,7 +67,7 @@ end
     agent = ModellingMovingAgent(given_target, given_initial, given_initial)
     register(container, agent)
 
-    stepping_result = step_simulation(container,1)
+    stepping_result = step_simulation(container, 1)
 
     shutdown(container)
 

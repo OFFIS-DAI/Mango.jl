@@ -82,12 +82,13 @@ macro role(struct_def)
         struct_field = struct_fields[i]
         name = struct_field.args[1]
         if name == Symbol("@shared")
-            field = struct_field.args[3]
-            field_name = field.args[1]
-            field_type = field.args[2]
+            struct_field = struct_fields[i+1]
+            field_name = struct_field.args[1]
+            field_type = struct_field.args[2]
             new_expr_decl = Expr(:(::), field_name, field_type)
             push!(new_struct_fields, new_expr_decl)
             push!(shared_names, Expr(:tuple, String(field_name), field_type))
+            deleteat!(modified_struct_fields, i+1)
             deleteat!(modified_struct_fields, i)
         end
     end
