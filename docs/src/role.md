@@ -56,7 +56,7 @@ end
 ### Event system
 
 
-Roles can emit events using `emit_event(role, event::Any, event_type::Any=nothing)`. If `event_type` is nothing, the type of `event` will be used as event_type. To handle these events roles can subscribe using `subscribe_event(role, event_type::Any, event_handler::Function, condition::Function)` or add a method to `handle_event`. The condition function shall have the signature `(source_role::Role, event::Any)::Boolean`. The event handler shall have the signature `(role::Role, source::Role, event::Any, event_type::Any)`.
+Roles can emit events using `emit_event(role, event::Any, event_type::Any=nothing)`. If `event_type` is nothing, the type of `event` will be used as `event_type`. To handle these events roles can subscribe using `subscribe_event(role, event_type::Any, event_handler::Function, condition::Function)` or add a method to `handle_event`. The condition function shall have the signature `(source_role::Role, event::Any)::Boolean`. The event handler shall have the signature `(role::Role, source::Role, event::Any, event_type::Any)`.
 
 ```julia
 
