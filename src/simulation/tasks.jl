@@ -43,7 +43,7 @@ struct WaitResult
     result::Any
 end
 
-function determine_next_event_time(scheduler::SimulationScheduler, simulation_time::DateTime)
+function determine_next_event_time_with(scheduler::SimulationScheduler, simulation_time::DateTime)
     lowest = nothing
 
     # normal queue
@@ -52,10 +52,7 @@ function determine_next_event_time(scheduler::SimulationScheduler, simulation_ti
         if isa(next.value, Tuple)
             return 0
         else
-            t = scheduler.events[next.value][2]
-            if isnothing(lowest) || t < lowest
-                lowest = t
-            end
+            throw("This should not happen! Did you schedule a task with zero sleep time?")
         end
         next = next.next
     end
@@ -138,8 +135,8 @@ end
     agent_schedulers::Vector{SimulationScheduler} = Vector{SimulationScheduler}()
 end
 
-function determine_next_event_time(task_sim::TaskSimulation)
-    event_times = [determine_next_event_time(scheduler, task_sim.clock.simulation_time) for scheduler in task_sim.agent_schedulers]
+function determine_next_event_time(task_sim::SimpleTaskSimulation)
+    event_times = [determine_next_event_time_with(scheduler, task_sim.clock.simulation_time) for scheduler in task_sim.agent_schedulers]
     event_times = event_times[event_times.!=nothing]
     if length(event_times) <= 0
         return nothing

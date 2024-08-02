@@ -24,6 +24,12 @@ function create_simulation_container(start_time::DateTime; communication_sim::Un
     return container
 end
 
+struct MessageData
+    content::Any
+    meta::AbstractDict
+    arriving_time::DateTime
+end
+
 @kwdef mutable struct SimulationContainer <: ContainerInterface
     world::World=World()
     clock::Clock=Clock(DateTime(0))
@@ -32,7 +38,7 @@ end
     agent_counter::Integer = 0
     shutdown::Bool = false
     communication_sim::CommunicationSimulation = SimpleCommunicationSimulation()
-    message_queue::ConcurrentQueue{Tuple{Any,AbstractDict,DateTime}} = ConcurrentQueue{Tuple{Any,AbstractDict,DateTime}}()
+    message_queue::ConcurrentQueue{MessageData} = ConcurrentQueue{MessageData}()
 end
 
 function on_step(agent::Agent, world::World, clock::Clock, step_size_s::Real)
@@ -68,31 +74,31 @@ struct SimulationResult
     simulation_step_size_s::Real
 end
 
-function to_message_package(message_tuple::Tuple{Any, AbstractDict}, simulation_time::DateTime)::MessagePackage
-    sender_aid = message_tuple[2][SENDER_ID]
-    receiver_aid = message_tuple[2][RECEIVER_ID]
-    return MessagePackage(sender_aid, receiver_aid, simulation_time, message_tuple)
+function to_message_package(message_data::MessageData)::MessagePackage
+    sender_aid = message_data.meta[SENDER_ID]
+    receiver_aid = message_data.meta[RECEIVER_ID]
+    return MessagePackage(sender_aid, receiver_aid, message_data.arriving_time, (message_data.content, message_data.meta))
 end
 
-function to_cs_input!(message_queue::ConcurrentQueue{Tuple{Any,AbstractDict,DateTime}})::Vector{MessagePackage}
+function to_cs_input!(message_queue::ConcurrentQueue{MessageData})::Vector{MessagePackage}
     messages_packages = Vector()
     while true
-        message = maybepopfirst!(message_queue)
-        if isnothing(message)
+        some_message = maybepopfirst!(message_queue)
+        if isnothing(some_message)
             break
         end
-        content, meta, time = something(message)
-        push!(messages_packages, to_message_package((content, meta), time))
+        message::MessageData = something(some_message)
+        push!(messages_packages, to_message_package(message))
     end
     return messages_packages
 end
 
-function to_cs_input(message_queue::ConcurrentQueue{Tuple{Any,AbstractDict,DateTime}})::Vector{MessagePackage}
+function to_cs_input(message_queue::ConcurrentQueue{MessageData})::Vector{MessagePackage}
     messages_packages = Vector()
     next = message_queue.head.next
     while !isnothing(next)
-        content, meta, time = next.value
-        push!(messages_packages, to_message_package((content, meta), time))
+        message::MessageData = next.value
+        push!(messages_packages, to_message_package(message))
         next = next.next
     end
     return messages_packages
@@ -117,7 +123,7 @@ function cs_step_iteration(container::SimulationContainer,
                 Threads.@spawn process_message(container, mp.content[1], mp.content[2])
             else
                 # process it later
-                push!(container.message_queue, (mp.content[1], mp.content[2], mp.sent_date))
+                push!(container.message_queue, MessageData(mp.content[1], mp.content[2], mp.sent_date))
             end
         end
     end
@@ -285,7 +291,7 @@ At this point it has already been evaluated the message has to be routed to an a
 the container. 
 """
 function forward_message(container::SimulationContainer, msg::Any, meta::AbstractDict)
-    push!(container.message_queue, (msg, meta, container.clock.simulation_time))
+    push!(container.message_queue, MessageData(msg, meta, container.clock.simulation_time))
 end
 
 """

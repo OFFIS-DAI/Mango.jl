@@ -362,3 +362,19 @@ end
     @test agent2.counter == 2
     @test agent2.scheduled_counter == 200
 end
+
+import Mango
+
+@testset "SimulationSchedulerDetermineError" begin
+    s = SimulationScheduler(clock=Clock(DateTime(0)))
+    push!(s.queue, Task(""))
+
+    @test_throws "This should not happen! Did you schedule a task with zero sleep time?" Mango.determine_next_event_time_with(s, DateTime(0))
+end
+
+struct TestTaskSim <: TaskSimulation
+end
+
+@testset "SimulationSchedulerDetermineNoImplent" begin
+    @test_throws "Please implement determine_next_event_time(...)" Mango.determine_next_event_time(TestTaskSim())
+end
