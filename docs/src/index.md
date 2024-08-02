@@ -10,7 +10,11 @@ Mango.jl as a package is partly based on the ideas of [mango-agents](https://man
 * Container mechanism to speedup local message exchange
 * Structuring complex agents with loose coupling and agent roles
 * Built-in codecs
-* Supports communication between agents directly via TCP
+* Supports communication between agents directly via TCP and MQTT
+* Built-in tasks mechanisms for proactive agent actions
+* Continous and discrete stepping simulation using an external clock to rapidly run and inspect simulations designed for longer time-spans
+  * Integrated communication and task simulation modules
+  * Integrated environment with which the agents can interact in a common space
 
 ## Development state
 Mango.jl is in an early development state. Feel free to try out the framework if you are interested and be aware that there might be some unexpected edges here and there.
