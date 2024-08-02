@@ -37,7 +37,7 @@ Agents can have multiple roles associated with them. Roles can be added using th
 ```julia
 using Mango
 
-# Define your agent struct using @agent macro
+# Define your role struct using @role macro
 @role struct MyRole
     my_own_field::String
 end
@@ -61,11 +61,11 @@ add(my_agent, role2)
 # Now you can interact with the roles as needed
 ```
 
-Additionally, roles can define the `setup` function to define actions to take when the roles are added to the agent. It is also possible to subscribe to specific messages using a boolean expression with the `subscribe(role::Role, handler::Function, condition::Function)` function. With the @role macro, the role context is added to the role, which contains the reference to the agent. However, it is recommended to use the equivalent methods defined on the role to execute actions like scheduling and sending messages.
+For more information on roles, take a look at [Role definition](@ref)
 
 ## 3. Message Handling
 
-Agents and Roles can handle incoming messages through the `handle_message` function. By default, it does nothing, but you can override it to define message-specific behavior. You can also add custom message handlers for specific roles using the `subscribe_handle` function. Here's how to handle messages:
+Agents and Roles can handle incoming messages through the `handle_message` function. By default, it does nothing, but you can override it to define message-specific behavior. You can also add custom message handlers for specific roles using the `subscribe_message` function. Here's how to handle messages:
 
 ```julia
 using Mango
@@ -109,7 +109,7 @@ send_message(agent, "Message", AgentAddress("receiver_id", "receiver_addr", "opt
 send_message(role, "Message", AgentAddress("receiver_id", "receiver_addr", "optional tracking id"))
 ```
 
-Further, there are two specialized methods for sending methods, (1) `send_tracked_message` and (2) `reply_to`.
+Further, there are two specialized methods for sending messages, (1) `send_tracked_message` and (2) `reply_to`.
 
 (1) This function can be used to send a message with an automatically generated tracking id (uuid1) and it also accepts a response handler, which will
     automatically be called when a response arrives to the tracked message (care to include the tracking id when responding or just use `reply_to`).

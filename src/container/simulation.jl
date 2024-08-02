@@ -35,7 +35,7 @@ end
     message_queue::ConcurrentQueue{Tuple{Any,AbstractDict,DateTime}} = ConcurrentQueue{Tuple{Any,AbstractDict,DateTime}}()
 end
 
-function on_step(role::Agent, world::World, clock::Clock, step_size_s::Real)
+function on_step(agent::Agent, world::World, clock::Clock, step_size_s::Real)
     # default nothing
 end
 

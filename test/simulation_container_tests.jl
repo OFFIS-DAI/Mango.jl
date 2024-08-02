@@ -259,12 +259,7 @@ function handle_message(agent::MoreComplexSimSchedulingAgent, message::Any, meta
     end
 end
 
-@testset "SimulationWithSpecificDelaysAndScheduledTasksWithReplyOnHandle" begin
-    #=
-    using Logging
-    debug_logger = ConsoleLogger(stderr, Logging.Debug)
-    global_logger(debug_logger)
-    =#
+@testset "SimulationWithSpecificDelaysWithReplyOnHandle" begin
 
     com_sim = SimpleCommunicationSimulation(default_delay_s=0)
     container = create_simulation_container(DateTime(0), communication_sim=com_sim)
@@ -296,12 +291,7 @@ end
     @test agent2.scheduled_counter == 200
 end
 
-@testset "SimulationWithSpecificDelaysAndScheduledTasksWithReplyOnHandleDiscreteEvent" begin
-    #=
-    using Logging
-    debug_logger = ConsoleLogger(stderr, Logging.Debug)
-    global_logger(debug_logger)
-    =#
+@testset "SimulationWithSpecificDelaysWithReplyOnHandleDiscreteEvent" begin
 
     com_sim = SimpleCommunicationSimulation(default_delay_s=0)
     container = create_simulation_container(DateTime(0), communication_sim=com_sim)
