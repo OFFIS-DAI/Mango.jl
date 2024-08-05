@@ -10,6 +10,8 @@ makedocs(
         "Getting Started"=>"getting_started.md",
         "Agents"=>"agent.md",
         "Container"=>"container.md",
+        "Roles"=>"role.md",
+        "Simulation"=>"simulation.md",
         "Codecs"=>"encode_decode.md",
         "Scheduling"=>"scheduling.md",
         "Legals"=>"legals.md",],

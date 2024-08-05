@@ -13,7 +13,7 @@ function count_nodes(queue::ConcurrentQueue{T})::Real where T
     return count
 end
 
-function add_seconds(date_time::DateTime, inc_s::Real)
+function add_seconds(date_time::DateTime, inc_s::Real)::DateTime
     return date_time + Millisecond(trunc(Int, inc_s*1000))
 end
 

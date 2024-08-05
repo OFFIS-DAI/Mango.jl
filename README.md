@@ -1,17 +1,22 @@
 
+<p align="center">
+
 ![logo](docs/src/Logo_mango_ohne_sub.svg#gh-light-mode-only)
 ![logo](docs/src/Logo_mango_ohne_sub_white.svg#gh-dark-mode-only)
 
-[Docs](https://offis-dai.github.io/Mango.jl/stable)
-| [Gitlab](https://github.com/OFFIS-DAI/Mango.jl) | [mail](mailto:mango@offis.de)
+</p>
 
-**Note:** _This project is still in an early development stage. 
-We appreciate constructive feedback and suggestions for improvement._
+[Docs](https://offis-dai.github.io/Mango.jl/stable)
+| [GitHub](https://github.com/OFFIS-DAI/Mango.jl) | [mail](mailto:mango@offis.de)
+
 <!-- Tidyverse lifecycle badges, see https://www.tidyverse.org/lifecycle/ Uncomment or delete as needed. -->
-![lifecycle](https://img.shields.io/badge/lifecycle-experimental-orange.svg)
-[![codecov](https://codecov.io/gh/OFFIS-DAI/Mango.jl/graph/badge.svg?token=JRZB5T2T2M)](https://codecov.io/gh/OFFIS-DAI/Mango.jl)
-<!--
 ![lifecycle](https://img.shields.io/badge/lifecycle-maturing-blue.svg)
+[![MIT License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/OFFIS-DAI/Mango.jl/blob/development/LICENSE)
+[![Test Mango.jl](https://github.com/OFFIS-DAI/Mango.jl/actions/workflows/test-mango.yml/badge.svg)](https://github.com/OFFIS-DAI/Mango.jl/actions/workflows/test-mango.yml)
+[![codecov](https://codecov.io/gh/OFFIS-DAI/Mango.jl/graph/badge.svg?token=JRZB5T2T2M)](https://codecov.io/gh/OFFIS-DAI/Mango.jl)
+
+<!--
+![lifecycle](https://img.shields.io/badge/lifecycle-experimental-orange.svg)
 ![lifecycle](https://img.shields.io/badge/lifecycle-stable-green.svg)
 ![lifecycle](https://img.shields.io/badge/lifecycle-retired-orange.svg)
 ![lifecycle](https://img.shields.io/badge/lifecycle-archived-red.svg)
@@ -20,15 +25,23 @@ We appreciate constructive feedback and suggestions for improvement._
 
 
 
-Mango.jl allows the user to create simple agents with little effort and in the same time offers options to structure agents with complex behaviour. The main features of mango are listed below. 
+Mango.jl allows the user to create simple agents with little effort and in the same time offers options to structure agents with complex behaviour.
+
+The agents agents can run in two different ways: in **real-time**, or **simulated**. In real-time, the agents will run as fast as possible and communicate as specified by the protocol ("they run as developed"). In the simulation mode, the agent system and their specified tasks will be scheduled and stepped (continous or discrete) and the communication will be simulated using articial delays. One big unique characteristic of Mango.jl is that both ways use the same agent-api, meaning you can develop, evaluate your agent system in a controlled simulated environment and then transfer it to a real-time setting without (majorly) changing the implementation of your agents, as both execution ways use the same API with different environments (and containers).
+
+**Note:** _This project is still in an early development stage. 
+We appreciate constructive feedback and suggestions for improvement._
 
 ## Features
+
 * Container mechanism to speedup local message exchange
 * Structuring complex agents with loose coupling and agent roles
 * Built-in codecs
 * Supports communication between agents directly via TCP and MQTT
 * Built-in tasks mechanisms for proactive agent actions
-* Discrete stepping simulation using an external clock to rapidly run simulations over a long time-span
+* Continous and discrete stepping simulation using an external clock to rapidly run and inspect simulations designed for longer time-spans
+  * Integrated communication and task simulation modules
+  * Integrated environment with which the agents can interact in a common space
 
 ## Example
 

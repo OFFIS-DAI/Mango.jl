@@ -12,8 +12,7 @@ export TaskData,
     schedule,
     Scheduler,
     AbstractScheduler,
-    Clock,
-    continue_tasks
+    Clock
 
 using Dates
 using ConcurrentCollections
@@ -75,10 +74,11 @@ end
 
 mutable struct PeriodicTaskData <: TaskData
     interval_s::Real
+    condition::Function
     timer::Timer
 
-    function PeriodicTaskData(interval_s::Real)
-        return new(interval_s, Timer(interval_s; interval=interval_s))
+    function PeriodicTaskData(interval_s::Real, condition::Function=()->true)
+        return new(interval_s, condition, Timer(interval_s; interval=interval_s))
     end
 end
 
@@ -106,7 +106,7 @@ struct ConditionalTaskData <: TaskData
 end
 
 function execute_task(f::Function, scheduler::AbstractScheduler, data::PeriodicTaskData)
-    while true
+    while data.condition()
         f()
         wait(scheduler, data.timer, data.interval_s)
     end

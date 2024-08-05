@@ -84,7 +84,8 @@ struct SharedTestEvent
 end
 
 @role struct SharedFieldTestRole
-    @shared shared_event::SharedTestEvent
+    @shared 
+    shared_event::SharedTestEvent
 end
 
 @testset "SharedFieldTestRole" begin
@@ -102,8 +103,10 @@ struct SharedTestEvent2
 end
 
 @role struct SharedFieldsTestRole
-    @shared shared_event::SharedTestEvent
-    @shared shared_event2::SharedTestEvent2
+    @shared 
+    shared_event::SharedTestEvent
+    @shared 
+    shared_event2::SharedTestEvent2
 end
 
 

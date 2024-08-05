@@ -10,4 +10,5 @@ using Test
     include("simulation_container_tests.jl")
     include("examples.jl")
     include("tcp_protocol_tests.jl")
+    include("agent_modeling_tests.jl")
 end

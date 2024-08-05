@@ -25,6 +25,9 @@ end
 function step_iteration(task_sim::TaskSimulation, step_size_s::Real)::TaskIterationResult 
     throw(ErrorException("Please implement step_iteration(...)"))
 end
+function determine_next_event_time(task_sim::TaskSimulation)
+    throw(ErrorException("Please implement determine_next_event_time(...)"))
+end
 
 # Scheduler Definition
 @kwdef struct SimulationScheduler <: AbstractScheduler
@@ -40,6 +43,34 @@ struct WaitResult
     result::Any
 end
 
+function determine_next_event_time_with(scheduler::SimulationScheduler, simulation_time::DateTime)
+    lowest = nothing
+
+    # normal queue
+    next = scheduler.queue.head.next
+    while !isnothing(next)
+        if isa(next.value, Tuple)
+            return 0
+        else
+            throw("This should not happen! Did you schedule a task with zero sleep time?")
+        end
+        next = next.next
+    end
+
+    # wait queue
+    next = scheduler.wait_queue.head.next
+    while !isnothing(next)
+        t = scheduler.events[next.value][2]
+        if isnothing(lowest) || t < lowest
+            lowest = t
+        end
+        next = next.next
+    end
+    if isnothing(lowest)
+        return nothing
+    end
+    return (lowest - simulation_time).value/1000
+end
 
 function wait_for_finish_or_sleeping(scheduler::SimulationScheduler, task::Task, step_size_s::Real, timeout_s::Real=10, check_delay_s=0.001)::WaitResult 
     remaining = timeout_s
@@ -102,6 +133,15 @@ end
 @kwdef mutable struct SimpleTaskSimulation <: TaskSimulation
     clock::Clock
     agent_schedulers::Vector{SimulationScheduler} = Vector{SimulationScheduler}()
+end
+
+function determine_next_event_time(task_sim::SimpleTaskSimulation)
+    event_times = [determine_next_event_time_with(scheduler, task_sim.clock.simulation_time) for scheduler in task_sim.agent_schedulers]
+    event_times = event_times[event_times.!=nothing]
+    if length(event_times) <= 0
+        return nothing
+    end
+    return findmin(event_times)[1]
 end
 
 function create_agent_scheduler(task_sim::SimpleTaskSimulation)
