@@ -1,4 +1,4 @@
-export Container, register, send_message, start, shutdown, protocol_addr
+export Container, register, send_message, start, shutdown, protocol_addr, notify_ready
 
 using Parameters
 using OrderedCollections
@@ -74,6 +74,18 @@ function start(container::Container)
             (msg_data, sender_addr; receivers=nothing) -> process_message(container, msg_data, sender_addr; receivers=receivers),
         )
     end
+    for agent in values(container.agents)
+        notify_start(agent)
+    end
+end
+
+"""
+Mark the agent system as ready, needs to be detected and called manually!
+"""
+function notify_ready(container::Container)
+    for agent in values(container.agents)
+        notify_ready(agent)
+    end
 end
 
 """
@@ -81,9 +93,13 @@ Shut down the container. It is always necessary to call it for freeing bound res
 """
 function shutdown(container::Container)
     container.shutdown = true
-    close(container.protocol)
-    for task in container.tasks
-        wait(task)
+    if !isnothing(container.protocol)
+        close(container.protocol)
+    end
+    if !isnothing(container.tasks)
+        for task in container.tasks
+            wait(task)
+        end
     end
 
     for agent in values(container.agents)
@@ -149,6 +165,7 @@ function forward_message(container::Container, msg::Any, meta::AbstractDict; rec
                 @warn "Container $(container.agents) has no agent with id: $receiver"
             else
                 agent = container.agents[receiver]
+                @debug "Dispatch a message to agent $(aid(agent))" typeof(msg) get(meta, SENDER_ID, "") protocol_addr(container)
                 push!(send_tasks, Threads.@spawn dispatch_message(agent, msg, meta))
             end
         end
@@ -201,6 +218,8 @@ function send_message(
     if isnothing(receiver_addr) || receiver_addr == id(container.protocol)
         return forward_message(container, content, meta)
     end
+
+    @debug "Send a message to ($receiver_id, $receiver_addr), from $sender_id" typeof(content)
 
     return Threads.@spawn send(
         container.protocol,

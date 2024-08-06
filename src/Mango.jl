@@ -11,11 +11,11 @@ include("container/api.jl")
 include("agent/api.jl")
 include("agent/role.jl")
 include("agent/core.jl")
+include("world/core.jl")
 
 include("container/protocol.jl")
 include("container/tcp.jl")
 include("container/mqtt.jl")
-
 
 include("simulation/communication.jl")
 include("simulation/tasks.jl")

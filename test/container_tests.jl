@@ -5,7 +5,7 @@ using Sockets: InetAddr, @ip_str
 using Base.Threads
 using OrderedCollections
 
-import Mango.handle_message
+import Mango.handle_message, Mango.on_start, Mango.on_ready
 
 
 function handle_message(agent::MyAgent, message::Any, meta::AbstractDict)
@@ -158,4 +158,40 @@ end
 
     @test responding_agent.counter == 10
     @test tracked_agent.counter == 1337
+end
+
+
+@agent struct MyHookedAgent
+    counter::Integer
+end
+@role struct MyHookedRole
+    counter::Integer
+end
+function on_start(agent::MyHookedAgent)
+    agent.counter += 1
+end
+function on_ready(agent::MyHookedAgent)
+    agent.counter += 10
+end
+function on_start(role::MyHookedRole)
+    role.counter += 1
+end
+function on_ready(role::MyHookedRole)
+    role.counter += 10
+end
+@testset "ContainerTestHookIns" begin
+
+    container = Container()
+
+    hooked_agent = MyHookedAgent(0)
+    hooked_role = MyHookedRole(0)
+    add(hooked_agent, hooked_role)
+
+    register(container, hooked_agent)
+
+    wait(Threads.@spawn start(container))
+    notify_ready(container)
+
+    @test hooked_agent.counter == 11
+    @test hooked_role.counter == 11
 end

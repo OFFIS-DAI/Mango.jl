@@ -6,7 +6,9 @@ export @agent,
     add,
     schedule,
     stop_and_wait_for_all_tasks,
-    shutdown
+    shutdown,
+    on_ready,
+    on_start
 
 using UUIDs
 
@@ -141,6 +143,7 @@ function dispatch_message(agent::Agent, message::Any, meta::AbstractDict)
     lock(agent.lock) do
         if haskey(meta, TRACKING_ID) && haskey(agent.transaction_handler, meta[TRACKING_ID])
             caller, response_handler = agent.transaction_handler[meta[TRACKING_ID]]
+            delete!(agent.transaction_handler, meta[TRACKING_ID])
             response_handler(caller, message, meta)
         else
             for role in agent.role_handler.roles
@@ -163,7 +166,37 @@ the multiple dispatch of julia).
 """
 function handle_message(agent::Agent, message::Any, meta::Any)
     # do nothing by default
-    @warn "Default handle message was called. This may be a bug."
+end
+
+function notify_start(agent::Agent)
+    on_start(agent)
+    for role in roles(agent)
+        on_start(role)
+    end
+end
+
+function notify_ready(agent::Agent)
+    on_ready(agent)
+    for role in roles(agent)
+        on_ready(role)
+    end
+end
+
+"""
+Lifecycle Hook-in function called when the container of the agent has been started,
+depending on the container type it may not be called (if there is no start at all, 
+f.e. the simulation container)
+"""
+function on_start(agent::Agent)
+    # do nothing by default
+end
+
+"""
+Lifecycle Hook-in function called when the agent system as a whole is ready, the 
+hook-in has to be manually activated using notify_ready(container::Container)
+"""
+function on_ready(agent::Agent)
+    # do nothing by default
 end
 
 """
