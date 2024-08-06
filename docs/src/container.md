@@ -91,8 +91,8 @@ container2.protocol = TCPProtocol(address=InetAddr(ip"127.0.0.2", 2940))
 ```
 
 
-## 7. MQTT
-### 1. Introduction
+## MQTT
+### Introduction
 The MQTT protocol enables sending via an MQTT message broker.
 It allows a container to subscribe to different topics on a broker and publish messages to them.
 
@@ -100,7 +100,7 @@ Currently, one container may only connect to a single broker.
 Subscribed topics for each agent are set on agent registration and tracked by the container.
 Incoming messages on these topics are distributed to the subscribing agents by the container.
 
-### 2. MQTTProtocol Struct 
+### MQTTProtocol Struct 
 The MQTTProtocol contains the status and channels of the underlying mosquitto C library (as abstracted to Julia by the Mosquitto.jl package).
 
 The constructor takes a `client_id` and the `broker_addr`.
@@ -110,7 +110,7 @@ Internally it also tracks the `msg_channel` and `conn_channel`, internal flags, 
 - `client_id` - `String` id the container will communicate to the MQTT broker.
 - `broker_addr` - `InetAddr` of the MQTT broker
 
-### 3. Usage
+### Usage
 
 To use the mqtt protocol you need to construct a MQTTProtocol struct and assign it to the `protocol` field in the container.
 
