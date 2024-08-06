@@ -141,15 +141,15 @@ end
     wait(Threads.@spawn start(container))
     wait(Threads.@spawn start(container2))
 
-    wait(send_tracked_message(tracked_agent, "Hello Agent, this is DialogRico", AgentAddress(aid=responding_agent.aid, address=InetAddr(ip"127.0.0.1", 2939)); 
-                              response_handler=handle_response))
+    wait(send_tracked_message(tracked_agent, "Hello Agent, this is DialogRico", AgentAddress(aid=responding_agent.aid, address=InetAddr(ip"127.0.0.1", 2939));
+        response_handler=handle_response))
 
     wait(Threads.@spawn begin
         while tracked_agent.counter == 0
             sleep(1)
         end
     end)
-                              
+
     @sync begin
         Threads.@spawn shutdown(container)
         Threads.@spawn shutdown(container2)
@@ -179,6 +179,7 @@ end
 function on_ready(role::MyHookedRole)
     role.counter += 10
 end
+
 @testset "ContainerTestHookIns" begin
 
     container = Container()
@@ -194,4 +195,23 @@ end
 
     @test hooked_agent.counter == 11
     @test hooked_role.counter == 11
+end
+
+@testset "ContainerUnknownAgentForward" begin
+    c1_addr = InetAddr(ip"127.0.0.1", 5555)
+    c1 = Container()
+    c1.protocol = TCPProtocol(address=c1_addr)
+
+    wait(Threads.@spawn start(c1))
+
+    unknown_addr = AgentAddress("unknown", c1_addr, nothing)
+
+    # send some messages
+    wait(send_message(c1, "hello", unknown_addr))
+
+    # we only care that this does not throw an exception
+    @test true
+
+    # stop container loop
+    wait(Threads.@spawn shutdown(c1))
 end

@@ -55,7 +55,7 @@ end
 """
 Get protocol addr part
 """
-function protocol_addr(container::Container) 
+function protocol_addr(container::Container)
     if isnothing(container.protocol)
         return nothing
     end
@@ -154,7 +154,7 @@ function forward_message(container::Container, msg::Any, meta::AbstractDict; rec
     if isnothing(receivers)
         receivers = RECEIVER_ID in keys(meta) ? [meta[RECEIVER_ID]] : nothing
     end
-    
+
     send_tasks = []
 
     if isnothing(receivers)
@@ -173,6 +173,12 @@ function forward_message(container::Container, msg::Any, meta::AbstractDict; rec
 
     # return the single wait task syncing all sends 
     # so we can wait for the full message action to be done outside
+    if isempty(send_tasks)
+        # return an empty finished task so this function
+        # can always be waited on
+        return @async begin end
+    end
+
     return @sync(send_tasks)[1]
 end
 
