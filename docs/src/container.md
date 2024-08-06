@@ -89,3 +89,42 @@ To use the tcp protocol you need to construct a TCPProtocol struct and assign it
 container2 = Container()
 container2.protocol = TCPProtocol(address=InetAddr(ip"127.0.0.2", 2940))
 ```
+
+
+## MQTT
+### Introduction
+The MQTT protocol enables sending via an MQTT message broker.
+It allows a container to subscribe to different topics on a broker and publish messages to them.
+
+Currently, one container may only connect to a single broker.
+Subscribed topics for each agent are set on agent registration and tracked by the container.
+Incoming messages on these topics are distributed to the subscribing agents by the container.
+
+### MQTTProtocol Struct 
+The MQTTProtocol contains the status and channels of the underlying mosquitto C library (as abstracted to Julia by the Mosquitto.jl package).
+
+The constructor takes a `client_id` and the `broker_addr`.
+Internally it also tracks the `msg_channel` and `conn_channel`, internal flags, the information to map topics to subscribing agents.
+
+`protocol = MQTTProtocol(cliant_id, broker_addr)`
+- `client_id` - `String` id the container will communicate to the MQTT broker.
+- `broker_addr` - `InetAddr` of the MQTT broker
+
+### Usage
+
+To use the mqtt protocol you need to construct a MQTTProtocol struct and assign it to the `protocol` field in the container.
+
+```julia
+container2 = Container()
+container2.protocol = MQTTProtocol("my_id", InetAddr(ip"127.0.0.2", 2940))
+```
+
+Subscribing an agent to a topic can happen only as registration time and is not allowed otherwise.
+When registering a new agent to the container the topics to subscribe are passed by the `topics` keyword argument, taking a collection of `String` topic names.
+NOTE: It is recommended you pass a `Vector{String}` as this is what is tested. 
+Other collections could work but no guarantees are given.
+
+```julia
+a1 = MyAgent(0)
+register(c1, a1; topics=["topic1", "topic2"])
+```
