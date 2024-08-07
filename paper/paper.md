@@ -63,7 +63,7 @@ This is especially relevant in the energy domain, where an increasing amount of 
 Large scale multi-agent simulations allow studying the behavior of these participants in energy markets and grid simulations.
 
 The Python version of `mango` has already been succesfully applied to various research areas in the energy domain, including coalition formation in multi-energy networks [@schrage:2023], distributed market participation of battery storage units [@tiemann:2022], distributed black start [@stark:2021], and investigating the impact of communication topologies on distributed optimization heuristics [@holly:2021].
-New Julia-based projects using `Mango.jl` are currently in active development.
+New Julia-based projects using `Mango.jl` are in active development.
 
 # Related Frameworks
 To our knowledge, there is no julia-based multi-agent framework with a focus on agent communication and distributed operation like `Mango.jl`.
@@ -78,8 +78,8 @@ The agentframework [@agentframework:2022] is based on JavaScript and has less fo
 Lastly, the original Python version of mango [@Schrage:2024] is of course most similar in scope but makes it more difficult to write high performance simulations due to the use of `asyncio` and the lack of native multi-threading in Python.
 
 
-# Software Description
-TODO: was soll hier noch hin, was nicht nur "read the docs" ist?
+# Code Example
+
 
 
 
