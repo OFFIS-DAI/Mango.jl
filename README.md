@@ -43,6 +43,26 @@ We appreciate constructive feedback and suggestions for improvement._
   * Integrated communication and task simulation modules
   * Integrated environment with which the agents can interact in a common space
 
+## Installation
+`Mango.jl` is registered to JuliaHub.
+To add it to your Julia installation or project you can use the Julia REPL by calling `]add Mango` or `import Pkg; Pkg.add("Mango")` directly:
+
+```
+> julia --project=.                                                         ✔ 
+               _
+   _       _ _(_)_     |  Documentation: https://docs.julialang.org
+  (_)     | (_) (_)    |
+   _ _   _| |_  __ _   |  Type "?" for help, "]?" for Pkg help.
+  | | | | | | |/ _` |  |
+  | | |_| | | | (_| |  |  Version 1.10.4 (2024-06-04)
+ _/ |\__'_|_|_|\__'_|  |  
+|__/                   |
+
+(project_name) pkg> add Mango
+    Updating registry at `~/.julia/registries/General.toml`
+    [...]
+```
+
 ## Example
 
 The following simple showcase demonstrates how you can define agents in Mango. Jl, assign them to containers and send messages via a TCP connection. For more information on the specifics and other features (e.g. MQTT, modular agent using roles, simulation, tasks), please have a look at our [Documentation](https://offis-dai.github.io/Mango.jl/stable)!
