@@ -3,7 +3,6 @@ export TaskIterationResult, TaskResult, TaskSimulation, create_agent_scheduler, 
 using UUIDs
 using Dates
 using ConcurrentCollections
-using Bijections
 
 # Interface Definition
 struct TaskResult

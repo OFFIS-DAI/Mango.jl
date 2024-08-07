@@ -1,7 +1,6 @@
 using Mango
 using Test
 using Parameters
-using TestItems
 using Sockets: InetAddr, @ip_str
 
 import Mango.handle_message
