@@ -32,7 +32,7 @@ bibliography: paper.bib
 # Summary
 Multi-agent simulations are inherently complex, making them difficult to implement, maintain, and optimize.
 An agent, as defined by [@russel:2010], is software that perceives its environment through sensors and acts upon it using actuators.
-`Mango.jl` is a simulation framework for multi-agent systems implemented in Julia.
+`Mango.jl` is a simulation framework for multi-agent systems implemented in Julia [@julia:2017].
 It enables quick implementations of multiple communicating agents, either spanning multiple devices or in a single local environment.
 
 For the design process, `Mango.jl` provides a general structure and a role concept to help develop modular and loosely coupled agents.
