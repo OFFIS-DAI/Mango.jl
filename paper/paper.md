@@ -44,7 +44,7 @@ Messages may be sent directly via TCP connections or indirectly using an MQTT br
 This way, `Mango.jl` makes it easy to set up multi-agent simulations on spanning multiple hardware devices.
 
 Mango agents can run either in real-time or using simulated time with either discrete event or stepped time versions.
-This is useful for simulations where simulated time should run much faster than real-time.
+This is useful for simulations where simulated time should run much faster than real-time. These non real-time simulation modes also enables the user to simulate the communication to e.g. validate the robustness of multi-agent systems against communication issues.
 
 
 
