@@ -57,7 +57,7 @@ Thus, a structured development framework to aid this process is a valuable asset
 
 While `Mango.jl` is a general purpose multi-agent framework, we will focus on energy systems in the following as this is the domain the authors are most familiar with.
 
-Many of the ideas for `Mango.jl` are based on the existing Python framework `mango` [@Schrage:2024]. 
+Many of the ideas for `Mango.jl` are based on the existing Python framework `mango` [@schrage:2024]. 
 The main reason for this julia-based version is to allow better focus on simulation performance, enabling larger scales of multi-agent simulations.
 This is especially relevant in the energy domain, where an increasing amount of energy resources (e.g. batteries and PV-generators) have distributed ownership, competing goals and contribute to the same power grid.
 Large scale multi-agent simulations allow studying the behavior of these participants in energy markets and grid simulations.
@@ -75,7 +75,7 @@ These have a different scope than `Mango.jl` which is more focused on agent comm
 JADE [@JADE:2001] and JIAC [@jiac:2013] are Java frameworks of similar scope but are not actively developed anymore. 
 JACK [@jack:2005] provides a language and tools to implement communicating agents but is discontinued and proprietary.
 The agentframework [@agentframework:2022] is based on JavaScript and has less focus on communication than `Mango.jl`.
-Lastly, the original Python version of mango [@Schrage:2024] is of course most similar in scope but makes it more difficult to write high performance simulations due to the use of `asyncio` and the lack of native multi-threading in Python.
+Lastly, the original Python version of mango [@schrage:2024] is of course most similar in scope but makes it more difficult to write high performance simulations due to the use of `asyncio` and the lack of native multi-threading in Python.
 
 
 # Basic Example
