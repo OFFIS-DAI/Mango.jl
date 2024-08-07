@@ -11,9 +11,9 @@ authors:
     equal-contrib: true
     affiliation: "1, 2" # (Multiple affiliations must be quoted)
   - name: Rico Schrage
-      orcid: 0000-0001-5339-6553
-      equal-contrib: true
-      affiliation: "1, 2" # (Multiple affiliations must be quoted)
+    orcid: 0000-0001-5339-6553
+    equal-contrib: true
+    affiliation: "1, 2" # (Multiple affiliations must be quoted)
 
 affiliations:
  - name: Digitalized Energy Systems Group, Carl von  Ossietzky Universität Oldenburg, 26129 Oldenburg, Germany
