@@ -5,7 +5,6 @@ repo = "https://github.com/OFFIS-DAI/Mango.jl"
 version = "0.2.2"
 
 [deps]
-Bijections = "e2ed5e7c-b2de-5872-ae92-c73ca462fb04"
 ConcurrentCollections = "5060bff5-0b44-40c5-b522-fcd3ca5cecdd"
 ConcurrentUtilities = "f0e56b4a-5159-44fe-b623-3e5288b988bb"
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
@@ -17,7 +16,6 @@ Mosquitto = "db317de6-444b-4dfa-9d0e-fbf3d8dd78ea"
 OrderedCollections = "bac558e1-5e72-5ebc-8fee-abe8a469f55d"
 Parameters = "d96e819e-fc66-5662-9728-84c9c7592b0a"
 Sockets = "6462fe0b-24de-5631-8697-dd941f90decc"
-TestItems = "1c621080-faea-4a02-84b6-bbd5e436b8fe"
 UUIDs = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
 
 [compat]
@@ -28,6 +26,7 @@ LightBSON = "~0.2"
 OrderedCollections = "~1.6"
 Parameters = "~0.12"
 julia = "^1.9"
+Mosquitto = "~0.10"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"

@@ -6,7 +6,6 @@ This is to catch example code breaking on changes to the framework.
 using Mango
 using Test
 using Parameters
-using TestItems
 using Sockets: InetAddr, @ip_str
 
 
