@@ -4,7 +4,6 @@ using OrderedCollections
 using Sockets: InetAddr
 
 include("../src/util/encode_decode.jl")
-using .EncodeDecode
 
 import Base.==
 
@@ -46,17 +45,17 @@ end
 
     test_dict2 = OrderedDict{String,Any}()
 
-    encoded = EncodeDecode.encode(test_dict1)
-    decoded = EncodeDecode.decode(encoded)
+    encoded = encode(test_dict1)
+    decoded = decode(encoded)
     @test isequal(decoded, test_dict1)
 
-    encoded = EncodeDecode.encode(test_dict2)
-    decoded = EncodeDecode.decode(encoded)
+    encoded = encode(test_dict2)
+    decoded = decode(encoded)
     @test isequal(decoded, test_dict2)
 
     composite = MyComposite(10.0, "some string", OrderedDict(["abc" => 123, "def" => 456]))
-    encoded = EncodeDecode.encode(composite)
-    decoded = EncodeDecode.decode(encoded, MyComposite)
+    encoded = encode(composite)
+    decoded = decode(encoded, MyComposite)
     @test isequal(decoded, composite)
 
     mango_msg = MangoMessage(
@@ -69,7 +68,7 @@ end
         Dict(["test" => 123, "blubb" => "bla", "addr" => "127.0.0.2:2981"]),
     )
 
-    encoded = EncodeDecode.encode(mango_msg)
-    decoded = EncodeDecode.decode(encoded, MangoMessage)
+    encoded = encode(mango_msg)
+    decoded = decode(encoded, MangoMessage)
     @test isequal(decoded, expected_output)
 end

@@ -1,5 +1,5 @@
-module ProtocolCore
-export Protocol, send, start, close, id
+
+export Protocol, send, start, close, id, notify_register
 
 """
 Type for all implementations of protocols, acts like an interface. A protocol defines the way message are processed and especially sent and received 
@@ -25,7 +25,7 @@ The type of the destination has to match with the protocol.
 # Returns
 The function returns a boolean indicating whether the message was successfull sent
 """
-function send(protocol::Protocol{T}, destination::T, message::Any) where T end
+function send(protocol::Protocol{T}, destination::T, message::Any) where {T} end
 
 """
 Initialized the protocols internal loops (if exists). In most implementation this would mean that the receiver loop is started.
@@ -34,18 +34,20 @@ To handle received messages the `data_handler` function can be passed `(msg, sen
 To control the lifetime of the loops a stop_check should be passed (() -> boolean). If the stop check is true the loops will 
 terminate. The exact behavior depends on the implementation though.
 """
-function init(protocol::Protocol{T}, stop_check::Function, data_handler::Function) where T end
+function init(protocol::Protocol{T}, stop_check::Function, data_handler::Function) where {T} end
 
 """
 Return the external identifier associated with the protocol (e.g. it could be the host+port, dns name, ...)
 """
-function id(protocol::Protocol{T}) where T end
+function id(protocol::Protocol{T}) where {T} end
 
 """
 Parse different types to the correct type (if required). Should be implemented if the id type is not trivial.
 """
-function parse_id(protocol::Protocol{T}, id_data::Any)::T where T end
+function parse_id(protocol::Protocol{T}, id_data::Any)::T where {T} end
 
-include("./tcp.jl")
+"""
+Protocol specific updates called when a new agent is registered.
+"""
+function notify_register(protocol::Protocol{T}, aid::String; kwargs...) where {T} end
 
-end

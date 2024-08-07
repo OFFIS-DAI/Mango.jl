@@ -1,4 +1,3 @@
-module AgentCore
 export @agent,
     dispatch_message,
     AgentRoleHandler,
@@ -7,17 +6,14 @@ export @agent,
     add,
     schedule,
     stop_and_wait_for_all_tasks,
-    shutdown
+    shutdown,
+    on_ready,
+    on_start
 
-using ..Mango
-using ..AgentRole
-using ..ContainerAPI
-import ..ContainerAPI.send_message
+using UUIDs
 
-import ..AgentAPI.subscribe_message_handle, ..AgentAPI.subscribe_send_handle
 import Dates
-import ..Mango:
-    schedule, stop_task, stop_all_tasks, wait_for_all_tasks, stop_and_wait_for_all_tasks
+
 
 """
 Context of the agent. Represents the environment for the specific agent. Therefore it includes a 
@@ -35,6 +31,8 @@ struct AgentRoleHandler
     roles::Vector{Role}
     handle_message_subs::Vector{Tuple{Role,Function,Function}}
     send_message_subs::Vector{Tuple{Role,Function}}
+    event_subs::Dict{Any,Vector{Tuple{Role,Function,Function}}}
+    models::Dict{DataType,Any}
 end
 
 """
@@ -45,8 +43,9 @@ AGENT_BASELINE_FIELDS::Vector = [
     :(lock::ReentrantLock),
     :(context::Union{Nothing,AgentContext}),
     :(role_handler::Union{AgentRoleHandler}),
-    :(scheduler::Scheduler),
+    :(scheduler::AbstractScheduler),
     :(aid::Union{Nothing,String}),
+    :(transaction_handler::Dict{String,Tuple}),
 ]
 
 """
@@ -57,9 +56,10 @@ AGENT_BASELINE_FIELDS.
 AGENT_BASELINE_DEFAULTS::Vector = [
     () -> ReentrantLock(),
     () -> nothing,
-    () -> AgentRoleHandler(Vector(), Vector(), Vector()),
+    () -> AgentRoleHandler(Vector(), Vector(), Vector(), Dict(), Dict()),
     () -> Scheduler(),
     () -> nothing,
+    () -> Dict(),
 ]
 
 """
@@ -139,17 +139,23 @@ Internal API used by the container to dispatch an incoming message to the agent.
 In this function the message will be handed over to the different handlers in the
 agent.
 """
-function dispatch_message(agent::Agent, message::Any, meta::Any)
+function dispatch_message(agent::Agent, message::Any, meta::AbstractDict)
     lock(agent.lock) do
-        for role in agent.role_handler.roles
-            handle_message(role, message, meta)
-        end
-        for (role, call, condition) in agent.role_handler.handle_message_subs
-            if condition(message, meta)
-                call(role, message, meta)
+        if haskey(meta, TRACKING_ID) && haskey(agent.transaction_handler, meta[TRACKING_ID])
+            caller, response_handler = agent.transaction_handler[meta[TRACKING_ID]]
+            delete!(agent.transaction_handler, meta[TRACKING_ID])
+            response_handler(caller, message, meta)
+        else
+            for role in agent.role_handler.roles
+                handle_message(role, message, meta)
             end
+            for (role, call, condition) in agent.role_handler.handle_message_subs
+                if condition(message, meta)
+                    call(role, message, meta)
+                end
+            end
+            handle_message(agent, message, meta)
         end
-        handle_message(agent, message, meta)
     end
 end
 
@@ -160,7 +166,37 @@ the multiple dispatch of julia).
 """
 function handle_message(agent::Agent, message::Any, meta::Any)
     # do nothing by default
-    @warn "Default handle message was called. This may be a bug."
+end
+
+function notify_start(agent::Agent)
+    on_start(agent)
+    for role in roles(agent)
+        on_start(role)
+    end
+end
+
+function notify_ready(agent::Agent)
+    on_ready(agent)
+    for role in roles(agent)
+        on_ready(role)
+    end
+end
+
+"""
+Lifecycle Hook-in function called when the container of the agent has been started,
+depending on the container type it may not be called (if there is no start at all, 
+f.e. the simulation container)
+"""
+function on_start(agent::Agent)
+    # do nothing by default
+end
+
+"""
+Lifecycle Hook-in function called when the agent system as a whole is ready, the 
+hook-in has to be manually activated using notify_ready(container::Container)
+"""
+function on_ready(agent::Agent)
+    # do nothing by default
 end
 
 """
@@ -185,7 +221,7 @@ end
 Return all roles of the given agent
 """
 function roles(agent::Agent)
-    return agent.roles
+    return agent.role_handler.roles
 end
 
 """
@@ -217,6 +253,43 @@ Internal implementation of the agent API.
 """
 function subscribe_send_handle(agent::Agent, role::Role, handler::Function)
     push!(agent.role_handler.send_message_subs, (role, handler))
+end
+
+"""
+Internal implementation of the agent API.
+"""
+function subscribe_event_handle(agent::Agent, role::Role, event_type::Any, event_handler::Function; condition::Function=(a, b) -> true)
+    if !haskey(agent.role_handler.event_subs, event_type)
+        agent.role_handler.event_subs[event_type] = Vector()
+    end
+    push!(agent.role_handler.event_subs[event_type], (role, condition, event_handler))
+end
+
+"""
+Internal implementation of the agent API.
+"""
+function emit_event_handle(agent::Agent, src::Role, event::Any; event_type::Any=nothing)
+    key = !isnothing(event_type) ? event_type : typeof(event)
+    if haskey(agent.role_handler.event_subs, key)
+        for (role, condition, func) in agent.role_handler.event_subs[key]
+            if condition(src, event)
+                func(role, src, event, event_type)
+            end
+        end
+    end
+    for role in roles(agent)
+        handle_event(role, src, event, event_type=event_type)
+    end
+end
+
+"""
+Internal implementation of the agent API.
+"""
+function get_model_handle(agent::Agent, type::DataType)
+    if !haskey(agent.role_handler.models, type)
+        agent.role_handler.models[type] = type()
+    end
+    return agent.role_handler.models[type]
 end
 
 """
@@ -254,6 +327,16 @@ function stop_all_tasks(agent::Agent)
     stop_all_tasks(agent.scheduler)
 end
 
+"""
+Shorter Alias
+"""
+function address(agent::Agent)
+    addr::Any = nothing
+    if !isnothing(agent.context)
+        addr = protocol_addr(agent.context.container)
+    end
+    return AgentAddress(aid=aid(agent), address=addr)
+end
 
 """
 Send a message using the context to the agent with the receiver id `receiver_id` at the address `receiver_addr`. 
@@ -263,21 +346,91 @@ internal meta data of the message.
 function send_message(
     agent::Agent,
     content::Any,
-    receiver_id::String,
-    receiver_addr::Any = nothing;
+    agent_adress::AgentAddress;
     kwargs...,
 )
     for (role, handler) in agent.role_handler.send_message_subs
-        handler(role, content, receiver_id, receiver_addr; kwargs...)
+        handler(role, content, agent_adress; kwargs...)
     end
-    return ContainerAPI.send_message(
+    return send_message(
         agent.context.container,
         content,
-        receiver_id,
-        receiver_addr,
+        agent_adress,
         agent.aid;
         kwargs...,
     )
 end
 
+function send_message(
+    agent::Agent,
+    content::Any,
+    mqtt_address::MQTTAddress;
+    kwargs...,
+)
+    for (role, handler) in agent.role_handler.send_message_subs
+        handler(role, content, mqtt_address; kwargs...)
+    end
+    return send_message(
+        agent.context.container,
+        content,
+        mqtt_address;
+        kwargs...,
+    )
+end
+
+"""
+Send a message using the context to the agent with the receiver id `receiver_id` at the address `receiver_addr`. 
+This method will always set a sender_id. Additionally, further keyword arguments can be defines to fill the 
+internal meta data of the message.
+
+Furthermore, message sent with this method will be wrapped in a data object which annotates the message with a 
+transactional id, to be able to track this specific agent discussion. For this it is possible to define a response_handler,
+to which a functin can be assigned, which handles the answer to this message call. To continue the conversation the
+transaction id has to be tr by kwargs in the response handler 
+"""
+function send_tracked_message(
+    agent::Agent,
+    content::Any,
+    agent_address::AgentAddress;
+    response_handler::Function=(agent,message,meta)->nothing,
+    calling_object::Any=nothing,
+    kwargs...
+)
+    tracking_id = nothing
+    if !isnothing(response_handler)
+        tracking_id = string(uuid1())
+        if !isnothing(agent_address.tracking_id)
+            tracking_id = agent_address.tracking_id
+        end
+        caller = agent
+        if !isnothing(calling_object)
+            caller = calling_object
+        end
+        agent.transaction_handler[tracking_id] = (caller, response_handler)
+    end
+    return send_message(agent, content, AgentAddress(agent_address.aid, agent_address.address, tracking_id); kwargs...)
+end
+
+"""
+Convenience method to reply to a received message using the meta the agent received. This reduces the regular send_message as response
+`send_message(agent, "Pong", AgentAddress(aid=meta["sender_id"], address=meta["sender_addr"]))`
+to
+`reply_to(agent, "Pong", meta)`
+
+Furthermore it guarantees that agent address (including the tracking id, which is part of the address!) is correctly passed to the mango
+container.
+"""
+function reply_to(agent::Agent,
+    content::Any,
+    received_meta::AbstractDict;
+    response_handler::Function=(agent,message,meta)->nothing,
+    calling_object::Any=nothing,
+    kwargs...)
+    target_meta = Dict(received_meta)
+    return send_tracked_message(agent, content, AgentAddress(target_meta[SENDER_ID], 
+                                              target_meta[SENDER_ADDR], 
+                                              target_meta[TRACKING_ID]); 
+                                              response_handler=response_handler,
+                                              calling_object=calling_object,
+                                              kwargs...)
 end

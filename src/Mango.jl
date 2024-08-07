@@ -3,44 +3,23 @@ Placeholder for a short summary about mango.
 """
 module Mango
 
-export @agent,
-    @role,
-    Role,
-    Agent,
-    Container,
-    send_message,
-    register,
-    AgentRoleHandler,
-    AgentContext,
-    RoleContext,
-    add,
-    subscribe_message,
-    subscribe_send,
-    TCPProtocol,
-    start,
-    shutdown
-
+include("util/datastructures_util.jl")
 include("util/scheduling.jl")
 include("util/encode_decode.jl")
-using .EncodeDecode
-
 include("container/api.jl")
-using .ContainerAPI
 
 include("agent/api.jl")
-using .AgentAPI
-
 include("agent/role.jl")
-using .AgentRole
-
 include("agent/core.jl")
-using .AgentCore
+include("world/core.jl")
 
 include("container/protocol.jl")
-using .ProtocolCore
+include("container/tcp.jl")
+include("container/mqtt.jl")
 
+include("simulation/communication.jl")
+include("simulation/tasks.jl")
+include("container/simulation.jl")
 include("container/core.jl")
-using .ContainerCore
-
 
 end # module
