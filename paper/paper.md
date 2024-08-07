@@ -11,9 +11,9 @@ authors:
     equal-contrib: true
     affiliation: "1, 2" # (Multiple affiliations must be quoted)
   - name: Rico Schrage
-    orcid: 0000-0001-5339-6553
-    equal-contrib: true
-    affiliation: "1, 2" # (Multiple affiliations must be quoted)
+      orcid: 0000-0001-5339-6553
+      equal-contrib: true
+      affiliation: "1, 2" # (Multiple affiliations must be quoted)
 
 affiliations:
  - name: Digitalized Energy Systems Group, Carl von  Ossietzky Universität Oldenburg, 26129 Oldenburg, Germany
@@ -78,9 +78,83 @@ The agentframework [@agentframework:2022] is based on JavaScript and has less fo
 Lastly, the original Python version of mango [@Schrage:2024] is of course most similar in scope but makes it more difficult to write high performance simulations due to the use of `asyncio` and the lack of native multi-threading in Python.
 
 
-# Code Example
+# Basic Example
+In this example, we define two agents in two containers (i.e. at different addresses) that pass messages to each other directly via TCP.
+Containers can be set up and equipped with the necessary TCP protocol and then started to handle all incoming and outgoing messages in the background.
 
+```julia
+using Mango
 
+# Create the container instances with TCP protocol
+container = Container()
+container.protocol = TCPProtocol(address=InetAddr(ip"127.0.0.1", 5555))
+
+container2 = Container()
+container2.protocol = TCPProtocol(address=InetAddr(ip"127.0.0.1", 5556))
+
+# Start the container
+wait(Threads.@spawn start(container))
+wait(Threads.@spawn start(container2))
+```
+
+Now, we need to define the agents.
+An agent in `Mango.jl` is a struct defined with the `@agent` keyword.
+We define a `PingPongAgent` that has an internal counter for incoming messages.
+
+```julia
+@agent struct TCPPingPongAgent
+    counter::Int
+end
+```
+
+After creation, agents have to be registered to their respective container.
+
+```julia
+# Create instances of ping pong agents
+ping_agent = TCPPingPongAgent(0)
+pong_agent = TCPPingPongAgent(0)
+
+# register each agent to a container
+register(container, ping_agent)
+register(container2, pong_agent)
+```
+
+When an incoming message is addressed at an agent, its container will call the `handle_message` function for it. 
+Using Julias multiple dispatch, we can define a new `handle_message` method for our agent.
+
+```julia
+import Mango.handle_message
+
+# Override the default handle_message function for ping pong agents
+function handle_message(agent::TCPPingPongAgent, message::Any, meta::Any)
+    if message == "Ping"
+        agent.counter += 1
+        t = AgentAddress(meta["sender_id"], meta["sender_addr"], nothing)
+        send_message(agent, "Pong", t)
+    elseif message == "Pong"
+        agent.counter += 1
+        t = AgentAddress(meta["sender_id"], meta["sender_addr"], nothing)
+        send_message(agent, "Ping", t)
+    end
+end
+```
+
+With all this in place, we can send a message to the first agent to start the repeated message exchange.
+
+```julia
+# Send the first message to start the exchange
+target = AgentAddress(pong_agent.aid, InetAddr(ip"127.0.0.1", 5556), nothing)
+send_message(ping_agent, "Ping", target)
+```
+
+Finally, `Mango.jl` provides functions to cleanly shut down containers, terminating any remaining scheduled tasks and closing all network connections:
+
+```julia
+@sync begin
+    Threads.@spawn shutdown(container)
+    Threads.@spawn shutdown(container2)
+end
+```
 
 
 # Acknowledgements
