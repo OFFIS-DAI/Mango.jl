@@ -77,6 +77,22 @@ JACK [@jack:2005] provides a language and tools to implement communicating agent
 The agentframework [@agentframework:2022] is based on JavaScript and has less focus on communication than `Mango.jl`.
 Lastly, the original Python version of mango [@schrage:2024] is of course most similar in scope, but makes it more difficult to write high performance simulations, due to the use of `asyncio` and the lack of native multi-threading in Python.
 
+# Performance
+![Performance comparison of Python and Julia mango. \label{fig:benchmark}](benchmark.png)
+
+The performance of the Python and Julia versions of mango were benchmarked against each other. The results are shown in \autoref{fig:benchmark} and the relevant code is available at [mango_benchmark](https://github.com/OFFIS-DAI/mango_benchmark).
+
+The aim of these scenarios is to measure the performance of the frameworks core features.
+This mainly means it measures how efficiently tasks are scheduled and messages are sent and handled.
+To achieve this, benchmark scenarios have agents set up in a small world topology communicating a fixed number of messages between each other while performing simulated workloads.
+All workloads in the agents is entirely simulated by static delays.
+Thus, the benchmarks assumes that workloads in Python and Julia are identical.
+
+The main advantage of `Mango.jl` is in the ease of parallelization.
+Python can in some cases reach similar performance using subprocesses for parallel execution to circumvent the limitations of the Python global interpreter lock.
+Compared to native threads in Julia, however, this is more prone to issues with the operating system, because it requires large amounts of file handles to operate the subprocesses.
+Overall, it is easier to get high performance from `Mango.jl`.
+
 
 # Basic Example
 In this example, we define two agents in two containers (i.e. at different addresses) that pass messages to each other directly via TCP.
