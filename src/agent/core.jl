@@ -520,9 +520,9 @@ function reply_to(agent::Agent,
                                 response_handler=response_handler,
                                 calling_object=calling_object,
                                 reply=true,
-                                reply_to_forwarded=get(target_meta, "forwarded", false),
-                                reply_to_forwarded_from_address=get(target_meta, FORWARDED_FROM_ADDR, nothing), 
-                                reply_to_forwarded_from_id=get(target_meta, FORWARDED_FROM_ID, nothing),
+                                reply_to_forwarded=get(received_meta, "forwarded", false),
+                                reply_to_forwarded_from_address=get(received_meta, FORWARDED_FROM_ADDR, nothing), 
+                                reply_to_forwarded_from_id=get(received_meta, FORWARDED_FROM_ID, nothing),
                                 kwargs...)
 end
 
