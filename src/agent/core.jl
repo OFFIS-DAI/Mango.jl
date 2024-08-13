@@ -59,7 +59,7 @@ AGENT_BASELINE_DEFAULTS::Vector = [
     () -> AgentRoleHandler(Vector(), Vector(), Vector(), Dict(), Dict()),
     () -> Scheduler(),
     () -> nothing,
-    () -> Dict(),
+    () -> Dict{String,Tuple}(),
 ]
 
 """
@@ -94,7 +94,11 @@ my_agent = MyAgent("own value")
 ```
 """
 macro agent(struct_def)
-    struct_name = struct_def.args[2]
+    struct_head = struct_def.args[2]
+    struct_name = struct_head
+    if typeof(struct_name) != Symbol
+        struct_name = struct_head.args[1]
+    end
     struct_fields = struct_def.args[3].args
 
     # Add the agents baseline fields
@@ -106,14 +110,14 @@ macro agent(struct_def)
     new_struct_def = Expr(
         :struct,
         true,
-        Expr(:(<:), struct_name, :(Agent)),
+        Expr(:(<:), struct_head, :(Agent)),
         Expr(:block, struct_fields...),
     )
 
     # Create a constructor, which will assign 'nothing' to all baseline fields, therefore requires you just to call it with the your fields
     # f.e. @agent MyMagent own_field::String end, can be constructed using MyAgent("MyOwnValueFor own_field").
     new_fields = [
-        field for field in struct_fields[2+length(AGENT_BASELINE_FIELDS):end] if
+        field.args[1] for field in struct_fields[2+length(AGENT_BASELINE_FIELDS):end] if
         typeof(field) != LineNumberNode
     ]
     default_constructor_def = Expr(
