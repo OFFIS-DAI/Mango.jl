@@ -96,10 +96,11 @@ Overall, it is easier to get high performance from `Mango.jl`.
 
 # Basic Example
 In this example, we define two agents in two containers (i.e. at different addresses) that pass messages to each other directly via TCP.
-Containers can be set up and equipped with the necessary TCP protocol and then started to handle all incoming and outgoing messages in the background.
+Containers can be set up and equipped with the necessary TCP protocol.
 
 ```julia
 using Mango
+using Sockets: InetAddr, @ip_str
 
 # Create the container instances with TCP protocol
 container = Container()
@@ -107,10 +108,6 @@ container.protocol = TCPProtocol(address=InetAddr(ip"127.0.0.1", 5555))
 
 container2 = Container()
 container2.protocol = TCPProtocol(address=InetAddr(ip"127.0.0.1", 5556))
-
-# Start the container
-wait(Threads.@spawn start(container))
-wait(Threads.@spawn start(container2))
 ```
 
 Now, we need to define the agents.
@@ -143,6 +140,8 @@ import Mango.handle_message
 
 # Override the default handle_message function for ping pong agents
 function handle_message(agent::TCPPingPongAgent, message::Any, meta::Any)
+    println("$(agent.aid) got a message: $message")
+
     if message == "Ping"
         agent.counter += 1
         t = AgentAddress(meta["sender_id"], meta["sender_addr"], nothing)
@@ -156,16 +155,23 @@ end
 ```
 
 With all this in place, we can send a message to the first agent to start the repeated message exchange.
+To do this, we need to start the containers so they listen to incoming messages and send the initating message.
 
 ```julia
+# Start the container
+wait(Threads.@spawn start(container))
+wait(Threads.@spawn start(container2))
+
 # Send the first message to start the exchange
-target = AgentAddress(pong_agent.aid, InetAddr(ip"127.0.0.1", 5556), nothing)
-send_message(ping_agent, "Ping", target)
+send_message(ping_agent, "Ping", address(pong_agent))
 ```
 
 Finally, `Mango.jl` provides functions to cleanly shut down containers, terminating any remaining scheduled tasks and closing all network connections:
 
 ```julia
+# wait a bit to see some outputs
+sleep(5)
+
 @sync begin
     Threads.@spawn shutdown(container)
     Threads.@spawn shutdown(container2)
