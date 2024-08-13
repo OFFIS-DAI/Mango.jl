@@ -149,3 +149,12 @@ end
     @test addr.aid == aid(agent)
     @test isnothing(addr.address)
 end
+
+@role struct MyRoleVar{T}
+    counter::T
+end
+
+@testset "TestTypedRoles" begin
+    role_var = MyRoleVar(1)
+    @test role_var.counter == 1 
+end

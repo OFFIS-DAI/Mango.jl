@@ -20,12 +20,10 @@ end
 function handle_message(agent::TCPPingPongAgent, message::Any, meta::Any)
     if message == "Ping"
         agent.counter += 1
-        t = AgentAddress(meta["sender_id"], meta["sender_addr"], nothing)
-        send_message(agent, "Pong", t)
-    elseif message == "Pong"
+        reply_to(agent, "Pong", meta)
+    elseif message == "Pong" && agent.counter < 5
         agent.counter += 1
-        t = AgentAddress(meta["sender_id"], meta["sender_addr"], nothing)
-        send_message(agent, "Ping", t)
+        reply_to(agent, "Ping", meta)
     end
 end
 
