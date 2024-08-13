@@ -150,7 +150,6 @@ end
     @test isnothing(addr.address)
 end
 
-
 @role struct ForwardingTestRole
     forwarded_from::AgentAddress
     forward_to::AgentAddress
@@ -261,4 +260,13 @@ end
 
     @test !role3.forward_arrived
     @test !role1.forward_arrived    
+end
+  
+@role struct MyRoleVar{T}
+    counter::T
+end
+
+@testset "TestTypedRoles" begin
+    role_var = MyRoleVar(1)
+    @test role_var.counter == 1 
 end

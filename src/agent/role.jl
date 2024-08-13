@@ -66,7 +66,11 @@ my_roel = MyRole("own value")
 macro role(struct_def)
     Base.remove_linenums!(struct_def)
     
-    struct_name = struct_def.args[2]
+    struct_head = struct_def.args[2]
+    struct_name = struct_head
+    if typeof(struct_name) != Symbol
+        struct_name = struct_head.args[1]
+    end
     struct_fields = struct_def.args[3].args
     
     # Add the roles baseline fields
@@ -98,14 +102,14 @@ macro role(struct_def)
     new_struct_def = Expr(
         :struct,
         true,
-        Expr(:(<:), struct_name, :(Role)),
+        Expr(:(<:), struct_head, :(Role)),
         Expr(:block, cat(struct_fields, new_struct_fields, dims=(1,1))...),
     )
 
     # Creates a constructor, which will assign nothing to all baseline fields, therefore requires you just to call it with the your fields
     # f.e. @role MyRole own_field::String end, can be constructed using MyRole("MyOwnValueFor own_field").
     new_fields = [
-        field for field in struct_fields[1+length(ROLE_BASELINE_FIELDS):end] if
+        field.args[1] for field in struct_fields[1+length(ROLE_BASELINE_FIELDS):end] if
         typeof(field) != LineNumberNode
     ]
     new_values = [i == 2 ? Expr(:vect, shared_names...) : Expr(:call, default) for (i, default) in enumerate(ROLE_BASELINE_DEFAULTS)]

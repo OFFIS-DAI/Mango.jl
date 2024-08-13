@@ -315,3 +315,22 @@ end
     wait(Threads.@spawn shutdown(c1))
     wait(Threads.@spawn shutdown(c2))
 end
+
+@agent struct MyAgentVar{T}
+    counter::T
+end
+@agent struct MyAgentVarVar{T<:AbstractFloat,D}
+    other::D
+    the_float::T
+end
+
+@testset "TestTypedAgents" begin
+    agent_var = MyAgentVar(1)
+
+    @test agent_var.counter == 1
+    
+    agent_var_var = MyAgentVarVar(2, 3.3)
+
+    @test agent_var_var.other == 2
+    @test agent_var_var.the_float == 3.3
+end

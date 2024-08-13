@@ -2,7 +2,7 @@ name = "Mango"
 uuid = "5e49fdec-d473-4d14-b295-7bff2fcf1925"
 authors = ["OFFIS e.V."]
 repo = "https://github.com/OFFIS-DAI/Mango.jl"
-version = "0.2.2"
+version = "0.3"
 
 [deps]
 ConcurrentCollections = "5060bff5-0b44-40c5-b522-fcd3ca5cecdd"

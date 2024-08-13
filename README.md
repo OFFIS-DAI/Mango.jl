@@ -51,6 +51,7 @@ The following simple showcase demonstrates how you can define agents in Mango. J
 using Mango
 
 import Mango.handle_message
+using Sockets: InetAddr, @ip_str
 
 # Define the agent struct using the @agent macro
 @agent struct PingPongAgent
