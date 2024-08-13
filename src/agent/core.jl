@@ -185,7 +185,6 @@ function dispatch_message(agent::Agent, message::Any, meta::AbstractDict)
     lock(agent.lock) do
         # check if part of a transaction
         if haskey(meta, TRACKING_ID) && haskey(agent.transaction_handler, meta[TRACKING_ID])
-            @info "asd"
             caller, response_handler = agent.transaction_handler[meta[TRACKING_ID]]
             delete!(agent.transaction_handler, meta[TRACKING_ID])
             response_handler(caller, message, meta)
