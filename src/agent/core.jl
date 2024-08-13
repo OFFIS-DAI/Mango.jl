@@ -348,7 +348,8 @@ Delete an added forwarding rule. If `to_address` is not set, all rules are remov
 """
 function delete_forwarding_rule(agent::Agent, from_addr::AgentAddress, to_address::Union{Nothing,AgentAddress})
     for i in length(agent.forwarding_rules):-1:1
-        if agent.forwarding_rules[i].from_addr == from_addr && (isnothing(to_address) || to_address == to_address)
+        rule = agent.forwarding_rules[i]
+        if rule.from_address == from_addr && (isnothing(to_address) || to_address == rule.to_address)
             deleteat!(agent.forwarding_rules, i)
         end
     end

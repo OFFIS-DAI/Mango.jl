@@ -252,4 +252,13 @@ end
     @test role3.forwarded_from == address(role1)
     @test role1.forward_arrived
     @test role1.forwarded_from == address(role3)
+
+    delete_forwarding_rule(role2, address(role1), nothing)
+
+    role3.forward_arrived = false
+    role1.forward_arrived = false
+    wait(send_message(role1, "Hey, forward me!", address(role2)))
+
+    @test !role3.forward_arrived
+    @test !role1.forward_arrived    
 end
