@@ -146,7 +146,6 @@ agent.
 function dispatch_message(agent::Agent, message::Any, meta::AbstractDict)
     lock(agent.lock) do
         if haskey(meta, TRACKING_ID) && haskey(agent.transaction_handler, meta[TRACKING_ID])
-            @info "asd"
             caller, response_handler = agent.transaction_handler[meta[TRACKING_ID]]
             delete!(agent.transaction_handler, meta[TRACKING_ID])
             response_handler(caller, message, meta)
@@ -401,12 +400,11 @@ function send_tracked_message(
     calling_object::Any=nothing,
     kwargs...
 )
-    tracking_id = nothing
+    tracking_id = string(uuid1())
+    if !isnothing(agent_address.tracking_id)
+        tracking_id = agent_address.tracking_id
+    end
     if !isnothing(response_handler)
-        tracking_id = string(uuid1())
-        if !isnothing(agent_address.tracking_id)
-            tracking_id = agent_address.tracking_id
-        end
         caller = agent
         if !isnothing(calling_object)
             caller = calling_object
