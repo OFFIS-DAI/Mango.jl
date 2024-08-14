@@ -88,8 +88,10 @@ end
 """
 function run_mango(runnable_simulation_code::Function, container_list::Vector{T}) where T <: ContainerInterface
     
-    for container in container_list
-        wait(Threads.@spawn start(container))
+    @sync begin
+        for container in container_list
+            Threads.@spawn start(container)
+        end
     end
 
     runnable_simulation_code()
