@@ -273,11 +273,14 @@ function address(role::Role)
     return address(role.context.agent)
 end
 
-"""
-Send a message using the context to the agent with the receiver id `receiver_id` at the address `receiver_addr`. 
-This method will always set a sender_id. Additionally, further keyword arguments can be defines to fill the 
-internal meta data of the message.
-"""
+function add_forwarding_rule(role::Role, from_addr::AgentAddress, to_address::AgentAddress, forward_replies::Bool)
+    add_forwarding_rule(role.context.agent, from_addr, to_address, forward_replies)
+end
+
+function delete_forwarding_rule(role::Role, from_addr::AgentAddress, to_address::Union{Nothing,AgentAddress})
+    delete_forwarding_rule(role.context.agent, from_addr, to_address)
+end
+
 function send_message(
     role::Role,
     content::Any,
@@ -298,10 +301,28 @@ function send_tracked_message(
     return send_tracked_message(role.context.agent, content, agent_adress; response_handler=response_handler, calling_object=role, kwargs...)
 end
 
+function send_and_handle_answer(
+    response_handler::Function,
+    role::Role,
+    content::Any,
+    agent_address::AgentAddress;
+    kwargs...)
+    return send_and_handle_answer(response_handler, role.context.agent, content, agent_address; 
+                    calling_object=role, kwargs...)
+end
+
 function reply_to(role::Role,
     content::Any,
     received_meta::AbstractDict;
     response_handler::Function=(agent,message,meta)->nothing,
     kwargs...)
     return reply_to(role.context.agent, content, received_meta; response_handler=response_handler, calling_object=role, kwargs...)
+end
+
+function forward_to(role::Role,
+    content::Any,
+    forward_to_address::AgentAddress,
+    received_meta::AbstractDict;
+    kwargs...)
+    return forward_to(role.context.agent, content, forward_to_address, received_meta; kwargs...)
 end

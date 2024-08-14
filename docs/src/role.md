@@ -16,7 +16,7 @@ end
 role1 = MyRole("Role1")
 ```
 
-Most functions, used for agent development can also be used with roles (e.g. `handle_message`, `address`, `schedule` and the lifecycle methods).  
+Most functions, used for agent development can also be used with roles (e.g. `handle_message`, `address`, `schedule`, `send_message` (plus variants) and the lifecycle methods).  
 
 Additionally, roles can define the `setup` function to define actions to take when the roles are added to the agent. It is also possible to subscribe to specific messages using a boolean expression with the `subscribe_message(role::Role, handler::Function, condition::Function)` function. With the @role macro, the role context is added to the role, which contains the reference to the agent. However, it is recommended to use the equivalent methods defined on the role to execute actions like scheduling and sending messages. Further with roles it is possible to listen to all messages sent from within the agent. For this `subscribe_send(role, handler::Function)` can be used.
 
