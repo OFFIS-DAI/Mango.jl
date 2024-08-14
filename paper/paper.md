@@ -127,9 +127,9 @@ After creation, agents have to be registered to their respective container.
 ping_agent = TCPPingPongAgent(0)
 pong_agent = TCPPingPongAgent(0)
 
-# register each agent to a container
-register(container, ping_agent)
-register(container2, pong_agent)
+# register each agent to a container and give them a name
+register(container, ping_agent, "Agent_1")
+register(container2, pong_agent, "Agent_2")
 ```
 
 When an incoming message is addressed at an agent, its container will call the `handle_message` function for it. 
@@ -140,7 +140,13 @@ import Mango.handle_message
 
 # Override the default handle_message function for ping pong agents
 function handle_message(agent::TCPPingPongAgent, message::Any, meta::Any)
-    println("$(agent.aid) got a message: $message")
+    println(
+        "$(agent.aid) got a message: $message." *
+        "This is message number: $(agent.counter) for me!"
+    )
+
+    # doing very important work
+    sleep(0.5)
 
     if message == "Ping"
         agent.counter += 1
