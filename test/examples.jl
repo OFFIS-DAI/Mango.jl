@@ -102,9 +102,11 @@ end
     register(c1, ping_agent; topics=["pongs"])
     register(c2, pong_agent; topics=["pings"])
     
+    mqtt_not_test_here = false
     run_mango([c1, c2]) do 
         sleep(0.5)
         if !c1.protocol.connected
+            mqtt_not_test_here = true
             return
         end
 
@@ -121,5 +123,8 @@ end
         end)
     end
 
+    if mqtt_not_test_here
+        return
+    end
     @test ping_agent.counter >= 5
 end
