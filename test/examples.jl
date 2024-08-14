@@ -45,27 +45,20 @@ end
     register(container, ping_agent)
     register(container2, pong_agent)
 
-    # Start the container
-    wait(Threads.@spawn start(container))
-    wait(Threads.@spawn start(container2))
+    # Start the Mango.jl system. At this point the TCP-server is created and bound
+    # to their addresses. After that, the runnable is executed (do ... end). at the 
+    # end the container and therefor the TCP server are shut down again. Using this 
+    # method it is not possible to forget starting or stopping containers.
+    run_mango([container, container2]) do 
+        # Send the initial message from the ping_agent to initiate the communication
+        wait(send_message(ping_agent, "Ping", AgentAddress(aid=pong_agent.aid, address=InetAddr(ip"127.0.0.1", 2939))))
 
-    # Send the first message to start the exchange
-    target = AgentAddress(pong_agent.aid, InetAddr(ip"127.0.0.1", 5556), nothing)
-    send_message(ping_agent, "Ping", target)
-
-    # Wait for a moment to see the result
-    # In general you want to use a Condition() instead to
-    # Define a clear stopping signal for the agents
-    wait(Threads.@spawn begin
-        while ping_agent.counter < 5
-            sleep(1)
-        end
-    end)
-
-    # Start the container
-    @sync begin
-        Threads.@spawn shutdown(container)
-        Threads.@spawn shutdown(container2)
+        # Wait until some Pings and Pongs has been exchanged
+        wait(Threads.@spawn begin
+            while ping_agent.counter < 5
+                sleep(1)
+            end
+        end)
     end
 
     @test ping_agent.counter >= 5
@@ -109,31 +102,24 @@ end
     register(c1, ping_agent; topics=["pongs"])
     register(c2, pong_agent; topics=["pings"])
 
-    # Start the container
-    wait(Threads.@spawn start(c1))
-    wait(Threads.@spawn start(c2))
-
-    sleep(0.5)
-    if !c1.protocol.connected
-        return
-    end
-
-    # Send the first message to start the exchange
-    wait(send_message(ping_agent, "Ping", MQTTAddress(broker_addr, "pings")))
-
-    # Wait for a moment to see the result
-    # In general you want to use a Condition() instead to
-    # Define a clear stopping signal for the agents
-    wait(Threads.@spawn begin
-        while ping_agent.counter < 5
-            sleep(1)
+    
+    run_mango([c1, c2]) do 
+        sleep(0.5)
+        if !c1.protocol.connected
+            return
         end
-    end)
 
-    # Start the container
-    @sync begin
-        Threads.@spawn shutdown(c1)
-        Threads.@spawn shutdown(c2)
+        # Send the first message to start the exchange
+        wait(send_message(ping_agent, "Ping", MQTTAddress(broker_addr, "pings")))
+
+        # Wait for a moment to see the result
+        # In general you want to use a Condition() instead to
+        # Define a clear stopping signal for the agents
+        wait(Threads.@spawn begin
+            while ping_agent.counter < 5
+                sleep(1)
+            end
+        end)
     end
 
     @test ping_agent.counter >= 5

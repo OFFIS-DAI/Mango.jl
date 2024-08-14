@@ -1,5 +1,5 @@
 
-export ContainerInterface, send_message, protocol_addr, Address, AgentAddress, MQTTAddress, SENDER_ADDR, SENDER_ID, TRACKING_ID
+export ContainerInterface, send_message, protocol_addr, Address, AgentAddress, MQTTAddress, SENDER_ADDR, SENDER_ID, TRACKING_ID, run_mango
 
 # id key for the sender address
 SENDER_ADDR::String = "sender_addr"
@@ -60,3 +60,47 @@ end
 Used by the agent to get the protocol addr part
 """
 function protocol_addr(container::ContainerInterface) end
+
+function start(container::ContainerInterface) end
+function shutdown(container::ContainerInterface) end
+
+"""
+    run_mango(runnable, container_list)
+
+Run a Mango.jl agent system using the container included in `container_list` and therefor,
+the agents included in these containers. The runnable defines what the agent system shall
+do. In most cases the runnable will execute code, which starts some process (e.g. some
+distributed negotiation) in the system.
+
+Generally this function is a convenience function and is equivalent to starting all containers 
+in the list, executing the code represented by `runnable` and shuting down the container again.
+
+# Examples
+```julia
+run_mango(your_containers) do 
+   # Send the first message to start the system
+   send_message(defined_agent, "Starting somethin", address(other_defined_agent))
+
+   # wait some time
+   wait(some_stopping_condition)
+end
+```
+"""
+function run_mango(runnable_simulation_code::Function, container_list::Vector{T}) where T <: ContainerInterface
+    
+    for container in container_list
+        wait(Threads.@spawn start(container))
+    end
+
+    runnable_simulation_code()
+
+    @sync begin
+        for container in container_list
+            Threads.@spawn shutdown(container)
+        end
+    end
+end
+
+function run_mango(runnable_simulation_code::Function, container::ContainerInterface)
+    run_mango(runnable_simulation_code, [container])
+end

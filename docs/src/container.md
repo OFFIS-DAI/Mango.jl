@@ -19,14 +19,28 @@ using Mango
 # Create a container instance
 container = Container()
 
+# ... setup the container, agents, define handles, ...
+
 # Start the container
 wait(Threads.@spwan start(container))
 
-# ... Perform message handling and agent registration ...
-# ... When done, shut down the container ...
+# Execute some functionality to e.g. trigger the agent system
 
 # Shut down the container
 shutdown(container)
+```
+
+However this approach can be error prune. Forgetting to start or shutdown all containers would be
+critical for the correct functionality of the implemented agent system. For this reason, we recommend
+using `run_mango(runnable, containers)`. With this function, the above `start/shutdown`-pair translates to...
+
+```julia
+# Start the container and shut it down after the runnable (do ... end) has been executed.
+run_mango(container) do
+
+# Execute some functionality to e.g. trigger the agent system
+
+end
 ```
 
 ## Registering Agents 
