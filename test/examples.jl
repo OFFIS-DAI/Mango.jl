@@ -51,7 +51,7 @@ end
     # method it is not possible to forget starting or stopping containers.
     run_mango([container, container2]) do 
         # Send the initial message from the ping_agent to initiate the communication
-        wait(send_message(ping_agent, "Ping", AgentAddress(aid=pong_agent.aid, address=InetAddr(ip"127.0.0.1", 2939))))
+        wait(send_message(ping_agent, "Ping", AgentAddress(aid=pong_agent.aid, address=InetAddr(ip"127.0.0.1", 5555))))
 
         # Wait until some Pings and Pongs has been exchanged
         wait(Threads.@spawn begin
@@ -101,7 +101,6 @@ end
     # For the MQTT protocol, topics for each agent have to be passed here.
     register(c1, ping_agent; topics=["pongs"])
     register(c2, pong_agent; topics=["pings"])
-
     
     run_mango([c1, c2]) do 
         sleep(0.5)

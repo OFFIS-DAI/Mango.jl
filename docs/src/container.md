@@ -30,9 +30,7 @@ wait(Threads.@spwan start(container))
 shutdown(container)
 ```
 
-However this approach can be error prune. Forgetting to start or shutdown all containers would be
-critical for the correct functionality of the implemented agent system. For this reason, we recommend
-using `run_mango(runnable, containers)`. With this function, the above `start/shutdown`-pair translates to...
+However, this approach can be error-pruned for multiple reasons. Besides simply forgetting to call shutdown, an exception may occur between the start and shutdown calls on the containers, leading to resource leaks. For this reason, we recommend using `run_mango(runnable, containers)`. With this function, the above `start/shutdown' pair translates to...
 
 ```julia
 # Start the container and shut it down after the runnable (do ... end) has been executed.

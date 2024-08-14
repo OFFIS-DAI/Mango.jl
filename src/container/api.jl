@@ -94,11 +94,15 @@ function run_mango(runnable_simulation_code::Function, container_list::Vector{T}
         end
     end
 
-    runnable_simulation_code()
-
-    @sync begin
-        for container in container_list
-            Threads.@spawn shutdown(container)
+    try
+        runnable_simulation_code()
+    catch e
+        @error "A nested error ocurred while running a mango simulation" e
+    finally
+        @sync begin
+            for container in container_list
+                Threads.@spawn shutdown(container)
+            end
         end
     end
 end
