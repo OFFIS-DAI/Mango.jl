@@ -1,6 +1,7 @@
+export encode, decode
+
 using LightBSON
 using OrderedCollections
-export encode, decode
 
 struct MsgContent
     typeinfo::String

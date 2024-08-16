@@ -93,7 +93,7 @@ register(container, pong_agent)
 # to their addresses. After that, the runnable is executed (do ... end). at the 
 # end the container and therefor the TCP server are shut down again. Using this 
 # method it is not possible to forget starting or stopping containers.
-run_mango([container, container2]) do 
+activate([container, container2]) do 
     # Send the initial message from the ping_agent to initiate the communication
     wait(send_message(ping_agent, "Ping", AgentAddress(aid=pong_agent.aid, address=InetAddr(ip"127.0.0.1", 2939))))
 

@@ -11,4 +11,5 @@ using Test
     include("examples.jl")
     include("tcp_protocol_tests.jl")
     include("agent_modeling_tests.jl")
+    include("express_api_tests.jl")
 end
