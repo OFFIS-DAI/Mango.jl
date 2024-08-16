@@ -1,4 +1,4 @@
-export Agent, send_message, send_tracked_message, reply_to, address, aid
+export Agent, send_message, send_tracked_message, reply_to, address, aid, send_and_handle_answer
 
 
 """
@@ -32,12 +32,12 @@ function subscribe_send_handle(agent::AgentInterface, role::Any, handler::Any) e
 """
 Used internally by the RoleContext to subscribe to role agent events.
 """
-function subscribe_event_handle(agent::AgentInterface, role::Any, event_type::Any, event_handler::Any; condition::Function=(a, b)->true) end
+function subscribe_event_handle(agent::AgentInterface, role::Any, event_type::Any, event_handler::Any; condition::Function = (a, b) -> true) end
 
 """
 Used internally by the RoleContext to subscribe to role agent events.
 """
-function emit_event_handle(agent::AgentInterface, role::Any, event::Any; event_type::Any=nothing) end
+function emit_event_handle(agent::AgentInterface, role::Any, event::Any; event_type::Any = nothing) end
 
 """
 Used internally by the RoleContext to subscribe to role agent events.
@@ -58,32 +58,56 @@ function aid(agent::AgentInterface) end
 API Definition for the role context
 """
 function send_message(
-    agent::AgentInterface,
-    content::Any,
-    agent_address::Address;
-    kwargs...
+	agent::AgentInterface,
+	content::Any,
+	agent_address::Address;
+	kwargs...,
 )
-    @warn "The API send_message definition has been called, this should never happen. There is most likely an import error."
+	@warn "The API send_message definition has been called, this should never happen. There is most likely an import error."
 end
 
 function send_tracked_message(
-    agent::AgentInterface,
-    content::Any,
-    agent_address::Address;
-    response_handler::Function=(agent,message,meta)->nothing,
-    calling_object::Any=nothing,
-    kwargs...
+	agent::AgentInterface,
+	content::Any,
+	agent_address::Address;
+	response_handler::Function = (agent, message, meta) -> nothing,
+	calling_object::Any = nothing,
+	kwargs...,
 )
-    @warn "The API send_tracked_message definition has been called, this should never happen. There is most likely an import error."
+	@warn "The API send_tracked_message definition has been called, this should never happen. There is most likely an import error."
+end
+
+"""
+API Definition for sending tracked message with required response handler
+"""
+function send_and_handle_answer(
+	response_handler::Function,
+	agent::AgentInterface,
+	content::Any,
+	agent_address::Address;
+	calling_object::Any = nothing,
+	kwargs...)
+	@warn "The API send_and_handle_answer definition has been called, this should never happen. There is most likely an import error."
 end
 
 """
 API Definition for directly replying to a message
 """
 function reply_to(
-    agent::AgentInterface,
-    content::Any,
-    received_meta::AbstractDict
+	agent::AgentInterface,
+	content::Any,
+	received_meta::AbstractDict,
 )
-    @warn "The API reply_to definition has been called, this should never happen. There is most likely an import error."
+	@warn "The API reply_to definition has been called, this should never happen. There is most likely an import error."
+end
+
+"""
+API Definition for forwarding messages to other agents. 
+"""
+function forward_to(agent::AgentInterface,
+	content::Any,
+	forward_to_address::Address,
+	received_meta::AbstractDict;
+	kwargs...)
+	@warn "The API forward_to definition has been called, this should never happen. There is most likely an import error."
 end

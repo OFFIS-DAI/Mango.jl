@@ -117,26 +117,35 @@ send_message(agent, "Message", AgentAddress("receiver_id", "receiver_addr", "opt
 send_message(role, "Message", AgentAddress("receiver_id", "receiver_addr", "optional tracking id"))
 ```
 
-Further, there are two specialized methods for sending messages, (1) `send_tracked_message` and (2) `reply_to`.
+Further, there are several specialized methods for sending messages, (1) `send_tracked_message`, (2) `send_and_handle_answer`, (3) `reply_to`, (4) `forward_to`.
 
 (1) This function can be used to send a message with an automatically generated tracking id (uuid1) and it also accepts a response handler, which will
     automatically be called when a response arrives to the tracked message (care to include the tracking id when responding or just use `reply_to`).
-(2) Convenience function to respond to a received message without the need to create the AgentAddress by yourself.
+(2) Variant of (1) which requires a response handler and enables the usage of the `do` syntax (see following code snippet).
+(3) Convenience function to respond to a received message without the need to create the AgentAddress by yourself.
+(4) Convenience function to forward messages to another agent. This function will set the approriate fields in the meta container to identify that a message has been forwarded and from which address it has been forwarded.
 
 ```julia
 agent1 = MyAgent("")
 agent2 = MyAgent("")
+agent3 = MyAgent("")
 
 function handle_message(agent::MyAgent, message::Any, meta::Any)
     # agent 2
-    reply_to(agent, "Hello Agent, this is a response", meta) # (2)
+    reply_to(agent, "Hello Agent, this is a response", meta) # (3)
 end
 function handle_response(agent::MyAgent, message::Any, meta::Any)
     # agent 1
+    forward_to(agent, "Forwarded message", address(agent3), meta) # (4)
 end
 
 send_tracked_message(agent1, "Hello Agent, this is a tracked message", AgentAddress(aid=agent2.aid); response_handler=handle_response) # (1)
+send_and_handle_answer(agent1, "Hello Agent, this is a different tracked message", AgentAddress(aid=agent2.aid)) do agent, message, meta # (2)
+    # agent 1
+end
 ```
+
+There is also a possibility to enable automatic forwarding with adding so-called forwarding rules. For this you can use the function `add_forwarding_rule(agent, from, to, forward_replies)`. To delete these rules the function `delete_forwarding_rule(agent, from, to=nothing)` exists.
 
 ## 4. Task Scheduling
 
