@@ -1,18 +1,18 @@
 export TaskData,
-	PeriodicTaskData,
-	InstantTaskData,
-	DateTimeTaskData,
-	AwaitableTaskData,
-	ConditionalTaskData,
-	stop_task,
-	stop_all_tasks,
-	wait_for_all_tasks,
-	stop_and_wait_for_all_tasks,
-	schedule,
-	Clock,
-	AbstractScheduler,
-	Scheduler,
-	SimulationScheduler
+    PeriodicTaskData,
+    InstantTaskData,
+    DateTimeTaskData,
+    AwaitableTaskData,
+    ConditionalTaskData,
+    stop_task,
+    stop_all_tasks,
+    wait_for_all_tasks,
+    stop_and_wait_for_all_tasks,
+    schedule,
+    Clock,
+    AbstractScheduler,
+    Scheduler,
+    SimulationScheduler
 
 using Dates
 using ConcurrentCollections
@@ -22,7 +22,7 @@ import Base.schedule, Base.sleep, Base.wait
 abstract type AbstractClock end
 
 @kwdef mutable struct Clock <: AbstractClock
-	simulation_time::DateTime
+    simulation_time::DateTime
 end
 
 struct DateTimeClock <: AbstractClock
@@ -35,146 +35,146 @@ abstract type TaskData end
 abstract type AbstractScheduler end
 
 function now(scheduler::AbstractScheduler)
-	return DateTime.now()
+    return DateTime.now()
 end
 
 function sleep(scheduler::AbstractScheduler, time_s::Real)
-	return sleep(time_s)
+    return sleep(time_s)
 end
 
 function wait(scheduler::AbstractScheduler, timer::Timer, delay_s::Real)
-	return wait(timer)
+    return wait(timer)
 end
 
 function clock(scheduler::AbstractScheduler)
-	throw("unimplemented")
+    throw("unimplemented")
 end
 function tasks(scheduler::AbstractScheduler)
-	throw("unimplemented")
+    throw("unimplemented")
 end
 
 @kwdef struct Scheduler <: AbstractScheduler
-	tasks::AbstractDict{Task, TaskData} = ConcurrentDict{Task, TaskData}()
-	clock::DateTimeClock = DateTimeClock()
+    tasks::AbstractDict{Task,TaskData} = ConcurrentDict{Task,TaskData}()
+    clock::DateTimeClock = DateTimeClock()
 end
 
 function clock(scheduler::Scheduler)
-	return scheduler.clock
+    return scheduler.clock
 end
 function tasks(scheduler::Scheduler)
-	return scheduler.tasks
+    return scheduler.tasks
 end
 
 function is_stopable(data::TaskData)::Bool
-	return false
+    return false
 end
 
 function stop_single_task(data::TaskData)::Nothing
 end
 
 mutable struct PeriodicTaskData <: TaskData
-	interval_s::Real
-	condition::Function
-	timer::Timer
+    interval_s::Real
+    condition::Function
+    timer::Timer
 
-	function PeriodicTaskData(interval_s::Real, condition::Function = () -> true)
-		return new(interval_s, condition, Timer(interval_s; interval = interval_s))
-	end
+    function PeriodicTaskData(interval_s::Real, condition::Function=() -> true)
+        return new(interval_s, condition, Timer(interval_s; interval=interval_s))
+    end
 end
 
 function is_stopable(data::PeriodicTaskData)::Bool
-	return true
+    return true
 end
 
 function stop_single_task(data::PeriodicTaskData)::Nothing
-	close(data.timer)
+    close(data.timer)
 end
 
 struct InstantTaskData <: TaskData end
 
 struct DateTimeTaskData <: TaskData
-	date::Dates.DateTime
+    date::Dates.DateTime
 end
 
 struct AwaitableTaskData <: TaskData
-	awaitable::Any
+    awaitable::Any
 end
 
 struct ConditionalTaskData <: TaskData
-	condition::Function
-	check_interval_s::Float64
+    condition::Function
+    check_interval_s::Float64
 end
 
 function execute_task(f::Function, scheduler::AbstractScheduler, data::PeriodicTaskData)
-	while data.condition()
-		f()
-		wait(scheduler, data.timer, data.interval_s)
-	end
+    while data.condition()
+        f()
+        wait(scheduler, data.timer, data.interval_s)
+    end
 end
 
 function execute_task(f::Function, scheduler::AbstractScheduler, data::InstantTaskData)
-	f()
+    f()
 end
 
 function execute_task(f::Function, scheduler::AbstractScheduler, data::DateTimeTaskData)
-	sleep(scheduler, (data.date - Dates.now()).value / 1000)
-	f()
+    sleep(scheduler, (data.date - Dates.now()).value / 1000)
+    f()
 end
 
 function execute_task(f::Function, scheduler::AbstractScheduler, data::AwaitableTaskData)
-	wait(data.awaitable)
-	f()
+    wait(data.awaitable)
+    f()
 end
 
 function execute_task(f::Function, scheduler::AbstractScheduler, data::ConditionalTaskData)
-	while !data.condition()
-		sleep(scheduler, data.check_interval_s)
-	end
-	f()
+    while !data.condition()
+        sleep(scheduler, data.check_interval_s)
+    end
+    f()
 end
 
 function schedule(f::Function, scheduler::AbstractScheduler, data::TaskData)
-	task = Threads.@spawn execute_task(f, scheduler, data)
-	tasks(scheduler)[task] = data
-	return task
+    task = Threads.@spawn execute_task(f, scheduler, data)
+    tasks(scheduler)[task] = data
+    return task
 end
 
 function stop_task(scheduler::AbstractScheduler, t::Task)
-	data = tasks(scheduler)[t]
+    data = tasks(scheduler)[t]
 
-	if is_stopable(data)
-		stop_single_task(data)
-	end
+    if is_stopable(data)
+        stop_single_task(data)
+    end
 
-	@warn "Attempted to stop a non-stopable task."
-	return nothing
+    @warn "Attempted to stop a non-stopable task."
+    return nothing
 end
 
 function stop_all_tasks(scheduler::AbstractScheduler)
-	for data in values(tasks(scheduler))
-		if is_stopable(data)
-			stop_single_task(data)
-		end
-	end
+    for data in values(tasks(scheduler))
+        if is_stopable(data)
+            stop_single_task(data)
+        end
+    end
 end
 
 function wait_for_all_tasks(scheduler::AbstractScheduler)
-	for task in keys(tasks(scheduler))
-		try
-			wait(task)
-		catch err
-			if isa(task.result, InterruptException) || isa(task.result, EOFError)
-				# ignore, task has been interrupted by the scheduler
-			else
-				@error "An error occurred while waiting for $task" exception =
-					(err, catch_backtrace())
-			end
-		end
-	end
+    for task in keys(tasks(scheduler))
+        try
+            wait(task)
+        catch err
+            if isa(task.result, InterruptException) || isa(task.result, EOFError)
+                # ignore, task has been interrupted by the scheduler
+            else
+                @error "An error occurred while waiting for $task" exception =
+                    (err, catch_backtrace())
+            end
+        end
+    end
 end
 
 function stop_and_wait_for_all_tasks(scheduler::AbstractScheduler)
-	stop_all_tasks(scheduler)
-	wait_for_all_tasks(scheduler)
+    stop_all_tasks(scheduler)
+    wait_for_all_tasks(scheduler)
 end
 

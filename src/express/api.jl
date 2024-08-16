@@ -1,9 +1,9 @@
 export create_tcp_container, create_mqtt_container, GeneralAgent, add_agent_composed_of, activate
 
-function _set_codec(container::Container, codec::Union{Nothing, Tuple{Function, Function}})
-	if !isnothing(codec)
-		container.codec = codec
-	end
+function _set_codec(container::Container, codec::Union{Nothing,Tuple{Function,Function}})
+    if !isnothing(codec)
+        container.codec = codec
+    end
 end
 
 """
@@ -20,11 +20,11 @@ can also provide a codec as tuple of functions (first encode, second decode, see
 agent = create_mqtt_container("127.0.0.1", 5555, "MyClient")
 ```
 """
-function create_tcp_container(host::String, port::Int; codec::Union{Nothing, Tuple{Function, Function}} = nothing)
-	container = Container()
-	container.protocol = TCPProtocol(address = InetAddr(host, port))
-	_set_codec(container, codec)
-	return container
+function create_tcp_container(host::String, port::Int; codec::Union{Nothing,Tuple{Function,Function}}=nothing)
+    container = Container()
+    container.protocol = TCPProtocol(address=InetAddr(host, port))
+    _set_codec(container, codec)
+    return container
 end
 
 """
@@ -42,11 +42,11 @@ Optionally you can also provide a codec as tuple of functions (first encode, sec
 agent = create_mqtt_container("127.0.0.1", 5555, "MyClient")
 ```
 """
-function create_mqtt_container(host::String, port::Int, client_id::String; codec::Union{Nothing, Tuple{Function, Function}} = nothing)
-	container = Container()
-	container.protocol = MQTTProtocol(client_id, InetAddr(host, port))
-	_set_codec(container, codec)
-	return container
+function create_mqtt_container(host::String, port::Int, client_id::String; codec::Union{Nothing,Tuple{Function,Function}}=nothing)
+    container = Container()
+    container.protocol = MQTTProtocol(client_id, InetAddr(host, port))
+    _set_codec(container, codec)
+    return container
 end
 
 @agent struct GeneralAgent
@@ -66,13 +66,13 @@ for the roles. The created agent will be returned by the function.
 agent = add_agent_composed_of(your_container, RoleA(), RoleB(), RoleC())
 ```
 """
-function add_agent_composed_of(container::ContainerInterface, roles::Role...; suggested_aid = nothing)
-	agent = GeneralAgent()
-	for role in roles
-		add(agent, role)
-	end
-	register(container, agent, suggested_aid = suggested_aid)
-	return agent
+function add_agent_composed_of(container::ContainerInterface, roles::Role...; suggested_aid=nothing)
+    agent = GeneralAgent()
+    for role in roles
+        add(agent, role)
+    end
+    register(container, agent, suggested_aid=suggested_aid)
+    return agent
 end
 
 """
@@ -100,29 +100,29 @@ activate(your_containers) do
 end
 ```
 """
-function activate(runnable_simulation_code::Function, container_list::Vector{T}) where T <: ContainerInterface
+function activate(runnable_simulation_code::Function, container_list::Vector{T}) where {T<:ContainerInterface}
 
-	@sync begin
-		for container in container_list
-			Threads.@spawn start(container)
-		end
-	end
-	for container in container_list
-		notify_ready(container)
-	end
-	try
-		runnable_simulation_code()
-	catch e
-		@error "A nested error ocurred while running a mango simulation" exception = (e, catch_backtrace())
-	finally
-		@sync begin
-			for container in container_list
-				Threads.@spawn shutdown(container)
-			end
-		end
-	end
+    @sync begin
+        for container in container_list
+            Threads.@spawn start(container)
+        end
+    end
+    for container in container_list
+        notify_ready(container)
+    end
+    try
+        runnable_simulation_code()
+    catch e
+        @error "A nested error ocurred while running a mango simulation" exception = (e, catch_backtrace())
+    finally
+        @sync begin
+            for container in container_list
+                Threads.@spawn shutdown(container)
+            end
+        end
+    end
 end
 
 function activate(runnable_simulation_code::Function, container::ContainerInterface)
-	activate(runnable_simulation_code, [container])
+    activate(runnable_simulation_code, [container])
 end

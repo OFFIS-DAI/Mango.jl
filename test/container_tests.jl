@@ -44,7 +44,7 @@ end
     agent3 = MyAgent(0)
     register(container2, agent3)
 
-    activate([container, container2]) do 
+    activate([container, container2]) do
         wait(
             send_message(
                 container2,
@@ -52,7 +52,7 @@ end
                 AgentAddress(aid=agent3.aid, address=InetAddr(ip"127.0.0.1", 2940))
             ),
         )
-    
+
         wait(Threads.@spawn begin
             while agent3.counter != 10
                 sleep(1)
@@ -89,7 +89,7 @@ end
     register(container2, ping_agent)
     register(container, pong_agent)
 
-    activate([container, container2]) do 
+    activate([container, container2]) do
         wait(send_message(ping_agent, "Ping", AgentAddress(aid=pong_agent.aid, address=InetAddr(ip"127.0.0.1", 2939))))
         wait(Threads.@spawn begin
             while ping_agent.counter < 5
@@ -131,7 +131,7 @@ end
     register(container2, tracked_agent)
     register(container, responding_agent)
 
-    activate([container, container2]) do 
+    activate([container, container2]) do
         wait(send_tracked_message(tracked_agent, "Hello Agent, this is DialogRico", AgentAddress(aid=responding_agent.aid, address=InetAddr(ip"127.0.0.1", 2939));
             response_handler=handle_response))
         wait(Threads.@spawn begin

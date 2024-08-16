@@ -19,9 +19,9 @@ Default AgentAddress base type, where the agent identifier is based on the conta
 Used with the TCP protocol.
 """
 @kwdef struct AgentAddress <: Address
-	aid::Union{String, Nothing}
-	address::Any = nothing
-	tracking_id::Union{String, Nothing} = nothing
+    aid::Union{String,Nothing}
+    address::Any = nothing
+    tracking_id::Union{String,Nothing} = nothing
 end
 
 """
@@ -29,8 +29,8 @@ Connection information for an MQTT topic on a given broker.
 Used with the MQTT protocol. 
 """
 @kwdef struct MQTTAddress <: Address
-	broker::Any = nothing
-	topic::String
+    broker::Any = nothing
+    topic::String
 end
 
 """
@@ -42,13 +42,13 @@ This only defines the function API, the actual implementation is done in the cor
 module.
 """
 function send_message(
-	container::ContainerInterface,
-	content::Any,
-	address::Address,
-	sender_id::Union{Nothing, String} = nothing;
-	kwargs...,
+    container::ContainerInterface,
+    content::Any,
+    address::Address,
+    sender_id::Union{Nothing,String}=nothing;
+    kwargs...,
 )
-	@warn "The API send_message definition has been called, this should never happen. There is most likely an import error."
+    @warn "The API send_message definition has been called, this should never happen. There is most likely an import error."
 end
 
 """
@@ -60,8 +60,8 @@ function start(container::ContainerInterface) end
 function shutdown(container::ContainerInterface) end
 
 function register(
-	container::ContainerInterface,
-	agent::AgentInterface,
-	suggested_aid::Union{String, Nothing} = nothing;
-	kwargs...,
+    container::ContainerInterface,
+    agent::AgentInterface,
+    suggested_aid::Union{String,Nothing}=nothing;
+    kwargs...,
 ) end

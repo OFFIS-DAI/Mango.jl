@@ -84,7 +84,7 @@ struct SharedTestEvent
 end
 
 @role struct SharedFieldTestRole
-    @shared 
+    @shared
     shared_event::SharedTestEvent
 end
 
@@ -103,9 +103,9 @@ struct SharedTestEvent2
 end
 
 @role struct SharedFieldsTestRole
-    @shared 
+    @shared
     shared_event::SharedTestEvent
-    @shared 
+    @shared
     shared_event2::SharedTestEvent2
 end
 
@@ -143,7 +143,7 @@ end
     agent = RoleTestAgent(0)
     role1 = RoleTestRole(0, nothing)
     add(agent, role1)
-    
+
     addr = address(role1)
 
     @test addr.aid == aid(agent)
@@ -161,8 +161,8 @@ function handle_message(role::ForwardingTestRole, content::Any, meta::Any)
         wait(forward_to(role, content, role.forward_to, meta))
     else
         role.forward_is_here = true
-        @test meta["forwarded_from_address"] == role.forwarded_from.address     
-        @test meta["forwarded_from_id"] == role.forwarded_from.aid   
+        @test meta["forwarded_from_address"] == role.forwarded_from.address
+        @test meta["forwarded_from_id"] == role.forwarded_from.aid
     end
 end
 
@@ -182,7 +182,7 @@ end
     add(agent3, role3)
 
     wait(send_message(role1, "Hey, forward me!", address(role2)))
-    
+
     @test role3.forward_is_here
 end
 
@@ -195,8 +195,8 @@ end
 
 function handle_message(role::ForwardTarget, content::Any, meta::Any)
     role.forward_arrived = meta["forwarded"]
-    role.forwarded_from = AgentAddress(aid=meta["forwarded_from_id"], 
-    address=meta["forwarded_from_address"])
+    role.forwarded_from = AgentAddress(aid=meta["forwarded_from_id"],
+        address=meta["forwarded_from_address"])
 end
 
 @testset "RoleAutoForwardMessage" begin
@@ -213,10 +213,10 @@ end
     add(agent1, role1)
     add(agent2, role2)
     add(agent3, role3)
-    
+
     add_forwarding_rule(role2, address(role1), address(role3), false)
     wait(send_message(role1, "Hey, forward me!", address(role2)))
-    
+
     @test role3.forward_arrived
     @test role3.forwarded_from == address(role1)
 end
@@ -243,10 +243,10 @@ end
     add(agent2, role2)
     add(agent3, role3)
     add(agent3, Replier())
-    
+
     add_forwarding_rule(role2, address(role1), address(role3), true)
     wait(send_message(role1, "Hey, forward me!", address(role2)))
-    
+
     @test role3.forward_arrived
     @test role3.forwarded_from == address(role1)
     @test role1.forward_arrived
@@ -259,14 +259,14 @@ end
     wait(send_message(role1, "Hey, forward me!", address(role2)))
 
     @test !role3.forward_arrived
-    @test !role1.forward_arrived    
+    @test !role1.forward_arrived
 end
-  
+
 @role struct MyRoleVar{T}
     counter::T
 end
 
 @testset "TestTypedRoles" begin
     role_var = MyRoleVar(1)
-    @test role_var.counter == 1 
+    @test role_var.counter == 1
 end
