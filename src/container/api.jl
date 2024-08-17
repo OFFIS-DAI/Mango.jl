@@ -1,5 +1,5 @@
 
-export ContainerInterface, send_message, protocol_addr, Address, AgentAddress, MQTTAddress, SENDER_ADDR, SENDER_ID, TRACKING_ID
+export ContainerInterface, send_message, protocol_addr, agents, Address, AgentAddress, MQTTAddress, SENDER_ADDR, SENDER_ID, TRACKING_ID
 
 # id key for the sender address
 SENDER_ADDR::String = "sender_addr"
@@ -65,3 +65,5 @@ function register(
     suggested_aid::Union{String,Nothing}=nothing;
     kwargs...,
 ) end
+
+function agents(container::ContainerInterface) end

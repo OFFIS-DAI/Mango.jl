@@ -30,6 +30,10 @@ able to send messages via different protocols using different codecs.
     tasks::Any = nothing
 end
 
+function agents(container::Container)
+    return values(container.agents)
+end
+
 """
 Internal representation of a message in mango
 """

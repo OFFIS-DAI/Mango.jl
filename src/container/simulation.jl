@@ -41,6 +41,10 @@ end
     message_queue::ConcurrentQueue{MessageData} = ConcurrentQueue{MessageData}()
 end
 
+function agents(container::SimulationContainer)
+    return values(container.agents)
+end
+
 function on_step(agent::Agent, world::World, clock::Clock, step_size_s::Real)
     # default nothing
 end

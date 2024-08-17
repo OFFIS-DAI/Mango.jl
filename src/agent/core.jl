@@ -59,6 +59,7 @@ AGENT_BASELINE_FIELDS::Vector = [
     :(aid::Union{Nothing,String}),
     :(transaction_handler::Dict{String,Tuple}),
     :(forwarding_rules::Vector{ForwardingRule}),
+    :(services::Dict{DataType,Any})
 ]
 
 """
@@ -74,6 +75,7 @@ AGENT_BASELINE_DEFAULTS::Vector = [
     () -> nothing,
     () -> Dict{String,Tuple}(),
     () -> Vector{ForwardingRule}(),
+    () -> Dict{DataType,Any}()
 ]
 
 """
@@ -543,4 +545,24 @@ function forward_to(agent::Agent,
     return send_message(agent, content, forward_to_address; forwarded=true,
         forwarded_from_address=received_meta[SENDER_ADDR],
         forwarded_from_id=received_meta[SENDER_ID])
+end
+
+function services(agent::Agent)::Dict{DataType,Any}
+    return agent.services
+end
+
+function service_of_type(agent::Agent, type::Type{T}, default::Union{T,Nothing}=nothing)::Union{T,Nothing} where {T}
+    for pair in services(agent)
+        if isa(pair[1], type)
+            return pair[2]
+        end
+    end
+    if !isnothing(default)
+        add_service(agent, default)
+    end
+    return default
+end
+
+function add_service(agent::Agent, service::Any)
+    agent.services[typeof(service)] = service
 end
