@@ -12,7 +12,10 @@ export @agent,
     forward_to,
     add_forwarding_rule,
     delete_forwarding_rule,
-    ForwardingRule
+    ForwardingRule,
+    service_of_type,
+    add_service!,
+    services
 
 using UUIDs
 
@@ -528,11 +531,13 @@ function reply_to(agent::Agent,
 end
 
 """
+    forward_to(agent, content, forward_to_address, received_meta; kwargs...)
+
 Forward the message to a specific agent using the metadata received on handling
 the message. This method essentially simply calls send_message on the input given, but
 also adds and fills the correct metadata fields to mark the message as forwarded. 
 
-For this the following is set.
+For this the following meta data is set.
 'forwarded=`true`',
 'forwarded_from_address=`address of the original sender`',
 'forwarded_from_id=`id of the original sender`'
@@ -547,10 +552,25 @@ function forward_to(agent::Agent,
         forwarded_from_id=received_meta[SENDER_ID])
 end
 
+"""
+    services(agent)::Dict{DataType,Any}
+
+Return a list of services, which were added to the agent.
+"""
 function services(agent::Agent)::Dict{DataType,Any}
     return agent.services
 end
 
+"""
+    service_of_type(agent, type::Type{T}, default=nothing)::Union{T,Nothing} where {T}
+
+Return the current agent service of the type `type`. 
+
+If a default is set, this default service will be added to the agent as service of te type `type. The
+function is especially useful if you want to extend the functionality of the agent without
+having to change the internals of the agent, as this functions enables the user to add 
+arbitrary data to the agent on which functions can be defined.
+"""
 function service_of_type(agent::Agent, type::Type{T}, default::Union{T,Nothing}=nothing)::Union{T,Nothing} where {T}
     for pair in services(agent)
         if isa(pair[1], type) || pair[1] == type
@@ -558,11 +578,16 @@ function service_of_type(agent::Agent, type::Type{T}, default::Union{T,Nothing}=
         end
     end
     if !isnothing(default)
-        add_service(agent, default)
+        add_service!(agent, default)
     end
     return default
 end
 
-function add_service(agent::Agent, service::Any)
+"""
+    add_service!(agent, service)
+
+Add a service to the agent. Every service can exists exactly one time (stored by type).
+"""
+function add_service!(agent::Agent, service::Any)
     agent.services[typeof(service)] = service
 end

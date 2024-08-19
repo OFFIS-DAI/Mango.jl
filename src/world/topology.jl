@@ -1,4 +1,4 @@
-export complete_topology, star_topology, cycle_topology, graph_topology, per_node, add!, topology_neighbors, create_topology, add_node!, add_edge!
+export complete_topology, star_topology, cycle_topology, graph_topology, per_node, add!, topology_neighbors, create_topology, add_node!, add_edge!, Topology
 
 using MetaGraphsNext
 using Graphs
@@ -30,26 +30,52 @@ function _create_meta_graph_with(graph::AbstractGraph)
     return MetaGraph(graph, vertices_description, edges_description)
 end
 
-function complete_topology(number_of_nodes::Int)
+"""
+	complete_topology(number_of_nodes)
+
+Create a fully-connected topology.
+"""
+function complete_topology(number_of_nodes::Int)::Topology
     graph = complete_graph(number_of_nodes)
     return Topology(_create_meta_graph_with(graph))
 end
 
+"""
+	star_topology(number_of_nodes)
+
+Create a star topology.
+"""
 function star_topology(number_of_nodes::Int)
     graph = star_graph(number_of_nodes)
     return Topology(_create_meta_graph_with(graph))
 end
 
+"""
+	cycle_topology(number_of_nodes)
+
+Create a cycle topology.
+"""
 function cycle_topology(number_of_nodes::Int)
     graph = cycle_graph(number_of_nodes)
     return Topology(_create_meta_graph_with(graph))
 end
 
-function graph_topology(graph::Graph)
+"""
+	graph_topology(graph)
+
+Create a topology based on a Graphs.jl (abstract) graph.
+"""
+function graph_topology(graph::AbstractGraph)
     return Topology(_create_meta_graph_with(graph))
 end
 
-function add_edge!(topology::Topology, node_id_from::Int, node_id_to::Int, directed=false)
+"""
+	add_edge!(topology, node_id_from, node_id_to, directed=false)
+
+Add an edge to the topology from `node_id_from` to `node_id_to`. If `directed` is true
+a directed edge is added, otherwise an undirected edge is added.
+"""
+function add_edge!(topology::Topology, node_id_from::Int, node_id_to::Int, directed::Bool=false)
     if directed
         topology.graph[node_id_from, node_id_to] = nothing
     else
@@ -58,12 +84,37 @@ function add_edge!(topology::Topology, node_id_from::Int, node_id_to::Int, direc
     end
 end
 
+"""
+	add_node!(topology, agents::Agent...)::Int
+
+Add a node to the topology with a list (or a single) of agents attached.
+"""
 function add_node!(topology::Topology, agents::Agent...)::Int
     vid = nv(topology.graph) + 1
     topology.graph[vid] = Node(vid, [a for a in agents])
     return vid
 end
 
+"""
+	create_topology(create_runnable)::Topology
+
+Create a topology using the `create_runnable` function which is a one-argument
+function with an initially empty topology as argument.
+
+# Example
+```julia
+topology = create_topology() do topology
+    agent = register(container, TopologyAgent())
+    agent2 = register(container, TopologyAgent())
+    agent3 = register(container, TopologyAgent())
+    n1 = add_node!(topology, agent)
+    n2 = add_node!(topology, agent2)
+    n3 = add_node!(topology, agent3)
+    add_edge!(topology, n1, n2)
+    add_edge!(topology, n1, n3)
+end
+```
+"""
 function create_topology(create_runnable::Function)
     topology = Topology(_create_meta_graph_with(DiGraph()))
     create_runnable(topology)
@@ -87,6 +138,19 @@ function _build_neighborhoods_and_inject(topology::Topology)
     end
 end
 
+"""
+	per_node(assign_runnable, topology)
+
+Loops over the nodes of the `topology`, calls `assign_runnable` on every node to enable the caller
+to populate the node. After the loop finished the neighborhoods are created and injected into the agent. 
+
+# Example
+```julia
+per_node(topology) do node
+    add!(node, register(container, TopologyAgent()))
+end
+```
+"""
 function per_node(assign_runnable::Function, topology::Topology)
     # 1st pass, let the user assign the agents
     for label in labels(topology.graph)
@@ -96,12 +160,23 @@ function per_node(assign_runnable::Function, topology::Topology)
     _build_neighborhoods_and_inject(topology)
 end
 
-function add!(node::Node, agent::Agent...)
-    for a in agent
+"""
+	add!(node, agent::Agent...)
+
+Add an `agents` to the `node`.
+"""
+function add!(node::Node, agents::Agent...)
+    for a in agents
         push!(node.agents, a)
     end
 end
 
+"""
+	topology_neighbors(agent)
+
+Retrieve the neighbors of the `agent`, represented by their addresses. These vaues will be
+updated when a topology is applied using `per_node` or `create_topology`.
+"""
 function topology_neighbors(agent::Agent)::Vector{AgentAddress}
     return neighbors(service_of_type(agent, TopologyService, TopologyService()))
 end
