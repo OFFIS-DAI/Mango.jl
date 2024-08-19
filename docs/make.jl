@@ -15,6 +15,7 @@ makedocs(
         "Codecs"=>"encode_decode.md",
         "Scheduling"=>"scheduling.md",
         "Topologies"=>"topology.md",
+        "API"=>"api.md",
         "Legals"=>"legals.md",],
     repo="https://github.com/OFFIS-DAI/Mango.jl",
 )
