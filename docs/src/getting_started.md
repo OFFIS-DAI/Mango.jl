@@ -80,7 +80,7 @@ end
 In this example, the ping pong agents take turns sending "Ping" and "Pong" messages to each other, incrementing their counters. After a short moment, we can see the result of the ping pong process.
 
 ## 5. Using the MQTT Protocol
-To use an MQTT messsage broker instead of a direkt TCP connection, you can use the the MQTT protocol.
+To use an MQTT messsage broker instead of a direkt TCP connection, you can use the MQTT protocol.
 
 ```julia
 broker_addr = InetAddr(ip"127.0.0.1", 1883)
