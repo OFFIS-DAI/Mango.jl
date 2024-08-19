@@ -14,6 +14,7 @@ makedocs(
         "Simulation"=>"simulation.md",
         "Codecs"=>"encode_decode.md",
         "Scheduling"=>"scheduling.md",
+        "Topologies"=>"topology.md",
         "Legals"=>"legals.md",],
     repo="https://github.com/OFFIS-DAI/Mango.jl",
 )

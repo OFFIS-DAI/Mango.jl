@@ -553,7 +553,7 @@ end
 
 function service_of_type(agent::Agent, type::Type{T}, default::Union{T,Nothing}=nothing)::Union{T,Nothing} where {T}
     for pair in services(agent)
-        if isa(pair[1], type)
+        if isa(pair[1], type) || pair[1] == type
             return pair[2]
         end
     end
