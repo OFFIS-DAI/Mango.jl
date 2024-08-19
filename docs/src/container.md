@@ -19,14 +19,26 @@ using Mango
 # Create a container instance
 container = Container()
 
+# ... setup the container, agents, define handles, ...
+
 # Start the container
 wait(Threads.@spwan start(container))
 
-# ... Perform message handling and agent registration ...
-# ... When done, shut down the container ...
+# Execute some functionality to e.g. trigger the agent system
 
 # Shut down the container
 shutdown(container)
+```
+
+However, this approach can be error-prone for multiple reasons. Besides simply forgetting to call shutdown, an exception may occur between the start and shutdown calls on the containers, leading to resource leaks. For this reason, we recommend using `activate(runnable, containers)`. With this function, the above `start/shutdown' pair translates to...
+
+```julia
+# Start the container and shut it down after the runnable (do ... end) has been executed.
+activate(container) do
+
+# Execute some functionality to e.g. trigger the agent system
+
+end
 ```
 
 ## Registering Agents 
@@ -90,6 +102,7 @@ container2 = Container()
 container2.protocol = TCPProtocol(address=InetAddr(ip"127.0.0.2", 2940))
 ```
 
+It is also possible to use the convenience function [`create_tcp_container`](@ref).
 
 ## MQTT
 ### Introduction
@@ -112,7 +125,8 @@ Internally it also tracks the `msg_channel` and `conn_channel`, internal flags, 
 
 ### Usage
 
-To use the mqtt protocol you need to construct a MQTTProtocol struct and assign it to the `protocol` field in the container.
+To use the mqtt protocol you need to construct a MQTTProtocol struct and assign it to the `protocol` field in the container. Further it is possible to use a convenience function for this 
+It is also possible to use the convenience function [`create_mqtt_container`](@ref).
 
 ```julia
 container2 = Container()

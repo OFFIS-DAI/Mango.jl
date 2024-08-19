@@ -1,5 +1,16 @@
 export Role,
-    handle_message, handle_event, RoleContext, @role, @shared, subscribe_message, subscribe_send, bind_context, emit_event, get_model, subscribe_event, address, setup, on_ready, on_start
+    RoleContext,
+    handle_message,
+    handle_event,
+    @role,
+    @shared,
+    subscribe_message,
+    subscribe_send,
+    bind_context,
+    emit_event,
+    get_model,
+    subscribe_event,
+    setup
 
 
 """
@@ -25,17 +36,17 @@ List of all baseline fields of every role, which will be inserted
 by the macro @role.
 """
 ROLE_BASELINE_FIELDS::Vector = [:(context::Union{RoleContext,Nothing}),
-                                :(shared_vars::Vector{Any})]
+    :(shared_vars::Vector{Any})]
 
 ROLE_BASELINE_DEFAULTS::Vector = [
     () -> nothing,
-    () -> Vector()
+    () -> Vector(),
 ]
 
 """
 Macro for defining a role struct. Expects a struct definition
 as argument.
-    
+	
 The macro does 3 things:
 1. It adds all baseline fields, defined in ROLE_BASELINE_FIELDS
    (the role context)
@@ -47,14 +58,14 @@ The macro does 3 things:
 For example the usage could like this.
 ```julia
 @role struct MyRole
-    my_own_field::String
+	my_own_field::String
 end
 
 # results in
 
 mutable struct MyRole <: Agent
-    # baseline fields...
-    my_own_field::String
+	# baseline fields...
+	my_own_field::String
 end
 MyRole(my_own_field) = MyRole(baseline fields defaults..., my_own_field)
 
@@ -65,14 +76,14 @@ my_roel = MyRole("own value")
 """
 macro role(struct_def)
     Base.remove_linenums!(struct_def)
-    
+
     struct_head = struct_def.args[2]
     struct_name = struct_head
     if typeof(struct_name) != Symbol
         struct_name = struct_head.args[1]
     end
     struct_fields = struct_def.args[3].args
-    
+
     # Add the roles baseline fields
     for field in reverse(ROLE_BASELINE_FIELDS)
         pushfirst!(struct_fields, field)
@@ -92,18 +103,18 @@ macro role(struct_def)
             new_expr_decl = Expr(:(::), field_name, field_type)
             push!(new_struct_fields, new_expr_decl)
             push!(shared_names, Expr(:tuple, String(field_name), field_type))
-            deleteat!(modified_struct_fields, i+1)
+            deleteat!(modified_struct_fields, i + 1)
             deleteat!(modified_struct_fields, i)
         end
     end
     struct_fields = modified_struct_fields
-    
+
     # Create the new struct definition
     new_struct_def = Expr(
         :struct,
         true,
         Expr(:(<:), struct_head, :(Role)),
-        Expr(:block, cat(struct_fields, new_struct_fields, dims=(1,1))...),
+        Expr(:block, cat(struct_fields, new_struct_fields, dims=(1, 1))...),
     )
 
     # Creates a constructor, which will assign nothing to all baseline fields, therefore requires you just to call it with the your fields
@@ -114,7 +125,7 @@ macro role(struct_def)
     ]
     new_values = [i == 2 ? Expr(:vect, shared_names...) : Expr(:call, default) for (i, default) in enumerate(ROLE_BASELINE_DEFAULTS)]
     new_struct_values = [Expr(:call, field.args[2]) for field in new_struct_fields]
-    new_values = cat(new_values, new_struct_values, dims=(1,1))
+    new_values = cat(new_values, new_struct_values, dims=(1, 1))
 
     default_constructor_def = Expr(
         :(=),
@@ -187,7 +198,6 @@ function shutdown(role::Role)
     # default nothing
 end
 
-
 """
 Lifecycle Hook-in function called when the container of the agent has been started,
 depending on the container type it may not be called (if there is no start at all, 
@@ -227,7 +237,7 @@ end
 Subscribe to specific types of events.
 """
 function subscribe_event(role::Role, event_type::Any, event_handler::Any)
-    subscribe_event_handle(role.context.agent, role, event_type, event_handler; condition=(a,b)->true)
+    subscribe_event_handle(role.context.agent, role, event_type, event_handler; condition=(a, b) -> true)
 end
 
 """
@@ -295,7 +305,7 @@ function send_tracked_message(
     role::Role,
     content::Any,
     agent_adress::AgentAddress;
-    response_handler::Function=(role,message,meta)->nothing,
+    response_handler::Function=(role, message, meta) -> nothing,
     kwargs...,
 )
     return send_tracked_message(role.context.agent, content, agent_adress; response_handler=response_handler, calling_object=role, kwargs...)
@@ -307,14 +317,14 @@ function send_and_handle_answer(
     content::Any,
     agent_address::AgentAddress;
     kwargs...)
-    return send_and_handle_answer(response_handler, role.context.agent, content, agent_address; 
-                    calling_object=role, kwargs...)
+    return send_and_handle_answer(response_handler, role.context.agent, content, agent_address;
+        calling_object=role, kwargs...)
 end
 
 function reply_to(role::Role,
     content::Any,
     received_meta::AbstractDict;
-    response_handler::Function=(agent,message,meta)->nothing,
+    response_handler::Function=(agent, message, meta) -> nothing,
     kwargs...)
     return reply_to(role.context.agent, content, received_meta; response_handler=response_handler, calling_object=role, kwargs...)
 end

@@ -1,4 +1,4 @@
-export Container, register, send_message, start, shutdown, protocol_addr, notify_ready
+export Container, register, send_message, start, shutdown, notify_ready
 
 using Parameters
 using OrderedCollections
@@ -118,7 +118,7 @@ messages.
 
 # Args
 suggested_aid: you can provide an aid yourself. The container will always use that aid
-    if possible
+	if possible
 
 # Returns
 The actually used aid will be returned.
@@ -127,7 +127,7 @@ function register(
     container::Container,
     agent::Agent,
     suggested_aid::Union{String,Nothing}=nothing;
-    kwargs...
+    kwargs...,
 )
     actual_aid::String = "$AGENT_PREFIX$(container.agent_counter)"
     if !isnothing(suggested_aid) && !haskey(container.agents, suggested_aid)
@@ -141,7 +141,7 @@ function register(
     if !isnothing(container.protocol)
         notify_register(container.protocol, actual_aid; kwargs...)
     end
-    return agent.aid
+    return agent
 end
 
 """
@@ -166,7 +166,7 @@ function forward_message(container::Container, msg::Any, meta::AbstractDict; rec
             else
                 agent = container.agents[receiver]
                 @debug "Dispatch a message to agent $(aid(agent))" typeof(msg) get(meta, SENDER_ID, "") protocol_addr(container)
-                push!(send_tasks, Threads.@spawn dispatch_message(agent, msg, meta))
+                push!(send_tasks, @spawnlog dispatch_message(agent, msg, meta))
             end
         end
     end
@@ -227,7 +227,7 @@ function send_message(
 
     @debug "Send a message to ($receiver_id, $receiver_addr), from $sender_id" typeof(content)
 
-    return Threads.@spawn send(
+    return @spawnlog send(
         container.protocol,
         receiver_addr,
         container.codec[1](to_external_message(content, meta)),
@@ -260,7 +260,7 @@ function send_message(
         meta[SENDER_ADDR] = id(container.protocol)
     end
 
-    return Threads.@spawn send(
+    return @spawnlog send(
         container.protocol,
         topic,
         container.codec[1](to_external_message(content, meta)),

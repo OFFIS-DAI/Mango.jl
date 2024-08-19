@@ -328,7 +328,7 @@ end
     agent_var = MyAgentVar(1)
 
     @test agent_var.counter == 1
-    
+
     agent_var_var = MyAgentVarVar(2, 3.3)
 
     @test agent_var_var.other == 2

@@ -8,6 +8,12 @@ using OrderedCollections
 import Mango.handle_message, Mango.on_start, Mango.on_ready
 
 
+@agent struct MyAgent
+    counter::Integer
+    got_msg::Bool
+end
+MyAgent(c::Integer) = MyAgent(c, false)
+
 function handle_message(agent::MyAgent, message::Any, meta::AbstractDict)
     agent.counter += 10
 end
@@ -38,26 +44,20 @@ end
     agent3 = MyAgent(0)
     register(container2, agent3)
 
-    wait(Threads.@spawn start(container))
-    wait(Threads.@spawn start(container2))
+    activate([container, container2]) do
+        wait(
+            send_message(
+                container2,
+                "Hello Friends2, this is RSc!",
+                AgentAddress(aid=agent3.aid, address=InetAddr(ip"127.0.0.1", 2940))
+            ),
+        )
 
-    wait(
-        send_message(
-            container2,
-            "Hello Friends2, this is RSc!",
-            AgentAddress(aid=agent3.aid, address=InetAddr(ip"127.0.0.1", 2940))
-        ),
-    )
-
-    wait(Threads.@spawn begin
-        while agent3.counter != 10
-            sleep(1)
-        end
-    end)
-
-    @sync begin
-        Threads.@spawn shutdown(container)
-        Threads.@spawn shutdown(container2)
+        wait(Threads.@spawn begin
+            while agent3.counter != 10
+                sleep(1)
+            end
+        end)
     end
 
     @test agent3.counter == 10
@@ -89,20 +89,13 @@ end
     register(container2, ping_agent)
     register(container, pong_agent)
 
-    wait(Threads.@spawn start(container))
-    wait(Threads.@spawn start(container2))
-
-    wait(send_message(ping_agent, "Ping", AgentAddress(aid=pong_agent.aid, address=InetAddr(ip"127.0.0.1", 2939))))
-
-    wait(Threads.@spawn begin
-        while ping_agent.counter < 5
-            sleep(1)
-        end
-    end)
-
-    @sync begin
-        Threads.@spawn shutdown(container)
-        Threads.@spawn shutdown(container2)
+    activate([container, container2]) do
+        wait(send_message(ping_agent, "Ping", AgentAddress(aid=pong_agent.aid, address=InetAddr(ip"127.0.0.1", 2939))))
+        wait(Threads.@spawn begin
+            while ping_agent.counter < 5
+                sleep(1)
+            end
+        end)
     end
 
     @test ping_agent.counter >= 5
@@ -138,23 +131,15 @@ end
     register(container2, tracked_agent)
     register(container, responding_agent)
 
-    wait(Threads.@spawn start(container))
-    wait(Threads.@spawn start(container2))
-
-    wait(send_tracked_message(tracked_agent, "Hello Agent, this is DialogRico", AgentAddress(aid=responding_agent.aid, address=InetAddr(ip"127.0.0.1", 2939));
-        response_handler=handle_response))
-
-    wait(Threads.@spawn begin
-        while tracked_agent.counter == 0
-            sleep(1)
-        end
-    end)
-
-    @sync begin
-        Threads.@spawn shutdown(container)
-        Threads.@spawn shutdown(container2)
+    activate([container, container2]) do
+        wait(send_tracked_message(tracked_agent, "Hello Agent, this is DialogRico", AgentAddress(aid=responding_agent.aid, address=InetAddr(ip"127.0.0.1", 2939));
+            response_handler=handle_response))
+        wait(Threads.@spawn begin
+            while tracked_agent.counter == 0
+                sleep(1)
+            end
+        end)
     end
-
 
     @test responding_agent.counter == 10
     @test tracked_agent.counter == 1337
@@ -202,16 +187,12 @@ end
     c1 = Container()
     c1.protocol = TCPProtocol(address=c1_addr)
 
-    wait(Threads.@spawn start(c1))
-
-    unknown_addr = AgentAddress("unknown", c1_addr, nothing)
-
-    # send some messages
-    wait(send_message(c1, "hello", unknown_addr))
+    activate(c1) do
+        unknown_addr = AgentAddress("unknown", c1_addr, nothing)
+        # send some messages
+        wait(send_message(c1, "hello", unknown_addr))
+    end
 
     # we only care that this does not throw an exception
     @test true
-
-    # stop container loop
-    wait(Threads.@spawn shutdown(c1))
 end

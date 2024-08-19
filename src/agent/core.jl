@@ -1,7 +1,6 @@
 export @agent,
-    dispatch_message,
-    AgentRoleHandler,
     AgentContext,
+    AgentRoleHandler,
     handle_message,
     add,
     schedule,
@@ -9,6 +8,7 @@ export @agent,
     shutdown,
     on_ready,
     on_start,
+    roles,
     forward_to,
     add_forwarding_rule,
     delete_forwarding_rule,
@@ -16,7 +16,7 @@ export @agent,
 
 using UUIDs
 
-import Dates
+using Dates: Dates
 
 FORWARDED_FROM_ADDR = "forwarded_from_address"
 FORWARDED_FROM_ID = "forwarded_from_id"
@@ -58,7 +58,7 @@ AGENT_BASELINE_FIELDS::Vector = [
     :(scheduler::AbstractScheduler),
     :(aid::Union{Nothing,String}),
     :(transaction_handler::Dict{String,Tuple}),
-    :(forwarding_rules::Vector{ForwardingRule})
+    :(forwarding_rules::Vector{ForwardingRule}),
 ]
 
 """
@@ -73,13 +73,13 @@ AGENT_BASELINE_DEFAULTS::Vector = [
     () -> Scheduler(),
     () -> nothing,
     () -> Dict{String,Tuple}(),
-    () -> Vector{ForwardingRule}()
+    () -> Vector{ForwardingRule}(),
 ]
 
 """
 Macro for defining an agent struct. Expects a struct definition
 as argument.
-    
+	
 The macro does 3 things:
 1. It adds all baseline fields, defined in AGENT_BASELINE_FIELDS
    (the agent context `context`, the role handler `role_handler`, and the `aid`)
@@ -91,14 +91,14 @@ The macro does 3 things:
 For example the usage could like this.
 ```julia
 @agent struct MyAgent
-    my_own_field::String
+	my_own_field::String
 end
 
 # results in
 
 mutable struct MyAgent <: Agent
-    # baseline fields...
-    my_own_field::String
+	# baseline fields...
+	my_own_field::String
 end
 MyAgent(my_own_field) = MyAgent(baseline fields defaults..., my_own_field)
 
@@ -181,7 +181,7 @@ function dispatch_message(agent::Agent, message::Any, meta::AbstractDict)
     if forwarded
         return
     end
-    
+
     lock(agent.lock) do
         # check if part of a transaction
         if haskey(meta, TRACKING_ID) && haskey(agent.transaction_handler, meta[TRACKING_ID])
@@ -461,7 +461,7 @@ function send_tracked_message(
     agent_address::AgentAddress;
     response_handler::Union{Function,Nothing}=nothing,
     calling_object::Any=nothing,
-    kwargs...
+    kwargs...,
 )
     tracking_id = string(uuid1())
     if !isnothing(agent_address.tracking_id)
@@ -483,7 +483,7 @@ Convenience method for sending tracked messages with response handler to the ans
 Sends a tracked message with a required response_handler to enable to use the syntax
 ```
 send_and_handle_answer(...) do agent, message, meta
-    # handle the answer
+	# handle the answer
 end
 ```
 """
@@ -513,16 +513,16 @@ function reply_to(agent::Agent,
     response_handler::Union{Function,Nothing}=nothing,
     calling_object::Any=nothing,
     kwargs...)
-    return send_tracked_message(agent, content, AgentAddress(received_meta[SENDER_ID], 
-                                received_meta[SENDER_ADDR], 
-                                get(received_meta, TRACKING_ID, nothing)); 
-                                response_handler=response_handler,
-                                calling_object=calling_object,
-                                reply=true,
-                                reply_to_forwarded=get(received_meta, "forwarded", false),
-                                reply_to_forwarded_from_address=get(received_meta, FORWARDED_FROM_ADDR, nothing), 
-                                reply_to_forwarded_from_id=get(received_meta, FORWARDED_FROM_ID, nothing),
-                                kwargs...)
+    return send_tracked_message(agent, content, AgentAddress(received_meta[SENDER_ID],
+            received_meta[SENDER_ADDR],
+            get(received_meta, TRACKING_ID, nothing));
+        response_handler=response_handler,
+        calling_object=calling_object,
+        reply=true,
+        reply_to_forwarded=get(received_meta, "forwarded", false),
+        reply_to_forwarded_from_address=get(received_meta, FORWARDED_FROM_ADDR, nothing),
+        reply_to_forwarded_from_id=get(received_meta, FORWARDED_FROM_ID, nothing),
+        kwargs...)
 end
 
 """
@@ -540,7 +540,7 @@ function forward_to(agent::Agent,
     forward_to_address::AgentAddress,
     received_meta::AbstractDict;
     kwargs...)
-    return send_message(agent, content, forward_to_address; forwarded=true, 
-                                                            forwarded_from_address=received_meta[SENDER_ADDR], 
-                                                            forwarded_from_id=received_meta[SENDER_ID])
+    return send_message(agent, content, forward_to_address; forwarded=true,
+        forwarded_from_address=received_meta[SENDER_ADDR],
+        forwarded_from_id=received_meta[SENDER_ID])
 end

@@ -1,6 +1,7 @@
+export encode, decode
+
 using LightBSON
 using OrderedCollections
-export encode, decode
 
 struct MsgContent
     typeinfo::String
@@ -26,7 +27,7 @@ end
 
 function decode(
     buf::Vector{UInt8},
-    t::Type = OrderedDict{String,Any},
+    t::Type=OrderedDict{String,Any},
 )::Union{OrderedDict{String,Any},Any}
     return LightBSON.bson_read(t, buf)
 end

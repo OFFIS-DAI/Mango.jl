@@ -61,6 +61,14 @@ add(my_agent, role2)
 # Now you can interact with the roles as needed
 ```
 
+As this can be clunky at some time, there is the possibility to create an agent using only roles and add it to the container using [`add_agent_composed_of`](@ref).
+
+```julia
+# internally an empty agent definition is used, the roles are added and the agent
+# is added to the given container
+created_agent = add_agent_composed_of(your_container, RoleA(), RoleB(), RoleC())
+```
+
 For more information on roles, take a look at [Role definition](@ref)
 
 ## 3. Message Handling

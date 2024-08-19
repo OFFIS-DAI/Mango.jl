@@ -4,15 +4,15 @@ export TaskData,
     DateTimeTaskData,
     AwaitableTaskData,
     ConditionalTaskData,
-    execute_task,
     stop_task,
     stop_all_tasks,
     wait_for_all_tasks,
     stop_and_wait_for_all_tasks,
     schedule,
-    Scheduler,
+    Clock,
     AbstractScheduler,
-    Clock
+    Scheduler,
+    SimulationScheduler
 
 using Dates
 using ConcurrentCollections
@@ -52,7 +52,7 @@ end
 function tasks(scheduler::AbstractScheduler)
     throw("unimplemented")
 end
-    
+
 @kwdef struct Scheduler <: AbstractScheduler
     tasks::AbstractDict{Task,TaskData} = ConcurrentDict{Task,TaskData}()
     clock::DateTimeClock = DateTimeClock()
@@ -64,7 +64,7 @@ end
 function tasks(scheduler::Scheduler)
     return scheduler.tasks
 end
-        
+
 function is_stopable(data::TaskData)::Bool
     return false
 end
@@ -77,7 +77,7 @@ mutable struct PeriodicTaskData <: TaskData
     condition::Function
     timer::Timer
 
-    function PeriodicTaskData(interval_s::Real, condition::Function=()->true)
+    function PeriodicTaskData(interval_s::Real, condition::Function=() -> true)
         return new(interval_s, condition, Timer(interval_s; interval=interval_s))
     end
 end
