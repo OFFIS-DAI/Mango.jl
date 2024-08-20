@@ -57,7 +57,9 @@ Return the agent address of the agent as [`AgentAddress`](@ref) or [`MQTTAddress
 function address(agent::AgentInterface) end
 
 """
-Used internally by the role to get the AID
+    aid(agent)
+
+Return the aid of the agent.
 """
 function aid(agent::AgentInterface) end
 
