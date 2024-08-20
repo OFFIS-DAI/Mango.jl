@@ -1,5 +1,5 @@
 
-export TCPProtocol, send, init, close, id, parse_id, acquire_tcp_connection, release_tcp_connection
+export TCPProtocol, init, parse_id, acquire_tcp_connection, release_tcp_connection
 
 using Sockets:
     connect,
@@ -16,7 +16,7 @@ using Sockets:
 
 using ConcurrentUtilities: Pool, acquire, release, drain!, ReadWriteLock, readlock, readunlock, lock, unlock
 
-import Dates
+using Dates: Dates
 import Base.close
 
 mutable struct AtomicCounter
@@ -40,7 +40,7 @@ end
 
 function close(pool::TCPConnectionPool)
     lock(pool.lock)
-    
+
     pool.closed = true
 
     # Waiting until all acquired connections are released
@@ -56,7 +56,7 @@ function close(pool::TCPConnectionPool)
         end
     end
     drain!(pool.connections)
-    
+
     unlock(pool.lock)
 end
 
@@ -70,18 +70,18 @@ end
 
 function acquire_tcp_connection(tcp_pool::TCPConnectionPool, key::InetAddr)::Union{TCPSocket,Nothing}
     readlock(tcp_pool.lock)
-    
+
     if tcp_pool.closed
         readunlock(tcp_pool.lock)
         return nothing
     end
-    
+
     connection, _ = acquire(
         tcp_pool.connections,
         key,
         forcenew=false,
         isvalid=c -> is_valid(c, tcp_pool.keep_alive_time_ms),
-        ) do
+    ) do
         result = (connect(key.host, key.port), Dates.now())
         return result
     end
@@ -89,7 +89,7 @@ function acquire_tcp_connection(tcp_pool::TCPConnectionPool, key::InetAddr)::Uni
     @atomic tcp_pool.acquired_connections.counter += 1
 
     readunlock(tcp_pool.lock)
-    
+
     return connection
 end
 
@@ -115,7 +115,7 @@ function send(protocol::TCPProtocol, destination::InetAddr, message::Vector{UInt
     if isnothing(connection)
         return false
     end
-    
+
     length_bytes = reinterpret(UInt8, [length(message)])
 
     write(connection, [length_bytes; message])
@@ -190,7 +190,7 @@ function init(protocol::TCPProtocol, stop_check::Function, data_handler::Functio
                     connection = accept(server)
                     push!(
                         tasks,
-                        Threads.@spawn handle_connection(data_handler, connection)
+                        @spawnlog handle_connection(data_handler, connection)
                     )
                 end
             catch err

@@ -62,8 +62,8 @@ end
 
 @testset "TestAgentStepPosition" begin
     container = create_simulation_container(DateTime(Millisecond(23)), communication_sim=SimpleCommunicationSimulation(default_delay_s=0))
-    given_initial = Position2D(-1,-1)
-    given_target = Position2D(1,1)
+    given_initial = Position2D(-1, -1)
+    given_target = Position2D(1, 1)
     agent = ModellingMovingAgent(given_target, given_initial, given_initial)
     register(container, agent)
 

@@ -209,6 +209,25 @@ end
     @test role1.counter == 1337
 end
 
+@testset "RoleAgentDialogWithDoSyntax" begin
+    container = Container()
+    agent1 = MyAgent(0)
+    agent2 = MyAgent(0)
+    role1 = MyTrackedRole(0)
+    role2 = MyRespondingRole(0)
+    add(agent2, role1)
+    add(agent1, role2)
+    register(container, agent1)
+    register(container, agent2)
+
+    wait(send_and_handle_answer(role1, "Hello Agent, this is DialogRico", AgentAddress(aid=aid(role2))) do role, message, meta
+        role.counter = 1111
+    end)
+
+    @test role2.counter == 10
+    @test role1.counter == 1111
+end
+
 
 @testset "AgentMQTTMessaging" begin
     broker_addr = InetAddr(ip"127.0.0.1", 1883)
@@ -309,7 +328,7 @@ end
     agent_var = MyAgentVar(1)
 
     @test agent_var.counter == 1
-    
+
     agent_var_var = MyAgentVarVar(2, 3.3)
 
     @test agent_var_var.other == 2

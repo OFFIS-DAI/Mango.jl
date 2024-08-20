@@ -1,19 +1,28 @@
 export @agent,
-    dispatch_message,
-    AgentRoleHandler,
     AgentContext,
+    AgentRoleHandler,
     handle_message,
     add,
     schedule,
     stop_and_wait_for_all_tasks,
     shutdown,
     on_ready,
-    on_start
+    on_start,
+    roles,
+    forward_to,
+    add_forwarding_rule,
+    delete_forwarding_rule,
+    ForwardingRule,
+    service_of_type,
+    add_service!,
+    services
 
 using UUIDs
 
-import Dates
+using Dates: Dates
 
+FORWARDED_FROM_ADDR = "forwarded_from_address"
+FORWARDED_FROM_ID = "forwarded_from_id"
 
 """
 Context of the agent. Represents the environment for the specific agent. Therefore it includes a 
@@ -35,6 +44,12 @@ struct AgentRoleHandler
     models::Dict{DataType,Any}
 end
 
+struct ForwardingRule
+    from_address::AgentAddress
+    to_address::AgentAddress
+    forward_replies::Bool
+end
+
 """
 All baseline fields added by the @agent macro are listed in this vector.
 They are added in the same order defined here.
@@ -46,6 +61,8 @@ AGENT_BASELINE_FIELDS::Vector = [
     :(scheduler::AbstractScheduler),
     :(aid::Union{Nothing,String}),
     :(transaction_handler::Dict{String,Tuple}),
+    :(forwarding_rules::Vector{ForwardingRule}),
+    :(services::Dict{DataType,Any})
 ]
 
 """
@@ -60,12 +77,14 @@ AGENT_BASELINE_DEFAULTS::Vector = [
     () -> Scheduler(),
     () -> nothing,
     () -> Dict{String,Tuple}(),
+    () -> Vector{ForwardingRule}(),
+    () -> Dict{DataType,Any}()
 ]
 
 """
 Macro for defining an agent struct. Expects a struct definition
 as argument.
-    
+	
 The macro does 3 things:
 1. It adds all baseline fields, defined in AGENT_BASELINE_FIELDS
    (the agent context `context`, the role handler `role_handler`, and the `aid`)
@@ -77,14 +96,14 @@ The macro does 3 things:
 For example the usage could like this.
 ```julia
 @agent struct MyAgent
-    my_own_field::String
+	my_own_field::String
 end
 
 # results in
 
 mutable struct MyAgent <: Agent
-    # baseline fields...
-    my_own_field::String
+	# baseline fields...
+	my_own_field::String
 end
 MyAgent(my_own_field) = MyAgent(baseline fields defaults..., my_own_field)
 
@@ -138,13 +157,38 @@ macro agent(struct_def)
     esc(Expr(:block, new_struct_def, default_constructor_def))
 end
 
+
+function build_forwarded_address_from_meta(meta::AbstractDict)
+    return AgentAddress(aid=meta["reply_to_forwarded_from_id"], address=meta["reply_to_forwarded_from_address"], tracking_id=get(meta, TRACKING_ID, nothing))
+end
+
 """
 Internal API used by the container to dispatch an incoming message to the agent. 
 In this function the message will be handed over to the different handlers in the
 agent.
 """
 function dispatch_message(agent::Agent, message::Any, meta::AbstractDict)
+    # check if auto forwarding is applicable
+    sender_addr = get(meta, SENDER_ADDR, nothing)
+    sender_id = get(meta, SENDER_ID, nothing)
+    forwarded = false
+    for rule::ForwardingRule in agent.forwarding_rules
+        if rule.from_address.aid == sender_id && rule.from_address.address == sender_addr
+            wait(forward_to(agent, message, rule.to_address, meta))
+            forwarded = true
+        end
+        # if reply to a forwarded message and replies shall be forwarded, forward this message to the original sender
+        if rule.to_address.address == sender_addr && rule.to_address.aid == sender_id && get(meta, "reply_to_forwarded", false) && rule.forward_replies
+            wait(forward_to(agent, message, build_forwarded_address_from_meta(meta), meta))
+            forwarded = true
+        end
+    end
+    if forwarded
+        return
+    end
+
     lock(agent.lock) do
+        # check if part of a transaction
         if haskey(meta, TRACKING_ID) && haskey(agent.transaction_handler, meta[TRACKING_ID])
             caller, response_handler = agent.transaction_handler[meta[TRACKING_ID]]
             delete!(agent.transaction_handler, meta[TRACKING_ID])
@@ -297,6 +341,30 @@ function get_model_handle(agent::Agent, type::DataType)
 end
 
 """
+Add a rule for message forwarding.
+
+After calling the agent will auto-forward every message coming from `from_addr` to
+`to_address`. If forward_replies is set, all replies from `to_address` are forwarded
+back to `from_addr`.
+"""
+function add_forwarding_rule(agent::Agent, from_addr::AgentAddress, to_address::AgentAddress, forward_replies::Bool)
+    push!(agent.forwarding_rules, ForwardingRule(from_addr, to_address, forward_replies))
+end
+
+"""
+Delete an added forwarding rule. If `to_address` is not set, all rules are removed matching
+`from_addr`. If it set, both addresses need to match.
+"""
+function delete_forwarding_rule(agent::Agent, from_addr::AgentAddress, to_address::Union{Nothing,AgentAddress})
+    for i in length(agent.forwarding_rules):-1:1
+        rule = agent.forwarding_rules[i]
+        if rule.from_address == from_addr && (isnothing(to_address) || to_address == rule.to_address)
+            deleteat!(agent.forwarding_rules, i)
+        end
+    end
+end
+
+"""
 Delegates to the scheduler `Scheduler`
 """
 function schedule(f::Function, agent::Agent, data::TaskData)
@@ -398,7 +466,7 @@ function send_tracked_message(
     agent_address::AgentAddress;
     response_handler::Union{Function,Nothing}=nothing,
     calling_object::Any=nothing,
-    kwargs...
+    kwargs...,
 )
     tracking_id = string(uuid1())
     if !isnothing(agent_address.tracking_id)
@@ -412,6 +480,27 @@ function send_tracked_message(
         agent.transaction_handler[tracking_id] = (caller, response_handler)
     end
     return send_message(agent, content, AgentAddress(agent_address.aid, agent_address.address, tracking_id); kwargs...)
+end
+
+"""
+Convenience method for sending tracked messages with response handler to the answer.
+
+Sends a tracked message with a required response_handler to enable to use the syntax
+```
+send_and_handle_answer(...) do agent, message, meta
+	# handle the answer
+end
+```
+"""
+function send_and_handle_answer(
+    response_handler::Function,
+    agent::Agent,
+    content::Any,
+    agent_address::AgentAddress;
+    calling_object::Any=nothing,
+    kwargs...)
+    return send_tracked_message(agent, content, agent_address; response_handler=response_handler,
+        calling_object=calling_object, kwargs...)
 end
 
 """
@@ -429,10 +518,76 @@ function reply_to(agent::Agent,
     response_handler::Union{Function,Nothing}=nothing,
     calling_object::Any=nothing,
     kwargs...)
-    return send_tracked_message(agent, content, AgentAddress(received_meta[SENDER_ID], 
-                                              received_meta[SENDER_ADDR], 
-                                              get(received_meta, TRACKING_ID, nothing)); 
-                                              response_handler=response_handler,
-                                              calling_object=calling_object,
-                                              kwargs...)
+    return send_tracked_message(agent, content, AgentAddress(received_meta[SENDER_ID],
+            received_meta[SENDER_ADDR],
+            get(received_meta, TRACKING_ID, nothing));
+        response_handler=response_handler,
+        calling_object=calling_object,
+        reply=true,
+        reply_to_forwarded=get(received_meta, "forwarded", false),
+        reply_to_forwarded_from_address=get(received_meta, FORWARDED_FROM_ADDR, nothing),
+        reply_to_forwarded_from_id=get(received_meta, FORWARDED_FROM_ID, nothing),
+        kwargs...)
+end
+
+"""
+    forward_to(agent, content, forward_to_address, received_meta; kwargs...)
+
+Forward the message to a specific agent using the metadata received on handling
+the message. This method essentially simply calls send_message on the input given, but
+also adds and fills the correct metadata fields to mark the message as forwarded. 
+
+For this the following meta data is set.
+'forwarded=`true`',
+'forwarded_from_address=`address of the original sender`',
+'forwarded_from_id=`id of the original sender`'
+"""
+function forward_to(agent::Agent,
+    content::Any,
+    forward_to_address::AgentAddress,
+    received_meta::AbstractDict;
+    kwargs...)
+    return send_message(agent, content, forward_to_address; forwarded=true,
+        forwarded_from_address=received_meta[SENDER_ADDR],
+        forwarded_from_id=received_meta[SENDER_ID])
+end
+
+"""
+    services(agent)::Dict{DataType,Any}
+
+Return a list of services, which were added to the agent.
+"""
+function services(agent::Agent)::Dict{DataType,Any}
+    return agent.services
+end
+
+"""
+    service_of_type(agent, type::Type{T}, default=nothing)::Union{T,Nothing} where {T}
+
+Return the current agent service of the type `type`. 
+
+If a default is set, this default service will be added to the agent as service of te type `type. The
+function is especially useful if you want to extend the functionality of the agent without
+having to change the internals of the agent, as this functions enables the user to add 
+arbitrary data to the agent on which functions can be defined.
+"""
+function service_of_type(agent::Agent, type::Type{T}, default::Union{T,Nothing}=nothing)::Union{T,Nothing} where {T}
+    for pair in services(agent)
+        if isa(pair[1], type) || pair[1] == type
+            return pair[2]
+        end
+    end
+    if !isnothing(default)
+        add_service!(agent, default)
+    end
+    return default
+end
+
+"""
+    add_service!(agent, service)
+
+Add a service to the agent. Every service can exists exactly one time (stored by type).
+"""
+function add_service!(agent::Agent, service::Any)
+    agent.services[typeof(service)] = service
 end

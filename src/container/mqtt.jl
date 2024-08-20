@@ -1,8 +1,4 @@
 export MQTTProtocol,
-    send,
-    init,
-    close,
-    id,
     get_messages_channel,
     disconnect,
     subscribe
@@ -87,7 +83,7 @@ function handle_msg_channel(protocol::MQTTProtocol, data_handler::Function)
         message = msg.payload
 
         # guaranteed to be a key in the dict unless something went seriously wrong on registration
-        Threads.@spawn data_handler(message, topic; receivers=protocol.topic_to_aid[topic])
+        @spawnlog data_handler(message, topic; receivers=protocol.topic_to_aid[topic])
     end
 end
 

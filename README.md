@@ -71,7 +71,6 @@ The following simple showcase demonstrates how you can define agents in Mango. J
 using Mango
 
 import Mango.handle_message
-using Sockets: InetAddr, @ip_str
 
 # Define the agent struct using the @agent macro
 @agent struct PingPongAgent
@@ -93,10 +92,8 @@ end
 
 # Create the container and add the protocol you want to use, here we use
 # a plain TCP protocol and define the address of the containers
-container = Container()
-container.protocol = TCPProtocol(address=InetAddr(ip"127.0.0.1", 2939))
-container2 = Container()
-container2.protocol = TCPProtocol(address=InetAddr(ip"127.0.0.1", 2940))
+container = create_tcp_container("127.0.0.1", 5555)
+container2 = create_tcp_container("127.0.0.1", 5556)
 
 # Create the agents we defined above
 ping_agent = PingPongAgent(0)
@@ -109,25 +106,20 @@ pong_agent = PingPongAgent(0)
 register(container2, ping_agent)
 register(container, pong_agent)
 
-# Start the containers. At this point the TCP-server is created and bound
-# to their addresses
-wait(Threads.@spawn start(container))
-wait(Threads.@spawn start(container2))
+# Start the Mango.jl system. At this point the TCP-server is created and bound
+# to their addresses. After that, the runnable is executed (do ... end). at the 
+# end the container and therefor the TCP server are shut down again. Using this 
+# method it is not possible to forget starting or stopping containers.
+activate([container, container2]) do 
+    # Send the initial message from the ping_agent to initiate the communication
+        send_message(ping_agent, "Ping", address(pong_agent))
 
-# Send the initial message from the ping_agent to initiate the communication
-wait(send_message(ping_agent, "Ping", AgentAddress(aid=pong_agent.aid, address=InetAddr(ip"127.0.0.1", 2939))))
-
-# Wait until some Pings and Pongs has been exchanged
-wait(Threads.@spawn begin
-    while ping_agent.counter < 5
-        sleep(1)
-    end
-end)
-
-# Gracefully shutdown the container and its containing agents
-@sync begin
-    Threads.@spawn shutdown(container)
-    Threads.@spawn shutdown(container2)
+    # Wait until some Pings and Pongs has been exchanged
+    wait(Threads.@spawn begin
+        while ping_agent.counter < 5
+            sleep(1)
+        end
+    end)
 end
 ```
 

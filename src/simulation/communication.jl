@@ -7,10 +7,10 @@ abstract type CommunicationSimulation end
 
 struct PackageResult
     reached::Bool
-    delay_s::UInt64    
+    delay_s::UInt64
 end
 
-struct CommunicationSimulationResult 
+struct CommunicationSimulationResult
     package_results::Vector{PackageResult}
 end
 
@@ -21,17 +21,17 @@ struct MessagePackage
     content::Any
 end
 
-function calculate_communication(communication_sim::CommunicationSimulation, clock::Clock, messages::Vector{MessagePackage})::CommunicationSimulationResult 
+function calculate_communication(communication_sim::CommunicationSimulation, clock::Clock, messages::Vector{MessagePackage})::CommunicationSimulationResult
     throw(ErrorException("Please implement calculate_communication(...)"))
 end
 
 # Default Implementation Communication Sim
 @kwdef struct SimpleCommunicationSimulation <: CommunicationSimulation
     default_delay_s::Real = 0
-    delay_s_directed_edge_vector::Dict{Tuple{Union{String,Nothing}, String},Real} = Dict()
+    delay_s_directed_edge_vector::Dict{Tuple{Union{String,Nothing},String},Real} = Dict()
 end
 
-function calculate_communication(communication_sim::SimpleCommunicationSimulation, clock::Clock, messages::Vector{MessagePackage})::CommunicationSimulationResult 
+function calculate_communication(communication_sim::SimpleCommunicationSimulation, clock::Clock, messages::Vector{MessagePackage})::CommunicationSimulationResult
     results::Vector{PackageResult} = Vector()
     for message in messages
         key = (message.sender_id, message.receiver_id)
