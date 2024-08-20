@@ -166,7 +166,7 @@ function forward_message(container::Container, msg::Any, meta::AbstractDict; rec
     else
         for receiver in receivers
             if !haskey(container.agents, receiver)
-                @warn "Container $(container.agents) has no agent with id: $receiver"
+                @warn "Container at $(protocol_addr(container)) has no agent with id: $receiver. Known agents are: $(container.agents)"
             else
                 agent = container.agents[receiver]
                 @debug "Dispatch a message to agent $(aid(agent))" typeof(msg) get(meta, SENDER_ID, "") protocol_addr(container)
