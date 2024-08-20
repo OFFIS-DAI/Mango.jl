@@ -86,7 +86,7 @@ Macro for defining an agent struct. Expects a struct definition
 as argument.
 	
 The macro does 3 things:
-1. It adds all baseline fields, defined in AGENT_BASELINE_FIELDS
+1. It adds all baseline fields, defined in `AGENT_BASELINE_FIELDS`
    (the agent context `context`, the role handler `role_handler`, and the `aid`)
 2. It adds the supertype `Agent` to the given struct.
 3. It defines a default constructor, which assigns all baseline fields
@@ -108,7 +108,7 @@ mutable struct MyAgent <: Agent
 end
 MyAgent(my_own_field) = MyAgent(baseline fields defaults..., my_own_field)
 
-# so youl would construct your agent like this
+# so you would construct your agent like this
 
 my_agent = MyAgent("own value")
 ```

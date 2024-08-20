@@ -47,7 +47,7 @@ Macro for defining a role struct. Expects a struct definition
 as argument.
 	
 The macro does 3 things:
-1. It adds all baseline fields, defined in ROLE_BASELINE_FIELDS
+1. It adds all baseline fields, defined in `ROLE_BASELINE_FIELDS`
    (the role context)
 2. It adds the supertype `Role` to the given struct.
 3. It defines a default constructor, which assigns all baseline fields

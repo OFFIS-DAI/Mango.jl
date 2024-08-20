@@ -18,10 +18,10 @@ Here, the API for the agent structs created with @agent/@role is listed.
 Modules = [Mango]
 Private = false
 Pages = ["agent/api.jl", "agent/core.jl", "agent/role.jl"]
-Order   = [:macro, :function, :constant, :type, :module]
+Order = [:macro, :function, :constant, :type, :module]
 ```
 
-# Container (focusing on the real time)
+# Real time container
 
 This part contains the API related to the container construction, access and management.
 
@@ -60,7 +60,6 @@ Modules = [Mango]
 Private = false
 Pages = ["world/topology.jl"]
 ```
-
 
 # Encoding/Decoding
 

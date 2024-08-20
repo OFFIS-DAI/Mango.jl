@@ -64,7 +64,13 @@ Return the aid of the agent.
 function aid(agent::AgentInterface) end
 
 """
-    send_message(agent, content::Any, agent_address::Address; kwargs...,)
+    send_message(
+    agent::AgentInterface,
+    content::Any,
+    agent_address::Address;
+    kwargs...,
+)
+
 
 Send a message with the content `content` to the agent represented by `agent_address`. 
 
@@ -82,11 +88,14 @@ end
 
 
 """
-    send_tracked_message(agent, content, agent_address; 
-        response_handler::Function(agent, message, meta)::nothing,
-        calling_object::Any=nothing,
-        kwargs...,
-    )
+    send_tracked_message(
+    agent::AgentInterface,
+    content::Any,
+    agent_address::Address;
+    response_handler::Function=(agent, message, meta) -> nothing,
+    calling_object::Any=nothing,
+    kwargs...,
+)
 
 Send a message with the content `content` to the agent represented by `agent_address`. This function will set
 a generated tracking_id to the address, which allows the identification of the dialog. 
@@ -111,12 +120,12 @@ end
 
 """
     send_and_handle_answer(
-        response_handler::Function(agent, message, meta)::nothing,
-        agent::AgentInterface,
-        content::Any,
-        agent_address::Address;
-        calling_object::Any=nothing,
-        kwargs...)
+    response_handler::Function,
+    agent::AgentInterface,
+    content::Any,
+    agent_address::Address;
+    calling_object::Any=nothing,
+    kwargs...)
 
 Convenience method for sending tracked messages with response handler to the answer.
 
@@ -138,9 +147,13 @@ function send_and_handle_answer(
 end
 
 """
-    reply_to(agent, content, received_meta)
+    reply_to(
+    agent::AgentInterface,
+    content::Any,
+    received_meta::AbstractDict,
+)
 
-Convenience method to reply to a received message using the meta the agent received. This reduces the regular send_message as response
+Convenience method to reply to a received message using the meta the agent received. This reduces the regular `send_message` as response
 `send_message(agent, "Pong", AgentAddress(aid=meta["sender_id"], address=meta["sender_addr"]))`
 to
 `reply_to(agent, "Pong", meta)`
@@ -164,9 +177,9 @@ the message. This method essentially simply calls send_message on the input give
 also adds and fills the correct metadata fields to mark the message as forwarded. 
 
 For this the following meta data is set.
-'forwarded=`true`',
-'forwarded_from_address=`address of the original sender`',
-'forwarded_from_id=`id of the original sender`'
+* 'forwarded=true',
+* 'forwarded_from_address=address of the original sender',
+* 'forwarded_from_id=id of the original sender'
 """
 function forward_to(agent::AgentInterface,
     content::Any,
