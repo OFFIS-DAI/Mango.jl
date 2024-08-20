@@ -1,6 +1,6 @@
 # Topologies
 
-In Mango.jl agents usually communicate with each other based on a topology. The topology determines which agent can communicate with which agent. To implement this, every agent has access to a so-called neighborhood, which is the set of all agents it can communicate to. 
+In Mango.jl agents usually communicate with each other based on a topology. The topology determines which agent can communicate with which agent. To implement this, every agent has access to a neighborhood, which is the set of all agents it can communicate with. 
 
 As it can be pretty clunky to create every neighborhood-list manually, Mango.jl provides several functions to make your life easier. For this it relys on `Graphs.jl` and `MetaGraphsNext.jl` as datastructure and for graph-construction
 
