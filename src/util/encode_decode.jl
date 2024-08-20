@@ -8,23 +8,61 @@ struct MsgContent
     payload::Vector{UInt8}
 end
 
-#= 
-These versions will reduce structs to OrderedDicts with their field names as is LightBSON default.
-"Normal" operation is passing OrderedDict with String keys and basic data type fields.
+"""
+    encode(data::OrderedDict{String,Any})
 
-For convenience, we pass the type info to the bson_read function so you CAN pass structs to and from
-the codec and get your desired type inference.
-This is entirely limited by what bson_read will handle for the types and we make no guarantees on
-the results.
+Encode `data` into a UInt8 buffer using LightBSON.
 
-Advanced features like nested smart type inference and such are kept as future work.
-=#
-function encode(data::Union{OrderedDict{String,Any},Any})::Vector{UInt8}
+
+# Examples
+```julia-repl
+julia> data = OrderedDict(["test" => 10])
+OrderedDict{String, Int64} with 1 entry:
+  "test" => 10
+
+julia> encode(data)
+19-element Vector{UInt8}:
+ 0x13
+ 0x00
+ 0x00
+ 0x00
+ 0x12
+    ⋮
+ 0x00
+ 0x00
+ 0x00
+ 0x00
+ 0x00
+```
+"""
+function encode(data::Any)::Vector{UInt8}
     buf = Vector{UInt8}()
     LightBSON.bson_write(buf, data)
     return buf
 end
 
+function encode(data::OrderedDict{String,Any})::Vector{UInt8}
+    buf = Vector{UInt8}()
+    LightBSON.bson_write(buf, data)
+    return buf
+end
+
+"""
+    decode(buf::Vector{UInt8}, t::Type=OrderedDict{String, Any})
+
+Decode the data in `buf` into an object of type `t` using `LightBSON.bson_read`.
+
+# Examples
+```julia-repl
+julia> data = OrderedDict(["test" => 10])
+OrderedDict{String, Int64} with 1 entry:
+  "test" => 10
+
+julia> decode(encode(data))
+OrderedDict{String, Any} with 1 entry:
+  "test" => 10
+```
+"""
 function decode(
     buf::Vector{UInt8},
     t::Type=OrderedDict{String,Any},
