@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Agents · Mango.jl</title><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../">Mango.jl</a></span></div><form class="docs-search" action="../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../">Home</a></li><li><a class="tocitem" href="../getting_started/">Getting Started</a></li><li class="is-active"><a class="tocitem" href>Agents</a><ul class="internal"><li><a class="tocitem" href="#.-Agent-Definition-with-@agent-Macro"><span>1. Agent Definition with @agent Macro</span></a></li><li><a class="tocitem" href="#.-Role-Management"><span>2. Role Management</span></a></li><li><a class="tocitem" href="#.-Message-Handling"><span>3. Message Handling</span></a></li><li><a class="tocitem" href="#.-Task-Scheduling"><span>4. Task Scheduling</span></a></li></ul></li><li><a class="tocitem" href="../container/">Container</a></li><li><a class="tocitem" href="../role/">Roles</a></li><li><a class="tocitem" href="../simulation/">Simulation</a></li><li><a class="tocitem" href="../encode_decode/">Codecs</a></li><li><a class="tocitem" href="../scheduling/">Scheduling</a></li><li><a class="tocitem" href="../topology/">Topologies</a></li><li><a class="tocitem" href="../api/">API</a></li><li><a class="tocitem" href="../legals/">Legals</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Agents</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Agents</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/OFFIS-DAI/Mango.jl" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Agents"><a class="docs-heading-anchor" href="#Agents">Agents</a><a id="Agents-1"></a><a class="docs-heading-anchor-permalink" href="#Agents" title="Permalink"></a></h1><p>Agents are autonomous entities that can perceive their environment, make decisions, and interact with other agents and the system they inhabit. They are the building blocks of Mango.jl, representing the individual entities or actors within a larger system.</p><h2 id=".-Agent-Definition-with-@agent-Macro"><a class="docs-heading-anchor" href="#.-Agent-Definition-with-@agent-Macro">1. Agent Definition with @agent Macro</a><a id=".-Agent-Definition-with-@agent-Macro-1"></a><a class="docs-heading-anchor-permalink" href="#.-Agent-Definition-with-@agent-Macro" title="Permalink"></a></h2><p>To define an agent the <code>@agent</code> macro can be used. It simplifies the process of defining an agent struct and automatically adds necessary baseline fields. Here&#39;s how you can define an agent:</p><pre><code class="language-julia hljs">using Mango
+
+# Define your agent struct using @agent macro
+@agent struct MyAgent
+    my_own_field::String
+end
+
+# Create an instance of the agent
+my_agent = MyAgent(&quot;MyValue&quot;)</code></pre><p>The <code>@agent</code> macro adds the baseline fields listed in the table below. You can initialize the agent with exclusive fields like <code>my_own_field</code> in the example.</p><table><tr><th style="text-align: right">Field</th><th style="text-align: right">Description</th><th style="text-align: right">Usable?</th></tr><tr><td style="text-align: right">aid</td><td style="text-align: right">The id of the agent</td><td style="text-align: right">Yes with aid(agent)!</td></tr><tr><td style="text-align: right">context</td><td style="text-align: right">Holds the reference to the container to send messages.</td><td style="text-align: right">Generally not recommended, use the convenience methods defined on the Agent type.</td></tr><tr><td style="text-align: right">scheduler</td><td style="text-align: right">The scheduler of the agent</td><td style="text-align: right">Generally not recommended, use the convenience methods defined on the Agent type.</td></tr><tr><td style="text-align: right">lock</td><td style="text-align: right">The agent lock to ensure only one message is handled per time.</td><td style="text-align: right">Internal use only!</td></tr><tr><td style="text-align: right">role_handler</td><td style="text-align: right">Contains the roles and handles their interactions</td><td style="text-align: right">Internal use only!</td></tr></table><h2 id=".-Role-Management"><a class="docs-heading-anchor" href="#.-Role-Management">2. Role Management</a><a id=".-Role-Management-1"></a><a class="docs-heading-anchor-permalink" href="#.-Role-Management" title="Permalink"></a></h2><p>Agents can have multiple roles associated with them. Roles can be added using the <code>add</code> function, allowing the agent to interact with its environment based on different roles. Here&#39;s how you can add roles to an agent:</p><pre><code class="language-julia hljs">using Mango
+
+# Define your role struct using @role macro
+@role struct MyRole
+    my_own_field::String
+end
+
+# Assume you have already defined roles using Mango.AgentRole module
+role1 = MyRole(&quot;Role1&quot;)
+role2 = MyRole(&quot;Role2&quot;)
+
+# Define your agent struct using @agent macro
+@agent struct MyAgent
+    my_own_field::String
+end
+
+# Create an instance of the agent
+my_agent = MyAgent(&quot;MyValue&quot;)
+
+# Add roles to the agent
+add(my_agent, role1)
+add(my_agent, role2)
+
+# Now you can interact with the roles as needed</code></pre><p>As this can be clunky at some time, there is the possibility to create an agent using only roles and add it to the container using <a href="../api/#Mango.add_agent_composed_of-Tuple{ContainerInterface, Vararg{Role}}"><code>add_agent_composed_of</code></a>.</p><pre><code class="language-julia hljs"># internally an empty agent definition is used, the roles are added and the agent
+# is added to the given container
+created_agent = add_agent_composed_of(your_container, RoleA(), RoleB(), RoleC())</code></pre><p>For more information on roles, take a look at <a href="../role/#Role-definition">Role definition</a></p><h2 id=".-Message-Handling"><a class="docs-heading-anchor" href="#.-Message-Handling">3. Message Handling</a><a id=".-Message-Handling-1"></a><a class="docs-heading-anchor-permalink" href="#.-Message-Handling" title="Permalink"></a></h2><p>Agents and Roles can handle incoming messages through the <code>handle_message</code> function. By default, it does nothing, but you can override it to define message-specific behavior. You can also add custom message handlers for specific roles using the <code>subscribe_message</code> function. Here&#39;s how to handle messages:</p><pre><code class="language-julia hljs">using Mango
+
+# Define your agent struct using @agent macro
+@agent struct MyAgent
+    my_own_field::String
+end
+@role struct MyRole
+    my_own_field::String
+end
+
+# Override the default handle_message function for custom behavior
+function handle_message(agent::MyAgent, message::Any, meta::Any)
+    println(&quot;Received message @agent: &quot;, message)
+end
+# Override the default handle_message function for custom behavior
+function handle_message(role::MyRole, message::Any, meta::Any)
+    println(&quot;Received message @role: &quot;, message)
+end</code></pre><p>Besides the ability to handle messages, there also must be a possibility to send messages. This is implemented using the <code>send_message</code> function, defined on roles and agents.</p><pre><code class="language-julia hljs">using Mango
+
+# Define your agent struct using @agent macro
+@agent struct MyAgent
+    my_own_field::String
+end
+@role struct MyRole
+    my_own_field::String
+end
+
+agent = MyAgent(&quot;&quot;)
+role = MyAgent(&quot;&quot;)
+
+send_message(agent, &quot;Message&quot;, AgentAddress(&quot;receiver_id&quot;, &quot;receiver_addr&quot;, &quot;optional tracking id&quot;))
+send_message(role, &quot;Message&quot;, AgentAddress(&quot;receiver_id&quot;, &quot;receiver_addr&quot;, &quot;optional tracking id&quot;))</code></pre><p>Further, there are several specialized methods for sending messages, (1) <code>send_tracked_message</code>, (2) <code>send_and_handle_answer</code>, (3) <code>reply_to</code>, (4) <code>forward_to</code>.</p><p>(1) This function can be used to send a message with an automatically generated tracking id (uuid1) and it also accepts a response handler, which will     automatically be called when a response arrives to the tracked message (care to include the tracking id when responding or just use <code>reply_to</code>). (2) Variant of (1) which requires a response handler and enables the usage of the <code>do</code> syntax (see following code snippet). (3) Convenience function to respond to a received message without the need to create the AgentAddress by yourself. (4) Convenience function to forward messages to another agent. This function will set the approriate fields in the meta container to identify that a message has been forwarded and from which address it has been forwarded.</p><pre><code class="language-julia hljs">agent1 = MyAgent(&quot;&quot;)
+agent2 = MyAgent(&quot;&quot;)
+agent3 = MyAgent(&quot;&quot;)
+
+function handle_message(agent::MyAgent, message::Any, meta::Any)
+    # agent 2
+    reply_to(agent, &quot;Hello Agent, this is a response&quot;, meta) # (3)
+end
+function handle_response(agent::MyAgent, message::Any, meta::Any)
+    # agent 1
+    forward_to(agent, &quot;Forwarded message&quot;, address(agent3), meta) # (4)
+end
+
+send_tracked_message(agent1, &quot;Hello Agent, this is a tracked message&quot;, AgentAddress(aid=agent2.aid); response_handler=handle_response) # (1)
+send_and_handle_answer(agent1, &quot;Hello Agent, this is a different tracked message&quot;, AgentAddress(aid=agent2.aid)) do agent, message, meta # (2)
+    # agent 1
+end</code></pre><p>There is also a possibility to enable automatic forwarding with adding so-called forwarding rules. For this you can use the function <code>add_forwarding_rule(agent, from, to, forward_replies)</code>. To delete these rules the function <code>delete_forwarding_rule(agent, from, to=nothing)</code> exists.</p><h2 id=".-Task-Scheduling"><a class="docs-heading-anchor" href="#.-Task-Scheduling">4. Task Scheduling</a><a id=".-Task-Scheduling-1"></a><a class="docs-heading-anchor-permalink" href="#.-Task-Scheduling" title="Permalink"></a></h2><p>Agents can schedule tasks using the <code>schedule</code> function, which delegates to the <code>Mango.schedule</code> function. You can wait for all scheduled tasks to be completed using <code>wait_for_all_tasks</code>. Here&#39;s how to schedule tasks:</p><pre><code class="language-julia hljs">using Mango
+
+# Define your agent struct using @agent macro
+@agent struct MyAgent
+    my_own_field::String
+end
+
+# Create an instance of the agent
+my_agent = MyAgent(&quot;MyValue&quot;)
+
+# Schedule a task for the agent
+schedule(my_task_function, my_agent, PeriodicTaskData(5.0)) # Schedule a task to run every 5 seconds
+
+# Wait for all scheduled tasks to complete
+wait_for_all_tasks(my_agent)</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../getting_started/">« Getting Started</a><a class="docs-footer-nextpage" href="../container/">Container »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Tuesday 20 August 2024 22:26">Tuesday 20 August 2024</span>. Using Julia version 1.9.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
