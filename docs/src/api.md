@@ -25,3 +25,12 @@ add_edge!
 ```@docs
 topology_neighbors
 ```
+
+# Autodocs
+
+```@autodocs
+Modules = [Mango]
+Private = false
+Pages = ["agent/api.jl", "agent/core.jl"]
+
+```
