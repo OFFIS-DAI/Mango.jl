@@ -3,11 +3,6 @@ export encode, decode
 using LightBSON
 using OrderedCollections
 
-struct MsgContent
-    typeinfo::String
-    payload::Vector{UInt8}
-end
-
 """
     encode(data::OrderedDict{String,Any})
 
