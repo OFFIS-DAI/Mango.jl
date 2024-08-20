@@ -11,7 +11,8 @@ export TaskData,
     schedule,
     Clock,
     Scheduler,
-    SimulationScheduler
+    SimulationScheduler,
+    AbstractScheduler
 
 using Dates
 using ConcurrentCollections
