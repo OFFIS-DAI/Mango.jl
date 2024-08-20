@@ -12,4 +12,5 @@ using Test
     include("tcp_protocol_tests.jl")
     include("agent_modeling_tests.jl")
     include("express_api_tests.jl")
+    include("topology_tests.jl")
 end

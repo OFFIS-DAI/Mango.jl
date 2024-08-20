@@ -23,6 +23,8 @@ include("simulation/tasks.jl")
 include("container/simulation.jl")
 include("container/core.jl")
 
+include("world/topology.jl")
+
 include("express/api.jl")
 
 end # module

@@ -21,13 +21,17 @@ define the behavior of the container itself. That being said, the same container
 able to send messages via different protocols using different codecs.
 """
 @kwdef mutable struct Container <: ContainerInterface
-    agents::Dict{String,Agent} = Dict()
+    agents::OrderedDict{String,Agent} = OrderedDict()
     agent_counter::Integer = 0
     protocol::Union{Nothing,Protocol} = nothing
     codec::Any = (encode, decode)
     shutdown::Bool = false
     loop::Any = nothing
     tasks::Any = nothing
+end
+
+function agents(container::Container)::Vector{Agent}
+    return [t[2] for t in collect(container.agents)]
 end
 
 """

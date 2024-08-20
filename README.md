@@ -51,7 +51,6 @@ The following simple showcase demonstrates how you can define agents in Mango. J
 using Mango
 
 import Mango.handle_message
-using Sockets: InetAddr, @ip_str
 
 # Define the agent struct using the @agent macro
 @agent struct PingPongAgent
@@ -73,10 +72,8 @@ end
 
 # Create the container and add the protocol you want to use, here we use
 # a plain TCP protocol and define the address of the containers
-container = Container()
-container.protocol = TCPProtocol(address=InetAddr(ip"127.0.0.1", 2939))
-container2 = Container()
-container2.protocol = TCPProtocol(address=InetAddr(ip"127.0.0.1", 2940))
+container = create_tcp_container("127.0.0.1", 5555)
+container2 = create_tcp_container("127.0.0.1", 5556)
 
 # Create the agents we defined above
 ping_agent = PingPongAgent(0)
@@ -95,7 +92,7 @@ register(container, pong_agent)
 # method it is not possible to forget starting or stopping containers.
 activate([container, container2]) do 
     # Send the initial message from the ping_agent to initiate the communication
-    wait(send_message(ping_agent, "Ping", AgentAddress(aid=pong_agent.aid, address=InetAddr(ip"127.0.0.1", 2939))))
+        send_message(ping_agent, "Ping", address(pong_agent))
 
     # Wait until some Pings and Pongs has been exchanged
     wait(Threads.@spawn begin

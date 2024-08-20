@@ -34,11 +34,15 @@ end
     world::World = World()
     clock::Clock = Clock(DateTime(0))
     task_sim::TaskSimulation = SimpleTaskSimulation(clock=clock)
-    agents::Dict{String,Agent} = Dict()
+    agents::OrderedDict{String,Agent} = OrderedDict()
     agent_counter::Integer = 0
     shutdown::Bool = false
     communication_sim::CommunicationSimulation = SimpleCommunicationSimulation()
     message_queue::ConcurrentQueue{MessageData} = ConcurrentQueue{MessageData}()
+end
+
+function agents(container::SimulationContainer)::Vector{Agent}
+    return [t[2] for t in collect(container.agents)]
 end
 
 function on_step(agent::Agent, world::World, clock::Clock, step_size_s::Real)

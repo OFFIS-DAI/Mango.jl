@@ -378,3 +378,16 @@ end
 @testset "SimulationSchedulerDetermineNoImplent" begin
     @test_throws "Please implement determine_next_event_time(...)" Mango.determine_next_event_time(TestTaskSim())
 end
+
+@testset "SimulationContainerAgentsAreOrdered" begin
+    container = create_simulation_container(DateTime(0))
+    a1 = register(container, SimAgent(0))
+    a2 = register(container, SimAgent(1))
+    a3 = register(container, SimAgent(2))
+    a4 = register(container, SimAgent(3))
+
+    @test agents(container)[1] == a1
+    @test agents(container)[2] == a2
+    @test agents(container)[3] == a3
+    @test agents(container)[4] == a4
+end
