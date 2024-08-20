@@ -140,8 +140,8 @@ end
     agent2 = SimAgent(0)
     register(container, agent1)
     register(container, agent2)
-    com_sim.delay_s_directed_edge_vector[(nothing, aid(agent1))] = 1
-    com_sim.delay_s_directed_edge_vector[(nothing, aid(agent2))] = 2
+    com_sim.delay_s_directed_edge_dict[(nothing, aid(agent1))] = 1
+    com_sim.delay_s_directed_edge_dict[(nothing, aid(agent2))] = 2
 
     send_message(container, "Hello Friends, this is RSc!", AgentAddress(aid=agent1.aid))
     send_message(container, "Hello Friends, this is RSd!", AgentAddress(aid=agent2.aid))
@@ -175,8 +175,8 @@ end
     agent2 = SimSchedulingAgent(0, 0)
     register(container, agent1)
     register(container, agent2)
-    com_sim.delay_s_directed_edge_vector[(nothing, aid(agent1))] = 1
-    com_sim.delay_s_directed_edge_vector[(nothing, aid(agent2))] = 2
+    com_sim.delay_s_directed_edge_dict[(nothing, aid(agent1))] = 1
+    com_sim.delay_s_directed_edge_dict[(nothing, aid(agent2))] = 2
 
     schedule(agent1, PeriodicTaskData(0.1)) do
         agent1.scheduled_counter += 1
@@ -220,8 +220,8 @@ end
     agent2 = ComplexSimSchedulingAgent(0, 0)
     register(container, agent1)
     register(container, agent2)
-    com_sim.delay_s_directed_edge_vector[(nothing, aid(agent1))] = 1
-    com_sim.delay_s_directed_edge_vector[(nothing, aid(agent2))] = 2
+    com_sim.delay_s_directed_edge_dict[(nothing, aid(agent1))] = 1
+    com_sim.delay_s_directed_edge_dict[(nothing, aid(agent2))] = 2
 
     schedule(agent1, PeriodicTaskData(0.1)) do
         agent1.scheduled_counter += 1
@@ -267,8 +267,8 @@ end
     agent2 = MoreComplexSimSchedulingAgent(0, 0)
     register(container, agent1)
     register(container, agent2)
-    com_sim.delay_s_directed_edge_vector[(nothing, aid(agent1))] = 1
-    com_sim.delay_s_directed_edge_vector[(nothing, aid(agent2))] = 2
+    com_sim.delay_s_directed_edge_dict[(nothing, aid(agent1))] = 1
+    com_sim.delay_s_directed_edge_dict[(nothing, aid(agent2))] = 2
 
     schedule(agent1, PeriodicTaskData(0.1)) do
         agent1.scheduled_counter += 1
@@ -299,8 +299,8 @@ end
     agent2 = MoreComplexSimSchedulingAgent(0, 0)
     register(container, agent1)
     register(container, agent2)
-    com_sim.delay_s_directed_edge_vector[(aid(agent2), aid(agent1))] = 1
-    com_sim.delay_s_directed_edge_vector[(nothing, aid(agent2))] = 2
+    com_sim.delay_s_directed_edge_dict[(aid(agent2), aid(agent1))] = 1
+    com_sim.delay_s_directed_edge_dict[(nothing, aid(agent2))] = 2
 
     schedule(agent1, InstantTaskData()) do
         agent1.scheduled_counter += 1
