@@ -75,7 +75,7 @@ end
 Add an edge to the topology from `node_id_from` to `node_id_to`. If `directed` is true
 a directed edge is added, otherwise an undirected edge is added.
 """
-function add_edge!(topology::Topology, node_id_from::Int, node_id_to::Int, directed::Bool=false)
+function add_edge!(topology::Topology, node_id_from::Int, node_id_to::Int; directed::Bool=false)
     if directed
         topology.graph[node_id_from, node_id_to] = nothing
     else
