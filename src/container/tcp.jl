@@ -23,6 +23,13 @@ mutable struct AtomicCounter
     @atomic counter::Int
 end
 
+"""
+Describes a connection pool for tcp connections. It supports 
+`keep_alive_time_ms` which specifies the time a connection is kept without usage
+before closing the connection.
+
+All methods defined on the pool are thread-safe.
+"""
 @kwdef mutable struct TCPConnectionPool
     keep_alive_time_ms::Int32
     connections::Pool{InetAddr,Tuple{TCPSocket,Dates.DateTime}} =
@@ -32,12 +39,21 @@ end
     acquired_connections::AtomicCounter = AtomicCounter(0)
 end
 
+"""
+Defines the tcp protocol. It holds a binding to an IP+Port and a tcp connection pool.
+"""
 @kwdef mutable struct TCPProtocol <: Protocol{InetAddr}
     address::InetAddr
     server::Union{Nothing,TCPServer} = nothing
     pool::TCPConnectionPool = TCPConnectionPool(keep_alive_time_ms=100000)
 end
 
+"""
+    close(pool::TCPConnectionPool)
+
+Close the pool. This closes all connections. Further, this function
+will wait until all connection are released.
+"""
 function close(pool::TCPConnectionPool)
     lock(pool.lock)
 
@@ -60,6 +76,9 @@ function close(pool::TCPConnectionPool)
     unlock(pool.lock)
 end
 
+"""
+Internal, checks whether a connection shall be kept alive 
+"""
 function is_valid(connection::Tuple{TCPSocket,Dates.DateTime}, keep_alive_time_ms::Int32)
     if (Dates.now() - connection[2]).value > keep_alive_time_ms
         close(connection[1])
@@ -68,6 +87,12 @@ function is_valid(connection::Tuple{TCPSocket,Dates.DateTime}, keep_alive_time_m
     return true
 end
 
+"""
+    acquire_tcp_connection(tcp_pool::TCPConnectionPool, key::InetAddr)::Union{TCPSocket,Nothing}
+
+Acquire a tcp connection from the pool for the key (IP+Port). Return a TCPSocket if the pool is not closed
+yet, otherwise `nothing` will be returned
+"""
 function acquire_tcp_connection(tcp_pool::TCPConnectionPool, key::InetAddr)::Union{TCPSocket,Nothing}
     readlock(tcp_pool.lock)
 
@@ -93,6 +118,16 @@ function acquire_tcp_connection(tcp_pool::TCPConnectionPool, key::InetAddr)::Uni
     return connection
 end
 
+"""
+    release_tcp_connection(
+    tcp_pool::TCPConnectionPool,
+    key::InetAddr,
+    connection::TCPSocket,
+)
+
+Release the given tcp `connection` indexed by the `key`. This will put the connection back
+to the pool.
+"""
 function release_tcp_connection(
     tcp_pool::TCPConnectionPool,
     key::InetAddr,
@@ -103,10 +138,11 @@ function release_tcp_connection(
 end
 
 """
+    send(protocol::TCPProtocol, destination::InetAddr, message::Vector{UInt8})
+
 Send a message `message` over plain TCP using `destination` as destination address. The message has to be provided 
 as a form, which is writeable to an arbitrary IO-Stream.
 
-# Returns
 Return true if successfull.
 """
 function send(protocol::TCPProtocol, destination::InetAddr, message::Vector{UInt8})
@@ -128,6 +164,10 @@ function send(protocol::TCPProtocol, destination::InetAddr, message::Vector{UInt
 end
 
 
+"""
+    parse_id(_::TCPProtocol, id::Any)::InetAddr
+
+"""
 function parse_id(_::TCPProtocol, id::Any)::InetAddr
     if typeof(id) == InetAddr
         return id
@@ -171,6 +211,8 @@ function handle_connection(data_handler::Function, connection::TCPSocket)
 end
 
 """
+    init(protocol::TCPProtocol, stop_check::Function, data_handler::Function)
+
 Initialized the tcp protocol. This starts the receiver and stop loop. The receiver loop
 will call the data_handler with every incoming message. Further it provides as sender adress
 a InetAddr object. 
@@ -209,12 +251,19 @@ function init(protocol::TCPProtocol, stop_check::Function, data_handler::Functio
     return listen_task, tasks
 end
 
-function id(protocol::TCPProtocol)
+"""
+    id(protocol::TCPProtocol)
+
+Return the technical address of the protocol (ip + port)
+"""
+function id(protocol::TCPProtocol)::InetAddr
     return protocol.address
 end
 
 """
-Release all tcp resources
+    close(protocol::TCPProtocol)
+
+Release all tcp resources (binding on port and connections in the pool).
 """
 function close(protocol::TCPProtocol)
     close(protocol.pool)

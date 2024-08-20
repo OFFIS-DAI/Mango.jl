@@ -4,31 +4,64 @@ using UUIDs
 using Dates
 using ConcurrentCollections
 
-# Interface Definition
+"""
+Defines the result of a task.
+"""
 struct TaskResult
     done::Bool
     finish_time::DateTime
     raw_result::Any
 end
 
+"""
+Define the result of an whole iteration of the task
+simulation
+"""
 @kwdef mutable struct TaskIterationResult
     task_to_result::Dict{UUID,TaskResult} = Dict()
     state_changed::Bool = false
 end
 
+"""
+Abstract type to define a TaskSimulation
+"""
 abstract type TaskSimulation end
 
+"""
+    create_agent_scheduler(task_sim::TaskSimulation)
+
+Create the scheduler used in the agents by the given `task_sim`.
+"""
 function create_agent_scheduler(task_sim::TaskSimulation)
     throw(ErrorException("Please implement create_agent_scheduler(...)"))
 end
+
+"""
+    step_iteration(task_sim::TaskSimulation, step_size_s::Real)::TaskIterationResult
+
+Execute an iteration for a step of the simulation, which time is stepped with the `step_size_s`. 
+    
+Can be called repeatedly if new tasks are spawn as a result of other tasks or as result of arriving messages. 
+"""
 function step_iteration(task_sim::TaskSimulation, step_size_s::Real)::TaskIterationResult
     throw(ErrorException("Please implement step_iteration(...)"))
 end
+
+"""
+    determine_next_event_time(task_sim::TaskSimulation)
+
+Determines the time of the next event, which shall occur.
+Used for the discrete event simulation type.
+"""
 function determine_next_event_time(task_sim::TaskSimulation)
     throw(ErrorException("Please implement determine_next_event_time(...)"))
 end
 
-# Scheduler Definition
+"""
+Specific scheduler, defined to be injected to the agents and intercept scheduling 
+calls and especially the sleep calls while scheduling. This struct manages all necessary times and
+events, which shall fulfill the purpose to step the tasks only for a given step_size.
+"""
 @kwdef struct SimulationScheduler <: AbstractScheduler
     clock::Clock
     events::ConcurrentDict{Task,Tuple{Base.Event,DateTime}} = ConcurrentDict{Task,Tuple{Base.Event,DateTime}}()
@@ -37,6 +70,9 @@ end
     wait_queue::ConcurrentQueue{Task} = ConcurrentQueue{Task}()
 end
 
+"""
+Internal struct, signaling the state of the tasks which has been waited on.
+"""
 struct WaitResult
     cont::Bool
     result::Any
@@ -128,7 +164,9 @@ function do_schedule(f::Function, scheduler::SimulationScheduler, data::TaskData
     return task
 end
 
-# Default Implementation of Interface
+"""
+Default implementation of the interface.
+"""
 @kwdef mutable struct SimpleTaskSimulation <: TaskSimulation
     clock::Clock
     agent_schedulers::Vector{SimulationScheduler} = Vector{SimulationScheduler}()

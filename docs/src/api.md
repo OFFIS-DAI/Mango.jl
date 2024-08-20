@@ -21,14 +21,14 @@ Pages = ["agent/api.jl", "agent/core.jl", "agent/role.jl"]
 Order   = [:macro, :function, :constant, :type, :module]
 ```
 
-# Container
+# Container (focusing on the real time)
 
 This part contains the API related to the container construction, access and management.
 
 ```@autodocs
 Modules = [Mango]
 Private = false
-Pages = ["container/api.jl", "container/core.jl", "container/mqtt.jl", "container/protocol.jl", "container/simulation.jl", "container/tcp.jl"]
+Pages = ["container/api.jl", "container/core.jl", "container/mqtt.jl", "container/protocol.jl", "container/tcp.jl"]
 ```
 
 # Simulation
@@ -38,7 +38,7 @@ In the following the APIs regarding the simulation container are listed.
 ```@autodocs
 Modules = [Mango]
 Private = false
-Pages = ["simulation/communication.jl", "simulation/tasks.jl"]
+Pages = ["container/simulation.jl", "simulation/communication.jl", "simulation/tasks.jl"]
 ```
 
 # Scheduling
