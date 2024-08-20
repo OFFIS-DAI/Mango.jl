@@ -10,9 +10,9 @@ Private = false
 Pages = ["express/api.jl"]
 ```
 
-# Agent
+# Agent and Roles
 
-Here, all exposed API for the agent structs created with @agent is listed. 
+Here, the API for the agent structs created with @agent/@role is listed. 
 
 ```@autodocs
 Modules = [Mango]
