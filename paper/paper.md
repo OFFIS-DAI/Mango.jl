@@ -136,10 +136,8 @@ When an incoming message is addressed at an agent, its container will call the `
 Using Julias multiple dispatch, we can define a new `handle_message` method for our agent.
 
 ```julia
-import Mango.handle_message
-
 # Override the default handle_message function for ping pong agents
-function handle_message(agent::TCPPingPongAgent, message::Any, meta::Any)
+function Mango.handle_message(agent::TCPPingPongAgent, message::Any, meta::Any)
     agent.counter += 1
 
     println(

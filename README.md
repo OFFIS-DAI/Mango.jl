@@ -70,7 +70,6 @@ The following simple showcase demonstrates how you can define agents in Mango. J
 ```julia
 using Mango
 using Sockets: InetAddr, @ip_str
-import Mango.handle_message
 
 # Create the container instances with TCP protocol
 container = Container()
@@ -95,7 +94,7 @@ register(container2, pong_agent, "Agent_2")
 
 # When an incoming message is addressed at an agent, its container will call the `handle_message` function for it. 
 # Using Julias multiple dispatch, we can define a new `handle_message` method for our agent.
-function handle_message(agent::TCPPingPongAgent, message::Any, meta::Any)
+function Mango.handle_message(agent::TCPPingPongAgent, message::Any, meta::Any)
     agent.counter += 1
 
     println(
