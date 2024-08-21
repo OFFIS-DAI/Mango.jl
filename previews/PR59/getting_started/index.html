@@ -8,16 +8,24 @@ container2 = create_tcp_container(&quot;127.0.0.1&quot;, 5556)</code></pre><h2 i
 # Define the ping pong agent
 @agent struct TCPPingPongAgent
     counter::Int
-end</code></pre><h2 id=".-Sending-and-Handling-Messages"><a class="docs-heading-anchor" href="#.-Sending-and-Handling-Messages">3. Sending and Handling Messages</a><a id=".-Sending-and-Handling-Messages-1"></a><a class="docs-heading-anchor-permalink" href="#.-Sending-and-Handling-Messages" title="Permalink"></a></h2><p>Ping pong agents can exchange messages and they can keep track of the number of messages received. Let&#39;s implement message handling for the agents. To achieve this a new method <a href="../api/#Mango.handle_message-Tuple{Agent, Any, Any}"><code>handle_message</code></a> from <code>Mango</code> has to be added:</p><pre><code class="language-julia hljs">import Mango.handle_message
+end</code></pre><h2 id=".-Sending-and-Handling-Messages"><a class="docs-heading-anchor" href="#.-Sending-and-Handling-Messages">3. Sending and Handling Messages</a><a id=".-Sending-and-Handling-Messages-1"></a><a class="docs-heading-anchor-permalink" href="#.-Sending-and-Handling-Messages" title="Permalink"></a></h2><p>Ping pong agents can exchange messages and they can keep track of the number of messages received. Let&#39;s implement message handling for the agents. To achieve this a new method <a href="../api/#Mango.handle_message-Tuple{Agent, Any, Any}"><code>handle_message</code></a> from <code>Mango</code> has to be added:</p><pre><code class="language-julia hljs"># Override the default handle_message function for ping pong agents
+function Mango.handle_message(agent::TCPPingPongAgent, message::Any, meta::Any)
+    agent.counter += 1
 
-# Override the default handle_message function for ping pong agents
-function handle_message(agent::TCPPingPongAgent, message::Any, meta::Any)
+    println(
+        &quot;$(agent.aid) got a message: $message.&quot; *
+        &quot;This is message number: $(agent.counter) for me!&quot;
+    )
+
+    # doing very important work
+    sleep(0.5)
+
     if message == &quot;Ping&quot;
-        agent.counter += 1
-        reply_to(agent, &quot;Pong&quot;, meta)
+        t = AgentAddress(meta[&quot;sender_id&quot;], meta[&quot;sender_addr&quot;], nothing)
+        send_message(agent, &quot;Pong&quot;, t)
     elseif message == &quot;Pong&quot;
-        agent.counter += 1
-        reply_to(agent, &quot;Ping&quot;, meta)
+        t = AgentAddress(meta[&quot;sender_id&quot;], meta[&quot;sender_addr&quot;], nothing)
+        send_message(agent, &quot;Ping&quot;, t)
     end
 end</code></pre><h2 id=".-Sending-Messages"><a class="docs-heading-anchor" href="#.-Sending-Messages">4. Sending Messages</a><a id=".-Sending-Messages-1"></a><a class="docs-heading-anchor-permalink" href="#.-Sending-Messages" title="Permalink"></a></h2><p>Now let&#39;s simulate the ping pong exchange by sending messages between the ping pong agents.  Addresses are provided to the <a href="../api/#Mango.send_message-Tuple{Mango.AgentInterface, Any, Address}"><code>send_message</code></a> function via the <a href="../api/#Mango.AgentAddress"><code>AgentAddress</code></a> struct. The struct consists of an <code>aid</code> and the more technical <code>address</code> field. Further an AgentAddress  can contain a <code>tracking_id</code>, which can identify the dialog agents are having.</p><p>The <a href="../api/#Mango.send_message-Tuple{Mango.AgentInterface, Any, Address}"><code>send_message</code></a> method here will automatically insert the agent as sender:</p><pre><code class="language-julia hljs"># Define the ping pong agent
 # Create instances of ping pong agents
@@ -28,14 +36,10 @@ activate([container, container2]) do
     # Send the first message to start the exchange
     send_message(ping_agent, &quot;Ping&quot;, address(pong_agent))
 
-    # Wait for a moment to see the result
-    # In general you want to use a Condition() instead to
-    # Define a clear stopping signal for the agents
-    wait(Threads.@spawn begin
-        while ping_agent.counter &lt; 5 
-            sleep(1)
-        end
-    end)
+    # wait for 5 messages to have been sent
+    while ping_agent.counter &lt; 5
+        sleep(1)
+    end
 end</code></pre><p>In this example, the ping pong agents take turns sending &quot;Ping&quot; and &quot;Pong&quot; messages to each other, incrementing their counters. After a short moment, we can see the result of the ping pong process.</p><h2 id=".-Using-the-MQTT-Protocol"><a class="docs-heading-anchor" href="#.-Using-the-MQTT-Protocol">5. Using the MQTT Protocol</a><a id=".-Using-the-MQTT-Protocol-1"></a><a class="docs-heading-anchor-permalink" href="#.-Using-the-MQTT-Protocol" title="Permalink"></a></h2><p>To use an MQTT messsage broker instead of a direkt TCP connection, you can use the MQTT protocol.</p><pre><code class="language-julia hljs">broker_addr = InetAddr(ip&quot;127.0.0.1&quot;, 1883)
 
 c1 = create_mqtt_container(&quot;127.0.0.1&quot;, 1883, &quot;PingContainer&quot;)
@@ -61,4 +65,4 @@ function handle_message(agent::MQTTPingPongAgent, message::Any, meta::Any)
         agent.counter += 1
         send_message(agent, &quot;Ping&quot;, MQTTAddress(broker_addr, &quot;pings&quot;))
     end
-end</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« Home</a><a class="docs-footer-nextpage" href="../agent/">Agents »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Wednesday 21 August 2024 11:48">Wednesday 21 August 2024</span>. Using Julia version 1.9.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+end</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« Home</a><a class="docs-footer-nextpage" href="../agent/">Agents »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Wednesday 21 August 2024 11:55">Wednesday 21 August 2024</span>. Using Julia version 1.9.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
