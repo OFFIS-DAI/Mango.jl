@@ -19,11 +19,9 @@ function Mango.handle_message(agent::TCPPingPongAgent, message::Any, meta::Any)
     agent.counter += 1
 
     if message == "Ping"
-        t = AgentAddress(meta["sender_id"], meta["sender_addr"], nothing)
-        send_message(agent, "Pong", t)
+        reply_to(agent, "Pong", meta)
     elseif message == "Pong"
-        t = AgentAddress(meta["sender_id"], meta["sender_addr"], nothing)
-        send_message(agent, "Ping", t)
+        reply_to(agent, "Ping", meta)
     end
 end
 

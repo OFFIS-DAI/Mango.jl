@@ -72,11 +72,8 @@ using Mango
 using Sockets: InetAddr, @ip_str
 
 # Create the container instances with TCP protocol
-container = Container()
-container.protocol = TCPProtocol(address=InetAddr(ip"127.0.0.1", 5555))
-
-container2 = Container()
-container2.protocol = TCPProtocol(address=InetAddr(ip"127.0.0.1", 5556))
+container = create_tcp_container("127.0.0.1", 5555)
+container2 = create_tcp_container("127.0.0.1", 5556)
 
 # An agent in `Mango.jl` is a struct defined with the `@agent` macro.
 # We define a `TCPPingPongAgent` that has an internal counter for incoming messages.
@@ -106,11 +103,9 @@ function Mango.handle_message(agent::TCPPingPongAgent, message::Any, meta::Any)
     sleep(0.5)
 
     if message == "Ping"
-        t = AgentAddress(meta["sender_id"], meta["sender_addr"], nothing)
-        send_message(agent, "Pong", t)
+        reply_to(agent, "Pong", meta)
     elseif message == "Pong"
-        t = AgentAddress(meta["sender_id"], meta["sender_addr"], nothing)
-        send_message(agent, "Ping", t)
+        reply_to(agent, "Ping", meta)
     end
 end
 
