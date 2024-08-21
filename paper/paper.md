@@ -167,12 +167,12 @@ The best way to start the container message loops and ensure they are correctly 
 
 ```julia
 activate([container, container2]) do
-  send_message(ping_agent, "Ping", address(pong_agent))
+    send_message(ping_agent, "Ping", address(pong_agent))
 
-  # wait for 5 messages to have been sent
-  while ping_agent.counter < 5
-    sleep(1)
-  end
+    # wait for 5 messages to have been sent
+    while ping_agent.counter < 5
+      sleep(1)
+    end
 end
 ```
 
