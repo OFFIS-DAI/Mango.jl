@@ -8,8 +8,6 @@ using Test
 using Parameters
 using Sockets: InetAddr, @ip_str
 
-import Mango.handle_message
-
 
 # Define the ping pong agent
 @agent struct TCPPingPongAgent
@@ -17,13 +15,15 @@ import Mango.handle_message
 end
 
 # Override the default handle_message function for ping pong agents
-function handle_message(agent::TCPPingPongAgent, message::Any, meta::Any)
+function Mango.handle_message(agent::TCPPingPongAgent, message::Any, meta::Any)
+    agent.counter += 1
+
     if message == "Ping"
-        agent.counter += 1
-        reply_to(agent, "Pong", meta)
-    elseif message == "Pong" && agent.counter < 5
-        agent.counter += 1
-        reply_to(agent, "Ping", meta)
+        t = AgentAddress(meta["sender_id"], meta["sender_addr"], nothing)
+        send_message(agent, "Pong", t)
+    elseif message == "Pong"
+        t = AgentAddress(meta["sender_id"], meta["sender_addr"], nothing)
+        send_message(agent, "Ping", t)
     end
 end
 
@@ -46,14 +46,10 @@ end
         # Send the first message to start the exchange
         send_message(ping_agent, "Ping", address(pong_agent))
 
-        # Wait for a moment to see the result
-        # In general you want to use a Condition() instead to
-        # Define a clear stopping signal for the agents
-        wait(Threads.@spawn begin
-            while ping_agent.counter < 5
-                sleep(1)
-            end
-        end)
+        # wait for 5 messages to have been sent
+        while ping_agent.counter < 5
+            sleep(1)
+        end
     end
 
     @test ping_agent.counter >= 5
@@ -66,7 +62,7 @@ end
 end
 
 # Override the default handle_message function for ping pong agents
-function handle_message(agent::MQTTPingPongAgent, message::Any, meta::Any)
+function Mango.handle_message(agent::MQTTPingPongAgent, message::Any, meta::Any)
     broker_addr = agent.context.container.protocol.broker_addr
 
     if message == "Ping"

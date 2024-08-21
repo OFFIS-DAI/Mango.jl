@@ -33,16 +33,24 @@ end
 Ping pong agents can exchange messages and they can keep track of the number of messages received. Let's implement message handling for the agents. To achieve this a new method [`handle_message`](@ref) from `Mango` has to be added:
 
 ```julia
-import Mango.handle_message
-
 # Override the default handle_message function for ping pong agents
-function handle_message(agent::TCPPingPongAgent, message::Any, meta::Any)
+function Mango.handle_message(agent::TCPPingPongAgent, message::Any, meta::Any)
+    agent.counter += 1
+
+    println(
+        "$(agent.aid) got a message: $message." *
+        "This is message number: $(agent.counter) for me!"
+    )
+
+    # doing very important work
+    sleep(0.5)
+
     if message == "Ping"
-        agent.counter += 1
-        reply_to(agent, "Pong", meta)
+        t = AgentAddress(meta["sender_id"], meta["sender_addr"], nothing)
+        send_message(agent, "Pong", t)
     elseif message == "Pong"
-        agent.counter += 1
-        reply_to(agent, "Ping", meta)
+        t = AgentAddress(meta["sender_id"], meta["sender_addr"], nothing)
+        send_message(agent, "Ping", t)
     end
 end
 ```
@@ -66,14 +74,10 @@ activate([container, container2]) do
     # Send the first message to start the exchange
     send_message(ping_agent, "Ping", address(pong_agent))
 
-    # Wait for a moment to see the result
-    # In general you want to use a Condition() instead to
-    # Define a clear stopping signal for the agents
-    wait(Threads.@spawn begin
-        while ping_agent.counter < 5 
-            sleep(1)
-        end
-    end)
+    # wait for 5 messages to have been sent
+    while ping_agent.counter < 5
+        sleep(1)
+    end
 end
 ```
 
