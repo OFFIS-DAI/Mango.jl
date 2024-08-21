@@ -6,7 +6,6 @@ This is to catch example code breaking on changes to the framework.
 using Mango
 using Test
 using Parameters
-using Sockets: InetAddr, @ip_str
 
 
 # Define the ping pong agent
@@ -93,7 +92,8 @@ end
         end
 
         # Send the first message to start the exchange
-        wait(send_message(ping_agent, "Ping", MQTTAddress(InetAddr("127.0.0.1", 1883), "pings")))
+        
+        wait(send_message(ping_agent, "Ping", MQTTAddress(c1.protocol.broker_addr, "pings")))
 
         # Wait for a moment to see the result
         # In general you want to use a Condition() instead to

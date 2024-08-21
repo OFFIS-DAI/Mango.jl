@@ -100,7 +100,6 @@ Containers can be set up and equipped with the necessary TCP protocol.
 
 ```julia
 using Mango
-using Sockets: InetAddr, @ip_str
 
 # Create the container instances with TCP protocol
 container = create_tcp_container("127.0.0.1", 5555)

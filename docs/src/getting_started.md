@@ -85,8 +85,6 @@ In this example, the ping pong agents take turns sending "Ping" and "Pong" messa
 To use an MQTT messsage broker instead of a direkt TCP connection, you can use the MQTT protocol.
 
 ```julia
-broker_addr = InetAddr(ip"127.0.0.1", 1883)
-
 c1 = create_mqtt_container("127.0.0.1", 1883, "PingContainer")
 c2 = create_mqtt_container("127.0.0.1", 1883, "PongContainer")
 ```
