@@ -106,7 +106,7 @@ macro role(struct_def)
     struct_fields = modified_struct_fields
 
     # Create the new struct definition
-    new_struct_def = Expr(:macrocall, Symbol("@kwdef"), LineNumberNode(0, Symbol("none")), Expr(
+    new_struct_def = Expr(:macrocall, Symbol("@with_def"), LineNumberNode(0, Symbol("none")), Expr(
         :struct,
         true,
         Expr(:(<:), struct_head, :(Role)),
