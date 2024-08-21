@@ -30,7 +30,7 @@ end
 
 ## 3. Sending and Handling Messages
 
-Ping pong agents can exchange messages and they can keep track of the number of messages received. Let's implement message handling for the agents. To achieve this a new method `handle_message` from `Mango` has to be added:
+Ping pong agents can exchange messages and they can keep track of the number of messages received. Let's implement message handling for the agents. To achieve this a new method [`handle_message`](@ref) from `Mango` has to be added:
 
 ```julia
 import Mango.handle_message
@@ -50,11 +50,11 @@ end
 ## 4. Sending Messages
 
 Now let's simulate the ping pong exchange by sending messages between the ping pong agents. 
-Addresses are provided to the `send_message` function via the [`AgentAddress`](@ref) struct.
+Addresses are provided to the [`send_message`](@ref) function via the [`AgentAddress`](@ref) struct.
 The struct consists of an `aid` and the more technical `address` field. Further an AgentAddress 
 can contain a `tracking_id`, which can identify the dialog agents are having.
 
-The `send_message` method here will automatically insert the agent as sender:
+The [`send_message`](@ref) method here will automatically insert the agent as sender:
 
 ```julia
 # Define the ping pong agent
@@ -118,7 +118,7 @@ wait(send_message(ping_agent, "Ping", MQTTAddress(broker_addr, "pings")))
 ```
 
 
-Lastly, `handle_message` has to be altered to send the corresponding answers correctly:
+Lastly, [`handle_message`](@ref) has to be altered to send the corresponding answers correctly:
 
 ```julia
 # Override the default handle_message function for ping pong agents

@@ -234,7 +234,9 @@ function subscribe_message(role::Role, handler::Function, condition::Function)
 end
 
 """
-Subscribe a send_message hook in function (signature, (role, content, receiver_id, receiver_addr; kwargs...)) to the
+    subscribe_send(role::Role, handler::Function)
+
+Subscribe a `send_message` hook in function (signature, (role, content, receiver_id, receiver_addr; kwargs...)) to the
 message sending. The hook in function will be called every time a message is sent by the agent.
 """
 function subscribe_send(role::Role, handler::Function)

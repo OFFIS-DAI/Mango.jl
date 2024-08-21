@@ -4,7 +4,7 @@ Roles are used to provide a mechanism for reusability and modularization of func
 
 ## Role definition
 
-A role can be defined using the `@role` macro. This macro adds some baselinefields to the following struct definition. The struct can be defined like any other Julia struct.
+A role can be defined using the [`@role`](@ref) macro. This macro adds some baselinefields to the following struct definition. The struct can be defined like any other Julia struct.
 
 ```julia
 # Define your role struct using @role macro
@@ -16,9 +16,9 @@ end
 role1 = MyRole("Role1")
 ```
 
-Most functions, used for agent development can also be used with roles (e.g. `handle_message`, `address`, `schedule`, `send_message` (plus variants) and the lifecycle methods).  
+Most functions, used for agent development can also be used with roles (e.g. [`handle_message`](@ref), [`address`](@ref), [`schedule`](@ref), [`send_message`](@ref) (plus variants) and the lifecycle methods).  
 
-Additionally, roles can define the `setup` function to define actions to take when the roles are added to the agent. It is also possible to subscribe to specific messages using a boolean expression with the `subscribe_message(role::Role, handler::Function, condition::Function)` function. With the @role macro, the role context is added to the role, which contains the reference to the agent. However, it is recommended to use the equivalent methods defined on the role to execute actions like scheduling and sending messages. Further with roles it is possible to listen to all messages sent from within the agent. For this `subscribe_send(role, handler::Function)` can be used.
+Additionally, roles can define the [`setup`](@ref) function to define actions to take when the roles are added to the agent. It is also possible to subscribe to specific messages using a boolean expression with the [`subscribe_message`](@ref) function. With the @role macro, the role context is added to the role, which contains the reference to the agent. However, it is recommended to use the equivalent methods defined on the role to execute actions like scheduling and sending messages. Further with roles it is possible to listen to all messages sent from within the agent. For this [`subscribe_send`](@ref) can be used.
 
 ## Role communication
 
@@ -29,7 +29,7 @@ Besides the message subscriptions there are functionalities to communicate/work 
 ### Data sharing
 
 The data sharing can be used using ordinary Julia structs with default constructors. There are two ways to share the data, first you can create the model you want share with
-`get_model(role, your_data_model_type)`
+[`get_model`](@ref)
 
 ```julia
 struct TestModel
@@ -42,7 +42,7 @@ shared_model = get_model(role, TestModel)
 
 Mango.jl will create a TestModel instance and manage this instance such that every role can access it. 
 
-Although this is a straightforward method it can be very clumsy to use. For this reason there is the macro `@shared`, which can be used within a role definition
+Although this is a straightforward method it can be very clumsy to use. For this reason there is the macro [`@shared`](@ref), which can be used within a role definition
 to mark a field as shared model. Then, Mango.jl will ensure that a shared instance of the declared type will be created and assigned to the struct field.
 
 ```julia
@@ -56,7 +56,7 @@ end
 ### Event system
 
 
-Roles can emit events using `emit_event(role, event::Any, event_type::Any=nothing)`. If `event_type` is nothing, the type of `event` will be used as `event_type`. To handle these events roles can subscribe using `subscribe_event(role, event_type::Any, event_handler::Function, condition::Function)` or add a method to `handle_event`. The condition function shall have the signature `(source_role::Role, event::Any)::Boolean`. The event handler shall have the signature `(role::Role, source::Role, event::Any, event_type::Any)`.
+Roles can emit events using [`emit_event`](@ref). If `event_type` is nothing, the type of `event` will be used as `event_type`. To handle these events roles can subscribe using [`subscribe_event`](@ref) or add a method to [`handle_event`](@ref).
 
 ```julia
 
