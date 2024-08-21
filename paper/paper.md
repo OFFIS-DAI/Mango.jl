@@ -111,7 +111,7 @@ container2.protocol = TCPProtocol(address=InetAddr(ip"127.0.0.1", 5556))
 ```
 
 Now, we need to define the agents.
-An agent in `Mango.jl` is a struct defined with the `@agent` keyword.
+An agent in `Mango.jl` is a struct defined with the `@agent` macro.
 We define a `TCPPingPongAgent` that has an internal counter for incoming messages.
 
 ```julia

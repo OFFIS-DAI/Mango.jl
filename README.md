@@ -79,7 +79,7 @@ container.protocol = TCPProtocol(address=InetAddr(ip"127.0.0.1", 5555))
 container2 = Container()
 container2.protocol = TCPProtocol(address=InetAddr(ip"127.0.0.1", 5556))
 
-# An agent in `Mango.jl` is a struct defined with the `@agent` keyword.
+# An agent in `Mango.jl` is a struct defined with the `@agent` macro.
 # We define a `TCPPingPongAgent` that has an internal counter for incoming messages.
 @agent struct TCPPingPongAgent
     counter::Int
