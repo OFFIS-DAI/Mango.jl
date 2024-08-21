@@ -112,7 +112,7 @@ container2.protocol = TCPProtocol(address=InetAddr(ip"127.0.0.1", 5556))
 
 Now, we need to define the agents.
 An agent in `Mango.jl` is a struct defined with the `@agent` keyword.
-We define a `PingPongAgent` that has an internal counter for incoming messages.
+We define a `TCPPingPongAgent` that has an internal counter for incoming messages.
 
 ```julia
 @agent struct TCPPingPongAgent
@@ -140,6 +140,8 @@ import Mango.handle_message
 
 # Override the default handle_message function for ping pong agents
 function handle_message(agent::TCPPingPongAgent, message::Any, meta::Any)
+    agent.counter += 1
+
     println(
         "$(agent.aid) got a message: $message." *
         "This is message number: $(agent.counter) for me!"
@@ -149,11 +151,9 @@ function handle_message(agent::TCPPingPongAgent, message::Any, meta::Any)
     sleep(0.5)
 
     if message == "Ping"
-        agent.counter += 1
         t = AgentAddress(meta["sender_id"], meta["sender_addr"], nothing)
         send_message(agent, "Pong", t)
     elseif message == "Pong"
-        agent.counter += 1
         t = AgentAddress(meta["sender_id"], meta["sender_addr"], nothing)
         send_message(agent, "Ping", t)
     end
@@ -162,25 +162,17 @@ end
 
 With all this in place, we can send a message to the first agent to start the repeated message exchange.
 To do this, we need to start the containers so they listen to incoming messages and send the initating message.
+The best way to start the container message loops and ensure they are correctly shut down in the end is the
+`activate(containers)` function.
 
 ```julia
-# Start the container
-wait(Threads.@spawn start(container))
-wait(Threads.@spawn start(container2))
+activate([container, container2]) do
+  send_message(ping_agent, "Ping", address(pong_agent))
 
-# Send the first message to start the exchange
-send_message(ping_agent, "Ping", address(pong_agent))
-```
-
-Finally, `Mango.jl` provides functions to cleanly shut down containers, terminating any remaining scheduled tasks and closing all network connections:
-
-```julia
-# wait a bit to see some outputs
-sleep(5)
-
-@sync begin
-    Threads.@spawn shutdown(container)
-    Threads.@spawn shutdown(container2)
+  # wait for 5 messages to have been sent
+  while ping_agent.counter < 5
+    sleep(1)
+  end
 end
 ```
 
