@@ -86,13 +86,14 @@ Macro for defining an agent struct. Expects a struct definition
 as argument.
 	
 The macro does 3 things:
-1. It adds all baseline fields, defined in AGENT_BASELINE_FIELDS
+1. It adds all baseline fields, defined in `AGENT_BASELINE_FIELDS`
    (the agent context `context`, the role handler `role_handler`, and the `aid`)
 2. It adds the supertype `Agent` to the given struct.
 3. It defines a default constructor, which assigns all baseline fields
    to predefined default values. As a result you can (and should) create 
    an agent using only the exclusive fields.
 
+# Example
 For example the usage could like this.
 ```julia
 @agent struct MyAgent
@@ -107,7 +108,7 @@ mutable struct MyAgent <: Agent
 end
 MyAgent(my_own_field) = MyAgent(baseline fields defaults..., my_own_field)
 
-# so youl would construct your agent like this
+# so you would construct your agent like this
 
 my_agent = MyAgent("own value")
 ```
@@ -208,6 +209,8 @@ function dispatch_message(agent::Agent, message::Any, meta::AbstractDict)
 end
 
 """
+    handle_message(agent::Agent, message::Any, meta::Any)
+
 Defines a function for an agent, which will be called when a message is dispatched
 to the agent. This methods will be called with any arriving message (according to
 the multiple dispatch of julia).
@@ -231,6 +234,8 @@ function notify_ready(agent::Agent)
 end
 
 """
+    on_start(agent::Agent)
+
 Lifecycle Hook-in function called when the container of the agent has been started,
 depending on the container type it may not be called (if there is no start at all, 
 f.e. the simulation container)
@@ -240,21 +245,23 @@ function on_start(agent::Agent)
 end
 
 """
+    on_ready(agent::Agent)
+
 Lifecycle Hook-in function called when the agent system as a whole is ready, the 
-hook-in has to be manually activated using notify_ready(container::Container)
+hook-in has to be manually activated using notify_ready(container::Container). If you use
+    the `activate` function, it is called automatically.
 """
 function on_ready(agent::Agent)
     # do nothing by default
 end
 
-"""
-Returns the agent id of the agent.
-"""
 function aid(agent::Agent)
     return agent.aid
 end
 
 """
+    add(agent::Agent, role::Role)
+
 Add a role to the agent. This will add the role
 to the internal RoleHandler of the agent and it
 will bind the RoleContext to the role, which enables
@@ -266,6 +273,8 @@ function add(agent::Agent, role::Role)
 end
 
 """
+    roles(agent)
+
 Return all roles of the given agent
 """
 function roles(agent::Agent)
@@ -273,6 +282,8 @@ function roles(agent::Agent)
 end
 
 """
+    shutdown(agent)
+
 Will be called on shutdown of the container, in which
 the agent is living
 """
@@ -284,9 +295,6 @@ function shutdown(agent::Agent)
     stop_and_wait_for_all_tasks(agent.scheduler)
 end
 
-"""
-Internal implementation of the agent API.
-"""
 function subscribe_message_handle(
     agent::Agent,
     role::Role,
@@ -296,16 +304,10 @@ function subscribe_message_handle(
     push!(agent.role_handler.handle_message_subs, (role, condition, handler))
 end
 
-"""
-Internal implementation of the agent API.
-"""
 function subscribe_send_handle(agent::Agent, role::Role, handler::Function)
     push!(agent.role_handler.send_message_subs, (role, handler))
 end
 
-"""
-Internal implementation of the agent API.
-"""
 function subscribe_event_handle(agent::Agent, role::Role, event_type::Any, event_handler::Function; condition::Function=(a, b) -> true)
     if !haskey(agent.role_handler.event_subs, event_type)
         agent.role_handler.event_subs[event_type] = Vector()
@@ -313,9 +315,6 @@ function subscribe_event_handle(agent::Agent, role::Role, event_type::Any, event
     push!(agent.role_handler.event_subs[event_type], (role, condition, event_handler))
 end
 
-"""
-Internal implementation of the agent API.
-"""
 function emit_event_handle(agent::Agent, src::Role, event::Any; event_type::Any=nothing)
     key = !isnothing(event_type) ? event_type : typeof(event)
     if haskey(agent.role_handler.event_subs, key)
@@ -330,9 +329,6 @@ function emit_event_handle(agent::Agent, src::Role, event::Any; event_type::Any=
     end
 end
 
-"""
-Internal implementation of the agent API.
-"""
 function get_model_handle(agent::Agent, type::DataType)
     if !haskey(agent.role_handler.models, type)
         agent.role_handler.models[type] = type()
@@ -341,6 +337,8 @@ function get_model_handle(agent::Agent, type::DataType)
 end
 
 """
+    add_forwarding_rule(agent, from_addr::AgentAddress, to_address::AgentAddress, forward_replies::Bool)
+
 Add a rule for message forwarding.
 
 After calling the agent will auto-forward every message coming from `from_addr` to
@@ -352,6 +350,8 @@ function add_forwarding_rule(agent::Agent, from_addr::AgentAddress, to_address::
 end
 
 """
+    delete_forwarding_rule(agent, from_addr::AgentAddress, to_address::Union{Nothing,AgentAddress})
+
 Delete an added forwarding rule. If `to_address` is not set, all rules are removed matching
 `from_addr`. If it set, both addresses need to match.
 """
@@ -365,6 +365,8 @@ function delete_forwarding_rule(agent::Agent, from_addr::AgentAddress, to_addres
 end
 
 """
+    schedule(f::Function, agent::Agent, data::TaskData)
+
 Delegates to the scheduler `Scheduler`
 """
 function schedule(f::Function, agent::Agent, data::TaskData)
@@ -372,6 +374,8 @@ function schedule(f::Function, agent::Agent, data::TaskData)
 end
 
 """
+    stop_and_wait_for_all_tasks(agent::Agent)
+
 Delegates to the scheduler `Scheduler`
 """
 function stop_and_wait_for_all_tasks(agent::Agent)
@@ -379,6 +383,8 @@ function stop_and_wait_for_all_tasks(agent::Agent)
 end
 
 """
+    stop_task(agent::Agent, t::Task)
+
 Delegates to the scheduler `Scheduler`
 """
 function stop_task(agent::Agent, t::Task)
@@ -386,6 +392,8 @@ function stop_task(agent::Agent, t::Task)
 end
 
 """
+    wait_for_all_tasks(agent::Agent)
+
 Delegates to the scheduler `Scheduler`
 """
 function wait_for_all_tasks(agent::Agent)
@@ -393,15 +401,14 @@ function wait_for_all_tasks(agent::Agent)
 end
 
 """
+    stop_all_tasks(agent::Agent)
+
 Delegates to the scheduler `Scheduler`
 """
 function stop_all_tasks(agent::Agent)
     stop_all_tasks(agent.scheduler)
 end
 
-"""
-Shorter Alias
-"""
 function address(agent::Agent)
     addr::Any = nothing
     if !isnothing(agent.context)
@@ -410,11 +417,6 @@ function address(agent::Agent)
     return AgentAddress(aid=aid(agent), address=addr)
 end
 
-"""
-Send a message using the context to the agent with the receiver id `receiver_id` at the address `receiver_addr`. 
-This method will always set a sender_id. Additionally, further keyword arguments can be defines to fill the 
-internal meta data of the message.
-"""
 function send_message(
     agent::Agent,
     content::Any,
@@ -450,16 +452,6 @@ function send_message(
     )
 end
 
-"""
-Send a message using the context to the agent with the receiver id `receiver_id` at the address `receiver_addr`. 
-This method will always set a sender_id. Additionally, further keyword arguments can be defines to fill the 
-internal meta data of the message.
-
-Furthermore, message sent with this method will be wrapped in a data object which annotates the message with a 
-transactional id, to be able to track this specific agent discussion. For this it is possible to define a response_handler,
-to which a functin can be assigned, which handles the answer to this message call. To continue the conversation the
-transaction id has to be tr by kwargs in the response handler 
-"""
 function send_tracked_message(
     agent::Agent,
     content::Any,
@@ -482,16 +474,6 @@ function send_tracked_message(
     return send_message(agent, content, AgentAddress(agent_address.aid, agent_address.address, tracking_id); kwargs...)
 end
 
-"""
-Convenience method for sending tracked messages with response handler to the answer.
-
-Sends a tracked message with a required response_handler to enable to use the syntax
-```
-send_and_handle_answer(...) do agent, message, meta
-	# handle the answer
-end
-```
-"""
 function send_and_handle_answer(
     response_handler::Function,
     agent::Agent,
@@ -503,15 +485,6 @@ function send_and_handle_answer(
         calling_object=calling_object, kwargs...)
 end
 
-"""
-Convenience method to reply to a received message using the meta the agent received. This reduces the regular send_message as response
-`send_message(agent, "Pong", AgentAddress(aid=meta["sender_id"], address=meta["sender_addr"]))`
-to
-`reply_to(agent, "Pong", meta)`
-
-Furthermore it guarantees that agent address (including the tracking id, which is part of the address!) is correctly passed to the mango
-container.
-"""
 function reply_to(agent::Agent,
     content::Any,
     received_meta::AbstractDict;
@@ -530,18 +503,6 @@ function reply_to(agent::Agent,
         kwargs...)
 end
 
-"""
-    forward_to(agent, content, forward_to_address, received_meta; kwargs...)
-
-Forward the message to a specific agent using the metadata received on handling
-the message. This method essentially simply calls send_message on the input given, but
-also adds and fills the correct metadata fields to mark the message as forwarded. 
-
-For this the following meta data is set.
-'forwarded=`true`',
-'forwarded_from_address=`address of the original sender`',
-'forwarded_from_id=`id of the original sender`'
-"""
 function forward_to(agent::Agent,
     content::Any,
     forward_to_address::AgentAddress,

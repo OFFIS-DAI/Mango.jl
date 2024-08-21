@@ -44,12 +44,12 @@ end
     scheduler = Scheduler()
     result = 0
 
-    condition = Condition()
-    task = schedule(scheduler, AwaitableTaskData(condition)) do
+    event = Base.Event()
+    task = schedule(scheduler, AwaitableTaskData(event)) do
         result = 10
     end
     yield()
-    notify(condition)
+    notify(event)
     stop_and_wait_for_all_tasks(scheduler)
 
     @test result == 10

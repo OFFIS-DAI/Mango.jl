@@ -7,7 +7,23 @@ using Mosquitto
 using Sockets: InetAddr
 
 
+"""
+Protocol that abstracts a [Mosquitto.jl](https://github.com/denglerchr/Mosquitto.jl) client for Mango agents.
 
+# Creation
+    MQTTProtocol(client_id::String, broker_addr::InetAddr)
+
+Create an MQTT client that connects to the broker at `broker_addr` with a `client_id`.
+
+# Fields
+* client - Mosquitto.jl client
+* broker_addr - address of the MQTT broker to connect to
+* connected - internal flag indicating connection status
+* active - internal flag indicating listen loop activity
+* msg_channel - message channel of the MQTT client
+* conn_channel - connection channel of the MQTT client
+* topic_to_aid - internal dictionary to track which registered agent is subscribed to which topic
+"""
 mutable struct MQTTProtocol <: Protocol{String}
     client::Client
     broker_addr::InetAddr
@@ -27,12 +43,9 @@ mutable struct MQTTProtocol <: Protocol{String}
 end
 
 """
-Initialize the Mosquitto looping task. This checks for incoming messages and 
-forwards their content to the container.
+    init(protocol::MQTTProtocol, stop_check::Function, data_handler::Function)
 
-# Returns
-
-Created Tasks
+Initialize the Mosquitto looping task for the provided `protocol` and forward incoming messages to `data_handler`. 
 """
 function init(protocol::MQTTProtocol, stop_check::Function, data_handler::Function)
     tasks = []
@@ -57,8 +70,11 @@ function init(protocol::MQTTProtocol, stop_check::Function, data_handler::Functi
 end
 
 """
-Endlessly loops over incoming messages on the msg_channel and conn_channel 
-and processes their contents. 
+    run_mosquitto_loop(protocol::MQTTProtocol, data_handler::Function)
+
+Endlessly loops over incoming messages on the `msg_channel` and `conn_channel`` and process their contents. 
+
+Loop is stopped by setting the `protocol.active` flag to false.
 """
 function run_mosquitto_loop(protocol::MQTTProtocol, data_handler::Function)
     Mosquitto.loop_start(protocol.client)
@@ -73,7 +89,9 @@ function run_mosquitto_loop(protocol::MQTTProtocol, data_handler::Function)
 end
 
 """
-Check msg_channel for new messages and forward their contents to the data_handler.
+    handle_msg_channel(protocol::MQTTProtocol, data_handler::Function)
+
+Check `protocol.msg_channel`` for new messages and forward their contents to the `data_handler`.
 """
 function handle_msg_channel(protocol::MQTTProtocol, data_handler::Function)
     # handle incoming content messages
@@ -88,7 +106,9 @@ function handle_msg_channel(protocol::MQTTProtocol, data_handler::Function)
 end
 
 """
-Check conn_chnnel for new messages and update the protocols connection status accordingly.
+    handle_conn_channel(protocol::MQTTProtocol)
+
+Check `protocol.conn_chnnel` for new messages and update the protocols connection status accordingly.
 """
 function handle_conn_channel(protocol::MQTTProtocol)
     # handle incoming connection status updates
@@ -104,7 +124,9 @@ function handle_conn_channel(protocol::MQTTProtocol)
 end
 
 """
-Send a message `message` to topic `destination` on the clients MQTT broker . 
+    send(protocol::MQTTProtocol, destination::String, message::Any)
+
+Send a `message` to topic `destination` on the clients MQTT broker. 
 
 # Returns
 Return value and message id from MQTT library.
@@ -114,20 +136,29 @@ function send(protocol::MQTTProtocol, destination::String, message::Any)
 end
 
 """
-Returns the namethe client is registered with at its broker.
+    id(protocol::MQTTProtocol)
+
+Return the name the client is registered with at its broker.
 """
 function id(protocol::MQTTProtocol)
     return protocol.client.id
 end
 
 """
-Subscribe the MQTT client of the protocol to `topic`.
+    subscribe(protocol::MQTTProtocol, topic::String; qos::Int=1)
+
+Subscribe the MQTT client of the `protocol` to `topic` with the given `qos` setting.
+
+# Returns 
+The Mosquitto error code and the message id.
 """
 function subscribe(protocol::MQTTProtocol, topic::String; qos::Int=1)
-    Mosquitto.subscribe(protocol.client, topic; qos)
+    Mosquitto.subscribe(protocol.client, topic; qos=qos)
 end
 
 """
+    close(protocol::MQTTProtocol)
+
 Disconnect the client from the broker and stop the message loop.
 """
 function close(protocol::MQTTProtocol)
@@ -139,14 +170,22 @@ function close(protocol::MQTTProtocol)
     protocol.active = false
 end
 
+"""
+    parse_id(_::MQTTProtocol, id::Any)::String
+
+Return the `id` of the protocol as string (for compliance with container core).
+"""
 function parse_id(_::MQTTProtocol, id::Any)::String
     return string(id)
 end
 
 
 """
-Notify the client that a new agent has been registered. Registrations expects a kwarg `topics` 
-to subscribe the agent to. 
+    notify_register(protocol::MQTTProtocol, aid::String; kwargs...)
+
+Notify the `protocol` MQTT client that a new agent with `aid` has been registered. 
+
+Registration expects a kwarg `topics` to subscribe the agent to. 
 If any topic is not yet subscribed by the client `subscribe` is called for it.
 """
 function notify_register(protocol::MQTTProtocol, aid::String; kwargs...)
