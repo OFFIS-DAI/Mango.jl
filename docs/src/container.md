@@ -22,7 +22,7 @@ container = Container()
 # ... setup the container, agents, define handles, ...
 
 # Start the container
-wait(Threads.@spwan start(container))
+wait(Threads.@spawn start(container))
 
 # Execute some functionality to e.g. trigger the agent system
 
