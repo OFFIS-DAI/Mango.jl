@@ -55,16 +55,21 @@ macro with_def(struct_def)
     type_clause = nothing
     type_args = []
     type_args_full = []
+
+    # If there are type parameters and/or type inheritance then the struct_name is deeper in the Expr-hierarchy
     if typeof(struct_name) != Symbol
         struct_name = struct_head.args[1]
+        # If there is a type inheritance it is one level deeper
         if typeof(struct_name) != Symbol
             struct_head_sub = struct_name
             struct_name = struct_head_sub.args[1]
+            # Get the information for type arguments
             if struct_head_sub.head == :curly
                 type_clause = struct_head_sub.args[2]
                 type_args, type_args_full = get_types(struct_head_sub)
             end
         end
+        # Get the information for type arguments
         if struct_head.head == :curly
             type_clause = struct_head.args[2]
             type_args, type_args_full = get_types(struct_head)
@@ -76,6 +81,7 @@ macro with_def(struct_def)
     new_struct_field_default = []
     struct_field_names = []
     struct_fields_without_def = []
+    # Fill the field vectors divided by having a default and don't having a default
     for field in struct_fields
         # has default
         if field.head == :(=)
