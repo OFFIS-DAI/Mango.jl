@@ -73,7 +73,7 @@ The macro does 3 things:
 1. It adds all baseline fields, defined in AGENT_BASELINE_FIELDS
    (the agent context `context`, the role handler `role_handler`, and the `aid`)
 2. It adds the supertype `Agent` to the given struct.
-3. It applies @kwdef for default construction, the baseline fields are assigned
+3. It applies [`@with_def`](@ref) for default construction, the baseline fields are assigned
    to default values
 
 For example the usage could like this.
@@ -84,15 +84,15 @@ end
 
 # results in
 
-mutable struct MyAgent <: Agent
+@with_def mutable struct MyAgent <: Agent
 	# baseline fields...
 	my_own_field::String
+    my_own_field_with_default::String = "Default"
 end
-MyAgent(my_own_field) = MyAgent(baseline fields defaults..., my_own_field)
 
 # so youl would construct your agent like this
 
-my_agent = MyAgent("own value")
+my_agent = MyAgent("own value", my_own_field_with_default="OtherValue")
 ```
 """
 macro agent(struct_def)

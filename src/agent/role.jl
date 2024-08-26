@@ -47,7 +47,7 @@ The macro does 3 things:
 1. It adds all baseline fields, defined in ROLE_BASELINE_FIELDS
    (the role context)
 2. It adds the supertype `Role` to the given struct.
-3. It applies @kwdef for default construction, the baseline fields are assigned
+3. It applies [`@with_def`](@ref) for default construction, the baseline fields are assigned
    to default values
 
 For example the usage could like this.
@@ -58,15 +58,15 @@ end
 
 # results in
 
-@kwdef mutable struct MyRole <: Agent
+@with_def mutable struct MyRole <: Role
 	# baseline fields...
 	my_own_field::String
+    my_own_field_with_default::String = "Default"
 end
-MyRole(my_own_field) = MyRole(baseline fields defaults..., my_own_field)
 
 # so youl would construct your role like this
 
-my_roel = MyRole("own value")
+my_roel = MyRole("own value", my_own_field_with_default="OtherValue")
 ```
 """
 macro role(struct_def)
