@@ -5,13 +5,28 @@ using Dates
 using ConcurrentCollections
 using OrderedCollections
 
-# id key for the receiver
+""" 
+Id key for the receiver in the meta dict
+"""
 RECEIVER_ID::String = "receiver_id"
-# prefix for the generated aid's
+""" 
+Prefix for the generated aid's 
+"""
 AGENT_PREFIX::String = "agent"
-# DISCRETE EVENT STEP SIZE
+""" 
+DISCRETE EVENT STEP SIZE
+"""
 DISCRETE_EVENT::Real = -1
 
+"""
+    create_simulation_container(start_time::DateTime; communication_sim::Union{Nothing,CommunicationSimulation}=nothing, task_sim::Union{Nothing,TaskSimulation}=nothing)
+
+Create a simulation container. The container is intitialized with `start_time`. 
+
+Per default the [`SimpleCommunicationSimulation`](@ref) is used for communication simulation, and
+[`SimpleTaskSimulation`](@ref) for simulating the tasks of agents. To replace these, `communication_sim`
+and respectively `task_sim` can be set.
+"""
 function create_simulation_container(start_time::DateTime; communication_sim::Union{Nothing,CommunicationSimulation}=nothing, task_sim::Union{Nothing,TaskSimulation}=nothing)
     container = SimulationContainer()
     container.clock.simulation_time = start_time
@@ -24,12 +39,19 @@ function create_simulation_container(start_time::DateTime; communication_sim::Un
     return container
 end
 
+"""
+Represents a message data package including the arriving time of the package.
+"""
 struct MessageData
     content::Any
     meta::AbstractDict
     arriving_time::DateTime
 end
 
+"""
+The SimulationContainer used as a base struct to enable simulations in Mango.jl. Shall be created
+using [`create_simulation_container`](@ref).
+"""
 @kwdef mutable struct SimulationContainer <: ContainerInterface
     world::World = World()
     clock::Clock = Clock(DateTime(0))
@@ -45,6 +67,15 @@ function agents(container::SimulationContainer)::Vector{Agent}
     return [t[2] for t in collect(container.agents)]
 end
 
+"""
+    on_step(agent::Agent, world::World, clock::Clock, step_size_s::Real)
+
+Hook-in, called on every step of the simulation container for every `agent`.
+
+Further, the `world` is passed, which represents a common view on the environment
+in which agents can interact with eachother. Besides, the `clock` and the `step_size_s`
+can be used to read the current simulation time and the time which passes in the current step.
+"""
 function on_step(agent::Agent, world::World, clock::Clock, step_size_s::Real)
     # default nothing
 end
@@ -53,6 +84,9 @@ function on_step(role::Role, world::World, clock::Clock, step_size_s::Real)
     # default nothing
 end
 
+"""
+Internal, call on_step on all agents.
+"""
 function step_agent(agent::Agent, world::World, clock::Clock, step_size_s::Real)
     on_step(agent, world, clock, step_size_s)
     for role in roles(agent)
@@ -60,17 +94,32 @@ function step_agent(agent::Agent, world::World, clock::Clock, step_size_s::Real)
     end
 end
 
+"""
+Contains the result of the communication simulation and whether the state of
+the container has changed
+"""
 struct MessagingIterationResult
     communication_result::CommunicationSimulationResult
     state_changed::Bool
 end
+
+"""
+Result of all messaging simulation iterations.
+"""
 @kwdef struct MessagingSimulationResult
     results::Vector{MessagingIterationResult} = Vector()
 end
+
+"""
+Result of all task simulation iterations.
+"""
 @kwdef struct TaskSimulationResult
     results::Vector{TaskIterationResult} = Vector()
 end
 
+"""
+Result of one simulation step.
+"""
 struct SimulationResult
     time_elapsed::Real
     messasing_result::MessagingSimulationResult
@@ -78,12 +127,18 @@ struct SimulationResult
     simulation_step_size_s::Real
 end
 
+"""
+Internal
+"""
 function to_message_package(message_data::MessageData)::MessagePackage
     sender_aid = message_data.meta[SENDER_ID]
     receiver_aid = message_data.meta[RECEIVER_ID]
     return MessagePackage(sender_aid, receiver_aid, message_data.arriving_time, (message_data.content, message_data.meta))
 end
 
+"""
+Internal
+"""
 function to_cs_input!(message_queue::ConcurrentQueue{MessageData})::Vector{MessagePackage}
     messages_packages = Vector()
     while true
@@ -97,6 +152,9 @@ function to_cs_input!(message_queue::ConcurrentQueue{MessageData})::Vector{Messa
     return messages_packages
 end
 
+"""
+Internal
+"""
 function to_cs_input(message_queue::ConcurrentQueue{MessageData})::Vector{MessagePackage}
     messages_packages = Vector()
     next = message_queue.head.next
@@ -108,7 +166,9 @@ function to_cs_input(message_queue::ConcurrentQueue{MessageData})::Vector{Messag
     return messages_packages
 end
 
-
+"""
+Internal
+"""
 function cs_step_iteration(container::SimulationContainer,
     step_size_s::Real,
     pre_communication_result::Union{Nothing,CommunicationSimulationResult})::MessagingIterationResult
@@ -134,6 +194,9 @@ function cs_step_iteration(container::SimulationContainer,
     return MessagingIterationResult(communication_result, state_changed)
 end
 
+"""
+Internal
+"""
 function determine_time_step(container::SimulationContainer)
     message_packages = to_cs_input(container.message_queue)
     communication_result = calculate_communication(container.communication_sim, container.clock, message_packages)
@@ -164,6 +227,14 @@ function determine_time_step(container::SimulationContainer)
     return min(time_to_next_message_s, next_event_s), communication_result
 end
 
+"""
+    step_simulation(container::SimulationContainer, step_size_s::Real=DISCRETE_EVENT)::Union{SimulationResult,Nothing}
+
+Step the simulation using a continous time-span or until the next event happens. 
+
+For the continous simulation a `step_size_s` can be freely chosen, for the discrete event type 
+DISCRETE_EVENT has to be set for the `step_size_s`.
+"""
 function step_simulation(container::SimulationContainer, step_size_s::Real=DISCRETE_EVENT)::Union{SimulationResult,Nothing}
     # Init world if uninitialized
     if !initialized(container.world)
@@ -222,16 +293,10 @@ function step_simulation(container::SimulationContainer, step_size_s::Real=DISCR
     return SimulationResult(elapsed, messaging_sim_result, task_sim_result, time_step_s)
 end
 
-"""
-Get protocol addr part
-"""
 function protocol_addr(container::SimulationContainer)
     return nothing
 end
 
-"""
-Shut down the container. It is always necessary to call it for freeing bound resources
-"""
 function shutdown(container::SimulationContainer)
     container.shutdown = true
 
@@ -240,22 +305,6 @@ function shutdown(container::SimulationContainer)
     end
 end
 
-"""
-Register an agent given the target container `container`. While registering
-an aid will be generated and assigned to the agent.
-
-This function will add the agent to the internal list of the container and will from
-then on be controlled by the container regarding the messaging activities. That means
-the container acts as the gateway of the agent defining its possible way to retrieve 
-messages.
-
-# Args
-suggested_aid: you can provide an aid yourself. The container will always use that aid
-	if possible
-
-# Returns
-The actually used aid will be returned.
-"""
 function register(
     container::SimulationContainer,
     agent::Agent,
@@ -289,26 +338,10 @@ function process_message(container::SimulationContainer, msg::Any, meta::Abstrac
     end
 end
 
-
-"""
-Internal function of the container, which forward the message to the correct agent in the container.
-At this point it has already been evaluated the message has to be routed to an agent in control of
-the container. 
-"""
 function forward_message(container::SimulationContainer, msg::Any, meta::AbstractDict)
     push!(container.message_queue, MessageData(msg, meta, container.clock.simulation_time))
 end
 
-"""
-Send a message `message` with using the given container `container`
-to the agent with the receiver id `receiver_id`. The receivers address 
-is used by the chosen protocol to appropriatley route the message to
-external participants. To specifiy further meta data of the message
-`kwargs` should be used.
-
-# Returns
-True if the message has been sent successfully, false otherwise.
-"""
 function send_message(
     container::SimulationContainer,
     content::Any,

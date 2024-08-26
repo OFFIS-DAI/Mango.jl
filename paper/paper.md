@@ -32,7 +32,7 @@ bibliography: paper.bib
 # Summary
 Multi-agent simulations are inherently complex, making them difficult to implement, maintain, and optimize.
 An agent, as defined by [@russel:2010], is software that perceives its environment through sensors and acts upon it using actuators.
-`Mango.jl` is a simulation framework for multi-agent systems implemented in Julia.
+`Mango.jl` is a simulation framework for multi-agent systems implemented in Julia [@julia:2017].
 It enables quick implementations of multiple communicating agents, either spanning multiple devices or in a single local environment.
 
 For the design process, `Mango.jl` provides a general structure and a role concept to help develop modular and loosely coupled agents.
@@ -77,29 +77,38 @@ JACK [@jack:2005] provides a language and tools to implement communicating agent
 The agentframework [@agentframework:2022] is based on JavaScript and has less focus on communication than `Mango.jl`.
 Lastly, the original Python version of mango [@schrage:2024] is of course most similar in scope, but makes it more difficult to write high performance simulations, due to the use of `asyncio` and the lack of native multi-threading in Python.
 
+# Performance
+![Performance comparison of Python and Julia mango. \label{fig:benchmark}](benchmark.png)
+
+The performance of the Python and Julia versions of mango were benchmarked against each other. The results are shown in \autoref{fig:benchmark} and the relevant code is available at [mango_benchmark](https://github.com/OFFIS-DAI/mango_benchmark).
+
+The aim of these scenarios is to measure the performance of the frameworks core features.
+This mainly means it measures how efficiently tasks are scheduled and messages are sent and handled.
+To achieve this, benchmark scenarios have agents set up in a small world topology communicating a fixed number of messages between each other while performing simulated workloads.
+All workloads in the agents is entirely simulated by static delays.
+Thus, the benchmarks assumes that workloads in Python and Julia are identical.
+
+The main advantage of `Mango.jl` is in the ease of parallelization.
+Python can in some cases reach similar performance using subprocesses for parallel execution to circumvent the limitations of the Python global interpreter lock.
+Compared to native threads in Julia, however, this is more prone to issues with the operating system, because it requires large amounts of file handles to operate the subprocesses.
+Overall, it is easier to get high performance from `Mango.jl`.
+
 
 # Basic Example
 In this example, we define two agents in two containers (i.e. at different addresses) that pass messages to each other directly via TCP.
-Containers can be set up and equipped with the necessary TCP protocol and then started to handle all incoming and outgoing messages in the background.
+Containers can be set up and equipped with the necessary TCP protocol.
 
 ```julia
 using Mango
 
 # Create the container instances with TCP protocol
-container = Container()
-container.protocol = TCPProtocol(address=InetAddr(ip"127.0.0.1", 5555))
-
-container2 = Container()
-container2.protocol = TCPProtocol(address=InetAddr(ip"127.0.0.1", 5556))
-
-# Start the container
-wait(Threads.@spawn start(container))
-wait(Threads.@spawn start(container2))
+container = create_tcp_container("127.0.0.1", 5555)
+container2 = create_tcp_container("127.0.0.1", 5556)
 ```
 
 Now, we need to define the agents.
-An agent in `Mango.jl` is a struct defined with the `@agent` keyword.
-We define a `PingPongAgent` that has an internal counter for incoming messages.
+An agent in `Mango.jl` is a struct defined with the `@agent` macro.
+We define a `TCPPingPongAgent` that has an internal counter for incoming messages.
 
 ```julia
 @agent struct TCPPingPongAgent
@@ -114,45 +123,48 @@ After creation, agents have to be registered to their respective container.
 ping_agent = TCPPingPongAgent(0)
 pong_agent = TCPPingPongAgent(0)
 
-# register each agent to a container
-register(container, ping_agent)
-register(container2, pong_agent)
+# register each agent to a container and give them a name
+register(container, ping_agent, "Agent_1")
+register(container2, pong_agent, "Agent_2")
 ```
 
 When an incoming message is addressed at an agent, its container will call the `handle_message` function for it. 
 Using Julias multiple dispatch, we can define a new `handle_message` method for our agent.
 
 ```julia
-import Mango.handle_message
-
 # Override the default handle_message function for ping pong agents
-function handle_message(agent::TCPPingPongAgent, message::Any, meta::Any)
+function Mango.handle_message(agent::TCPPingPongAgent, message::Any, meta::Any)
+    agent.counter += 1
+
+    println(
+        "$(agent.aid) got a message: $message." *
+        "This is message number: $(agent.counter) for me!"
+    )
+
+    # doing very important work
+    sleep(0.5)
+
     if message == "Ping"
-        agent.counter += 1
-        t = AgentAddress(meta["sender_id"], meta["sender_addr"], nothing)
-        send_message(agent, "Pong", t)
+        reply_to(agent, "Pong", meta)
     elseif message == "Pong"
-        agent.counter += 1
-        t = AgentAddress(meta["sender_id"], meta["sender_addr"], nothing)
-        send_message(agent, "Ping", t)
+        reply_to(agent, "Ping", meta)
     end
 end
 ```
 
 With all this in place, we can send a message to the first agent to start the repeated message exchange.
+To do this, we need to start the containers so they listen to incoming messages and send the initating message.
+The best way to start the container message loops and ensure they are correctly shut down in the end is the
+`activate(containers)` function.
 
 ```julia
-# Send the first message to start the exchange
-target = AgentAddress(pong_agent.aid, InetAddr(ip"127.0.0.1", 5556), nothing)
-send_message(ping_agent, "Ping", target)
-```
+activate([container, container2]) do
+    send_message(ping_agent, "Ping", address(pong_agent))
 
-Finally, `Mango.jl` provides functions to cleanly shut down containers, terminating any remaining scheduled tasks and closing all network connections:
-
-```julia
-@sync begin
-    Threads.@spawn shutdown(container)
-    Threads.@spawn shutdown(container2)
+    # wait for 5 messages to have been sent
+    while ping_agent.counter < 5
+      sleep(1)
+    end
 end
 ```
 

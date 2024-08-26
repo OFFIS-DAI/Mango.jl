@@ -1,6 +1,5 @@
 export Role,
     RoleContext,
-    handle_message,
     handle_event,
     @role,
     @shared,
@@ -44,7 +43,7 @@ Macro for defining a role struct. Expects a struct definition
 as argument.
 	
 The macro does 3 things:
-1. It adds all baseline fields, defined in ROLE_BASELINE_FIELDS
+1. It adds all baseline fields, defined in `ROLE_BASELINE_FIELDS`
    (the role context)
 2. It adds the supertype `Role` to the given struct.
 3. It applies [`@with_def`](@ref) for default construction, the baseline fields are assigned
@@ -117,13 +116,29 @@ macro role(struct_def)
 end
 
 """
-Mark the field as shared across roles, this will implicitly 
+Mark the field as shared across roles. 
+
+This only works on structs with empty default constructor. Internally the marked field will be initialized
+with a model created by [`get_model`](@ref). The model will be set when the Role is added to an agent.
+
+# Example
+```julia
+@kwdef struct Model
+    field::Int = 0
+end
+@role struct MyRole
+    @shared
+    my_model::Model # per agent the exact same in every agent.
+end
+```
 """
 macro shared(field_declaration)
     return esc(field_declaration)
 end
 
 """
+    setup(role::Role)
+
 Hook-in function to setup the role, after it has been
 added to its agent.
 """
@@ -140,6 +155,8 @@ function handle_message(role::Role, message::Any, meta::Any)
 end
 
 """
+    handle_event(role::Role, src::Role, event::Any; event_type::Any)
+
 Default function for arriving events, which get dispatched to the role.
 """
 function handle_event(role::Role, src::Role, event::Any; event_type::Any)
@@ -159,41 +176,32 @@ function bind_context(role::Role, context::RoleContext)
 end
 
 """
+    context(role::Role)
+
 Return the context of role
 """
 function context(role::Role)
     return role.context
 end
 
-"""
-Hook-in function, which will be called on shutdown of the roles
-agent.
-"""
 function shutdown(role::Role)
     # default nothing
 end
 
-"""
-Lifecycle Hook-in function called when the container of the agent has been started,
-depending on the container type it may not be called (if there is no start at all, 
-f.e. the simulation container)
-"""
 function on_start(role::Role)
     # do nothing by default
 end
 
-"""
-Lifecycle Hook-in function called when the agent system as a whole is ready, the 
-hook-in has to be manually activated using notify_ready(container::Container)
-"""
 function on_ready(role::Role)
     # do nothing by default
 end
 
 """
+    subscribe_message(role::Role, handler::Function, condition::Function)
+
 Subscribe a message handler function (it need to have the signature (role, message, meta))
 to the message dispatching. This handler function will be called everytime the given
-condition function (message, meta -> boolean) evaluates to true when a message arrives
+condition function ((message, meta) -> boolean) evaluates to true when a message arrives
 at the roles agent.
 """
 function subscribe_message(role::Role, handler::Function, condition::Function)
@@ -201,7 +209,9 @@ function subscribe_message(role::Role, handler::Function, condition::Function)
 end
 
 """
-Subscribe a send_message hook in function (signature, (role, content, receiver_id, receiver_addr; kwargs...)) to the
+    subscribe_send(role::Role, handler::Function)
+
+Subscribe a `send_message` hook in function (signature, (role, content, receiver_id, receiver_addr; kwargs...)) to the
 message sending. The hook in function will be called every time a message is sent by the agent.
 """
 function subscribe_send(role::Role, handler::Function)
@@ -209,51 +219,65 @@ function subscribe_send(role::Role, handler::Function)
 end
 
 """
-Subscribe to specific types of events.
-"""
-function subscribe_event(role::Role, event_type::Any, event_handler::Any)
-    subscribe_event_handle(role.context.agent, role, event_type, event_handler; condition=(a, b) -> true)
-end
+    subscribe_event(role::Role, event_type::Any, event_handler::Any, condition::Function)
 
+Subscribe to specific types of events. 
+
+The types of events are determined by the `condition` function (accepting `src` and `event`) and 
+by the `event_type`.
+
+# Example
+```julia
+struct MyEvent end
+function custom_handler(role::Role, src::Role, event::Any, event_type::Any)
+    # do your thing
+end
+subscribe_event(my_role, MyEvent, custom_handler, (src, event) -> aid(src) == "agent0")
+```
 """
-Subscribe to specific types of events.
-"""
-function subscribe_event(role::Role, event_type::Any, event_handler::Any, condition::Function)
+function subscribe_event(role::Role, event_type::Any, event_handler::Any, condition::Function=(a, b) -> true)
     subscribe_event_handle(role.context.agent, role, event_type, event_handler; condition=condition)
 end
 
 """
-Emit an event to their subscriber
+    emit_event(role::Role, event::Any; event_type::Any=nothing)
+
+Emit an event to their subscriber.
 """
 function emit_event(role::Role, event::Any; event_type::Any=nothing)
     emit_event_handle(role.context.agent, role, event, event_type=event_type)
 end
 
 """
+    get_model(role::Role, type::DataType)
+
 Get a shared model from the pool. If the model does not exist yet, it will be created.
 Only types with default constructor are allowed!
+
+# Example
+```julia
+@kwdef struct ExampleModel
+    my_field::Int = 0
+end
+role = ExampleRole()
+model::ExampleModel = get_model(role, ExampleModel)
+model.my_field = 1
+model2::ExampleModel = get_model(role, ExampleModel)
+# model == model2, it will also be the same for every role!
+```
 """
 function get_model(role::Role, type::DataType)
     get_model_handle(role.context.agent, type)
 end
 
-"""
-Delegates to the scheduler `Scheduler`
-"""
 function schedule(f::Function, role::Role, data::TaskData)
     schedule(f, role.context.agent, data)
 end
 
-"""
-Get AID of the parent agent
-"""
 function aid(role::Role)
     return address(role.context.agent).aid
 end
 
-"""
-Get AgentAddress of the parent agent
-"""
 function address(role::Role)
     return address(role.context.agent)
 end

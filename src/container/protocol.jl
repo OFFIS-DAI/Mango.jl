@@ -17,17 +17,19 @@ Every protocol has to define two methods.
 abstract type Protocol{T} end
 
 """
+    send(protocol::Protocol{T}, destination::T, message::Any) where {T}
+
 Send the message `message` to the agent known by the adress `destination`. How the message is exactly handled is 
 determined by the protocol invoked. 
 
-The type of the destination has to match with the protocol. 
-
-# Returns
-The function returns a boolean indicating whether the message was successfull sent
+The type of the destination has to match with the protocol. The function returns a boolean indicating 
+whether the message was successfull sent
 """
 function send(protocol::Protocol{T}, destination::T, message::Any) where {T} end
 
 """
+    init(protocol::Protocol{T}, stop_check::Function, data_handler::Function) where {T}
+
 Initialized the protocols internal loops (if exists). In most implementation this would mean that the receiver loop is started.
 To handle received messages the `data_handler` function can be passed `(msg, sender) -> your handling code`. 
 
@@ -37,16 +39,22 @@ terminate. The exact behavior depends on the implementation though.
 function init(protocol::Protocol{T}, stop_check::Function, data_handler::Function) where {T} end
 
 """
+    id(protocol::Protocol{T}) where {T}
+
 Return the external identifier associated with the protocol (e.g. it could be the host+port, dns name, ...)
 """
 function id(protocol::Protocol{T}) where {T} end
 
 """
+    parse_id(protocol::Protocol{T}, id_data::Any)::T where {T}
+
 Parse different types to the correct type (if required). Should be implemented if the id type is not trivial.
 """
 function parse_id(protocol::Protocol{T}, id_data::Any)::T where {T} end
 
 """
+    notify_register(protocol::Protocol{T}, aid::String; kwargs...) where {T}
+
 Protocol specific updates called when a new agent is registered.
 """
 function notify_register(protocol::Protocol{T}, aid::String; kwargs...) where {T} end

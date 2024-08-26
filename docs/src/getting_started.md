@@ -30,18 +30,24 @@ end
 
 ## 3. Sending and Handling Messages
 
-Ping pong agents can exchange messages and they can keep track of the number of messages received. Let's implement message handling for the agents. To achieve this a new method `handle_message` from `Mango` has to be added:
+Ping pong agents can exchange messages and they can keep track of the number of messages received. Let's implement message handling for the agents. To achieve this a new method [`handle_message`](@ref) from `Mango` has to be added:
 
 ```julia
-import Mango.handle_message
-
 # Override the default handle_message function for ping pong agents
-function handle_message(agent::TCPPingPongAgent, message::Any, meta::Any)
+function Mango.handle_message(agent::TCPPingPongAgent, message::Any, meta::Any)
+    agent.counter += 1
+
+    println(
+        "$(agent.aid) got a message: $message." *
+        "This is message number: $(agent.counter) for me!"
+    )
+
+    # doing very important work
+    sleep(0.5)
+
     if message == "Ping"
-        agent.counter += 1
         reply_to(agent, "Pong", meta)
     elseif message == "Pong"
-        agent.counter += 1
         reply_to(agent, "Ping", meta)
     end
 end
@@ -50,11 +56,11 @@ end
 ## 4. Sending Messages
 
 Now let's simulate the ping pong exchange by sending messages between the ping pong agents. 
-Addresses are provided to the `send_message` function via the [`AgentAddress`](@ref) struct.
+Addresses are provided to the [`send_message`](@ref) function via the [`AgentAddress`](@ref) struct.
 The struct consists of an `aid` and the more technical `address` field. Further an AgentAddress 
 can contain a `tracking_id`, which can identify the dialog agents are having.
 
-The `send_message` method here will automatically insert the agent as sender:
+The [`send_message`](@ref) method here will automatically insert the agent as sender:
 
 ```julia
 # Define the ping pong agent
@@ -66,14 +72,10 @@ activate([container, container2]) do
     # Send the first message to start the exchange
     send_message(ping_agent, "Ping", address(pong_agent))
 
-    # Wait for a moment to see the result
-    # In general you want to use a Condition() instead to
-    # Define a clear stopping signal for the agents
-    wait(Threads.@spawn begin
-        while ping_agent.counter < 5 
-            sleep(1)
-        end
-    end)
+    # wait for 5 messages to have been sent
+    while ping_agent.counter < 5
+        sleep(1)
+    end
 end
 ```
 
@@ -83,8 +85,6 @@ In this example, the ping pong agents take turns sending "Ping" and "Pong" messa
 To use an MQTT messsage broker instead of a direkt TCP connection, you can use the MQTT protocol.
 
 ```julia
-broker_addr = InetAddr(ip"127.0.0.1", 1883)
-
 c1 = create_mqtt_container("127.0.0.1", 1883, "PingContainer")
 c2 = create_mqtt_container("127.0.0.1", 1883, "PongContainer")
 ```
@@ -118,7 +118,7 @@ wait(send_message(ping_agent, "Ping", MQTTAddress(broker_addr, "pings")))
 ```
 
 
-Lastly, `handle_message` has to be altered to send the corresponding answers correctly:
+Lastly, [`handle_message`](@ref) has to be altered to send the corresponding answers correctly:
 
 ```julia
 # Override the default handle_message function for ping pong agents

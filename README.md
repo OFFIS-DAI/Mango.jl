@@ -43,6 +43,26 @@ We appreciate constructive feedback and suggestions for improvement._
   * Integrated communication and task simulation modules
   * Integrated environment with which the agents can interact in a common space
 
+## Installation
+`Mango.jl` is registered to JuliaHub.
+To add it to your Julia installation or project you can use the Julia REPL by calling `]add Mango` or `import Pkg; Pkg.add("Mango")` directly:
+
+```
+> julia --project=.                                                         ✔ 
+               _
+   _       _ _(_)_     |  Documentation: https://docs.julialang.org
+  (_)     | (_) (_)    |
+   _ _   _| |_  __ _   |  Type "?" for help, "]?" for Pkg help.
+  | | | | | | |/ _` |  |
+  | | |_| | | | (_| |  |  Version 1.10.4 (2024-06-04)
+ _/ |\__'_|_|_|\__'_|  |  
+|__/                   |
+
+(project_name) pkg> add Mango
+    Updating registry at `~/.julia/registries/General.toml`
+    [...]
+```
+
 ## Example
 
 The following simple showcase demonstrates how you can define agents in Mango. Jl, assign them to containers and send messages via a TCP connection. For more information on the specifics and other features (e.g. MQTT, modular agent using roles, simulation, tasks), please have a look at our [Documentation](https://offis-dai.github.io/Mango.jl/stable)!
@@ -50,56 +70,55 @@ The following simple showcase demonstrates how you can define agents in Mango. J
 ```julia
 using Mango
 
-import Mango.handle_message
+# Create the container instances with TCP protocol
+container = create_tcp_container("127.0.0.1", 5555)
+container2 = create_tcp_container("127.0.0.1", 5556)
 
-# Define the agent struct using the @agent macro
-@agent struct PingPongAgent
+# An agent in `Mango.jl` is a struct defined with the `@agent` macro.
+# We define a `TCPPingPongAgent` that has an internal counter for incoming messages.
+@agent struct TCPPingPongAgent
     counter::Int
 end
 
-# Define the way the PingPongAgent reacts to incoming messages
-# Here it will reply to incoming "Pong"s with "Ping", and with incoming
-# "Ping"s with "Pong"
-function handle_message(agent::PingPongAgent, message::Any, meta::AbstractDict)
-    if message == "Ping" && agent.counter < 5
-        agent.counter += 1
+# Create instances of ping pong agents
+ping_agent = TCPPingPongAgent(0)
+pong_agent = TCPPingPongAgent(0)
+
+# register each agent to a container and give them a name
+register(container, ping_agent, "Agent_1")
+register(container2, pong_agent, "Agent_2")
+
+# When an incoming message is addressed at an agent, its container will call the `handle_message` function for it. 
+# Using Julias multiple dispatch, we can define a new `handle_message` method for our agent.
+function Mango.handle_message(agent::TCPPingPongAgent, message::Any, meta::Any)
+    agent.counter += 1
+
+    println(
+        "$(agent.aid) got a message: $message." *
+        "This is message number: $(agent.counter) for me!"
+    )
+
+    # doing very important work
+    sleep(0.5)
+
+    if message == "Ping"
         reply_to(agent, "Pong", meta)
-    elseif message == "Pong" && agent.counter < 5
-        agent.counter += 1
+    elseif message == "Pong"
         reply_to(agent, "Ping", meta)
     end
 end
 
-# Create the container and add the protocol you want to use, here we use
-# a plain TCP protocol and define the address of the containers
-container = create_tcp_container("127.0.0.1", 5555)
-container2 = create_tcp_container("127.0.0.1", 5556)
+# With all this in place, we can send a message to the first agent to start the repeated message exchange.
+# To do this, we need to start the containers so they listen to incoming messages and send the initating message.
+# The best way to start the container message loops and ensure they are correctly shut down in the end is the
+# `activate(containers)` function.
+activate([container, container2]) do
+    send_message(ping_agent, "Ping", address(pong_agent))
 
-# Create the agents we defined above
-ping_agent = PingPongAgent(0)
-pong_agent = PingPongAgent(0)
-
-# Registering the agents and the respective container
-# We want to showcase the use of TCP so each agent need to be
-# in its own container, otherwise the agents would communicate
-# without any protocol (with simple function calls internally)
-register(container2, ping_agent)
-register(container, pong_agent)
-
-# Start the Mango.jl system. At this point the TCP-server is created and bound
-# to their addresses. After that, the runnable is executed (do ... end). at the 
-# end the container and therefor the TCP server are shut down again. Using this 
-# method it is not possible to forget starting or stopping containers.
-activate([container, container2]) do 
-    # Send the initial message from the ping_agent to initiate the communication
-        send_message(ping_agent, "Ping", address(pong_agent))
-
-    # Wait until some Pings and Pongs has been exchanged
-    wait(Threads.@spawn begin
-        while ping_agent.counter < 5
-            sleep(1)
-        end
-    end)
+    # wait for 5 messages to have been sent
+    while ping_agent.counter < 5
+        sleep(1)
+    end
 end
 ```
 

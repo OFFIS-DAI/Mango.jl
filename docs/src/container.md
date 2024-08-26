@@ -1,17 +1,17 @@
 # Real Time Container
 
-The real time container feature in Mango.jl allows you to create and manage a container, which acts as the communication layer within the environment. A container is responsible for handling messages, forwarding them to the appropriate agents, and managing agent registration. The real time component means that the container acts on a real time clock, and does not differentiate between a simulation time and the execution time, which essentially means everything executed withing the real time container is executed immediately as stated in the code. In contrast, there is also a "simulation" container, which maintains an interal simulation time and only executes tasks and delivers messages according to the requested step_sizes (next event time). More on the simulation container can be found under [Simulation Container](@ref). Note, that both container types implement the methods for the `ContainerInterface` and can therefore be drop-in replacements for the each other with slight differences in usage.
+The real time container feature in Mango.jl allows you to create and manage a container, which acts as the communication layer within the environment. A container is responsible for handling messages, forwarding them to the appropriate agents, and managing agent registration. The real time component means that the container acts on a real time clock, and does not differentiate between a simulation time and the execution time, which essentially means everything executed withing the real time container is executed immediately as stated in the code. In contrast, there is also a "simulation" container, which maintains an interal simulation time and only executes tasks and delivers messages according to the requested step_sizes (next event time). More on the simulation container can be found under [Simulation Container](@ref). Note, that both container types implement the methods for the [`ContainerInterface`](@ref) and can therefore be drop-in replacements for the each other with slight differences in usage.
 
 ## Container Struct 
 
-The `Container` struct represents the container as an actor within the environment. It is implemented using composition, making it flexible to use different protocols and codecs for message communication. The key components of the `Container` struct are:
+The [`Container`](@ref) struct represents the container as an actor within the environment. It is implemented using composition, making it flexible to use different protocols and codecs for message communication. The key components of the [`Container`](@ref) struct are:
 
 - `protocol`: The protocol used for message communication (e.g., TCP).
 - `codec`: A pair of functions for encoding and decoding messages in the container.
 
 ## Start and Shutdown 
 
-Before using the container for message handling and agent management, you need to start the container using the `start` function. This function initializes the container's components and enables it to act as the communication layer.
+Before using the container for message handling and agent management, you need to start the container using the [`start`](@ref) function. This function initializes the container's components and enables it to act as the communication layer. After you are done with the container, [`shutdown`](@ref) has to be called.
 
 ```julia
 using Mango
@@ -30,7 +30,7 @@ wait(Threads.@spwan start(container))
 shutdown(container)
 ```
 
-However, this approach can be error-prone for multiple reasons. Besides simply forgetting to call shutdown, an exception may occur between the start and shutdown calls on the containers, leading to resource leaks. For this reason, we recommend using `activate(runnable, containers)`. With this function, the above `start/shutdown' pair translates to...
+However, this approach can be error-prone for multiple reasons. Besides simply forgetting to call shutdown, an exception may occur between the start and shutdown calls on the containers, leading to resource leaks. For this reason, we recommend using [`activate`](@ref). With this function, the above `start/shutdown' pair translates to...
 
 ```julia
 # Start the container and shut it down after the runnable (do ... end) has been executed.
@@ -43,7 +43,7 @@ end
 
 ## Registering Agents 
 
-To enable the container to manage agents and handle their messaging activities, you can register agents using the `register` function. This function associates an agent with a unique agent ID (AID) and adds the agent to the container's internal list.
+To enable the container to manage agents and handle their messaging activities, you can register agents using the [`register`](@ref) function. This function associates an agent with a unique agent ID (AID) and adds the agent to the container's internal list.
 
 ```julia
 using Mango
@@ -64,7 +64,7 @@ register(container, my_agent)
 
 ## Sending Messages
 
-To send messages between agents within the container, you can use the `send_message` function. The container routes the message to the specified receiver agent based on the receiver's AID.
+To send messages between agents within the container, you can use the [`send_message`](@ref) function. The container routes the message to the specified receiver agent based on the receiver's AID.
 
 ```julia
 using Mango
@@ -88,7 +88,7 @@ The TCP Protocol in Mango.jl is a communication protocol used to exchange messag
 
 ### TCPProtocol Struct 
 
-The `TCPProtocol` struct represents the TCP Protocol within Mango.jl. It encapsulates the necessary functionalities for communication via TCP connections. Key features of the `TCPProtocol` struct are:
+The [`TCPProtocol`](@ref) struct represents the TCP Protocol within Mango.jl. It encapsulates the necessary functionalities for communication via TCP connections. Key features of the [`TCPProtocol`](@ref) struct are:
 
 - `address`: The `InetAddr` represents the address on which the TCP server listens.
 - `server`: A `TCPServer` instance used for accepting incoming connections.
@@ -104,6 +104,10 @@ container2.protocol = TCPProtocol(address=InetAddr(ip"127.0.0.2", 2940))
 
 It is also possible to use the convenience function [`create_tcp_container`](@ref).
 
+```julia
+container2 = create_tcp_container("127.0.0.2", 2940)
+```
+
 ## MQTT
 ### Introduction
 The MQTT protocol enables sending via an MQTT message broker.
@@ -114,7 +118,7 @@ Subscribed topics for each agent are set on agent registration and tracked by th
 Incoming messages on these topics are distributed to the subscribing agents by the container.
 
 ### MQTTProtocol Struct 
-The MQTTProtocol contains the status and channels of the underlying mosquitto C library (as abstracted to Julia by the Mosquitto.jl package).
+The [`MQTTProtocol`](@ref) contains the status and channels of the underlying mosquitto C library (as abstracted to Julia by the Mosquitto.jl package).
 
 The constructor takes a `client_id` and the `broker_addr`.
 Internally it also tracks the `msg_channel` and `conn_channel`, internal flags, the information to map topics to subscribing agents.
