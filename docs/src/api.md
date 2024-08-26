@@ -73,7 +73,6 @@ Pages = ["util/encode_decode.jl"]
 
 # Misc
 
-In the following the built-in functions for encoding and decoding messages are listed.
 
 ```@autodocs
 Modules = [Mango]
