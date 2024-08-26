@@ -16,8 +16,10 @@ end
     i::Int = 0
 end
 
-@with_def struct ABC2 <: Int
-    abc::T
+abstract type AbstractTypeAbc end
+
+@with_def struct ABC2 <: AbstractTypeAbc
+    abc::Int
     i::Int = 0
 end
 
@@ -27,7 +29,8 @@ end
     @test abc.i == 0
 end
 @testset "TestTypeInheritanceWithDef" begin
-    abc = ABC("H")
-    @test abc.abc == "H"
+    abc = ABC2(0)
+
+    @test abc.abc == 0
     @test abc.i == 0
 end
