@@ -312,6 +312,7 @@ function register(
     kwargs...,
 )
     actual_aid::String = "$AGENT_PREFIX$(container.agent_counter)"
+    @debug suggested_aid
     if !isnothing(suggested_aid) && !haskey(container.agents, suggested_aid)
         actual_aid = suggested_aid
     end
@@ -331,7 +332,7 @@ function process_message(container::SimulationContainer, msg::Any, meta::Abstrac
     receiver_id = meta[RECEIVER_ID]
 
     if !haskey(container.agents, meta[RECEIVER_ID])
-        @warn "Container $(keys(container.agents)) has no agent with id: $receiver_id"
+        @warn "Container $(keys(container.agents)) has no agent with id: $receiver_id" msg meta
     else
         agent = container.agents[receiver_id]
         return dispatch_message(agent, msg, meta)
@@ -361,6 +362,8 @@ function send_message(
     meta[SENDER_ID] = sender_id
     meta[TRACKING_ID] = tracking_id
     meta[SENDER_ADDR] = nothing
+
+    @debug "Send a message to ($receiver_id), from $sender_id" typeof(content)
 
     return forward_message(container, content, meta)
 end

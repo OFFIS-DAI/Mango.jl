@@ -58,7 +58,7 @@ end
     container2 = create_tcp_container("127.0.0.1", 5556)
 
     express_one = add_agent_composed_of(container, ExpressRole(0), ExpressRole(0))
-    express_two = add_agent_composed_of(container2, ExpressRole(0), ExpressRole(0))
+    express_two = add_agent_composed_of(container2, ExpressRole(0), ExpressRole(0), suggested_aid="test")
 
     activate([container, container2]) do
         wait(send_message(express_one, "TestMessage", address(express_two)))
@@ -71,4 +71,7 @@ end
 
     @test roles(express_two)[1].counter == 1
     @test roles(express_two)[2].counter == 1
+    @test aid(express_two) == "test"
 end
+
+

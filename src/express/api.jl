@@ -66,12 +66,12 @@ for the roles. The created agent will be returned by the function.
 agent = add_agent_composed_of(your_container, RoleA(), RoleB(), RoleC())
 ```
 """
-function add_agent_composed_of(container::ContainerInterface, roles::Role...; suggested_aid=nothing)
+function add_agent_composed_of(container::ContainerInterface, roles::Role...; suggested_aid::Union{Nothing,String}=nothing)
     agent = GeneralAgent()
     for role in roles
         add(agent, role)
     end
-    register(container, agent, suggested_aid=suggested_aid)
+    register(container, agent, suggested_aid)
     return agent
 end
 
