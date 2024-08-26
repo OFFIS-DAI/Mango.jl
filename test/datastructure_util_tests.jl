@@ -10,3 +10,13 @@ using ConcurrentCollections
 
     @test length(queue) == 3
 end
+
+@with_def struct ABC{T}
+    abc::T
+    i::Int = 0
+end
+
+@testset "TestSimpleTypeParam" begin
+    abc = ABC("H")
+    @test abc.abc == "H"
+end
