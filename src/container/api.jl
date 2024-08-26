@@ -113,3 +113,14 @@ function register(
 Return the agents of the container. The agents have a fixed order.
 """
 function agents(container::ContainerInterface) end
+
+"""
+    notify_ready(container::Container)
+
+Mark the agent system as ready.
+"""
+function notify_ready(container::ContainerInterface)
+    for agent in values(agents(container))
+        notify_ready(agent)
+    end
+end

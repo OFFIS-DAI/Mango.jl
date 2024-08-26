@@ -76,17 +76,6 @@ function start(container::Container)
     end
 end
 
-"""
-    notify_ready(container::Container)
-
-Mark the agent system as ready.
-"""
-function notify_ready(container::Container)
-    for agent in values(container.agents)
-        notify_ready(agent)
-    end
-end
-
 function shutdown(container::Container)
     container.shutdown = true
     if !isnothing(container.protocol)

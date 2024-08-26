@@ -20,6 +20,7 @@ export @agent,
 using UUIDs
 
 using Dates: Dates
+import Base.getindex
 
 FORWARDED_FROM_ADDR = "forwarded_from_address"
 FORWARDED_FROM_ID = "forwarded_from_id"
@@ -513,4 +514,8 @@ Add a service to the agent. Every service can exists exactly one time (stored by
 """
 function add_service!(agent::Agent, service::Any)
     agent.services[typeof(service)] = service
+end
+
+function getindex(agent::T, index::Int) where {T<:Agent}
+    return roles(agent)[index]
 end
