@@ -169,3 +169,25 @@ end
     @test length(topology_neighbors(agents(container)[3])) == 2
     @test length(topology_neighbors(agents(container)[4])) == 2
 end
+
+@testset "TestSetEdgeState" begin
+    container = create_tcp_container("127.0.0.1", 3333)
+    agent = nothing
+    topology = cycle_topology(4)
+
+    modify_topolology(topology) do topology
+        agent = register(container, TopologyAgent())
+        agent2 = register(container, TopologyAgent())
+        agent3 = register(container, TopologyAgent())
+        n1 = add_node!(topology, agent)
+        n2 = add_node!(topology, agent2)
+        n3 = add_node!(topology, agent3)
+        add_edge!(topology, n1, n2)
+        add_edge!(topology, n1, n3)
+        set_edge_state!(topology, n1, n2, BROKEN)
+    end
+
+    @test topology_neighbors(agent) == [address(agents(container)[3])]
+    @test topology_neighbors(agents(container)[2]) == []
+    @test topology_neighbors(agents(container)[3]) == [address(agents(container)[1])]
+end
