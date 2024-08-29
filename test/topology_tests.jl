@@ -191,3 +191,19 @@ end
     @test topology_neighbors(agents(container)[2]) == []
     @test topology_neighbors(agents(container)[3]) == [address(agents(container)[1])]
 end
+
+@testset "TestTopologyRemoveEdgeRemoveNode" begin
+    topology = complete_topology(5)
+    container = create_tcp_container("127.0.0.1", 3333)
+
+    per_node(topology) do node
+        add!(node, register(container, TopologyAgent()))
+    end
+
+    modify_topolology(topology) do topology
+        remove_edge!(topology, 1, 2)
+        remove_node!(topology, 3)
+    end
+
+    @test length(topology_neighbors(container["agent0"])) == 2
+end

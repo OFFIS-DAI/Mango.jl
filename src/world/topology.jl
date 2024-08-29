@@ -1,4 +1,4 @@
-export complete_topology, star_topology, cycle_topology, graph_topology, per_node, add!, topology_neighbors, create_topology, add_node!, add_edge!, Topology, modify_topolology, choose_agent, assign_agent, NORMAL, BROKEN, INACTIVE, set_edge_state!
+export complete_topology, star_topology, cycle_topology, graph_topology, per_node, add!, topology_neighbors, create_topology, add_node!, add_edge!, Topology, modify_topolology, choose_agent, assign_agent, NORMAL, BROKEN, INACTIVE, set_edge_state!, remove_edge!, remove_node!
 
 using MetaGraphsNext
 using Graphs
