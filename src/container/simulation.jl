@@ -4,6 +4,7 @@ using Base.Threads
 using Dates
 using ConcurrentCollections
 using OrderedCollections
+import Base.getindex
 
 """ 
 Id key for the receiver in the meta dict
@@ -284,7 +285,7 @@ function step_simulation(container::SimulationContainer, step_size_s::Real=DISCR
             step_agent(agent, container.world, container.clock, time_step_s)
         end
     end
-    @debug "The simulation iteration needed $elapsed seconds"
+    @debug "The simulation step needed $elapsed seconds"
 
     container.clock.simulation_time = add_seconds(container.clock.simulation_time, time_step_s)
 
@@ -312,7 +313,6 @@ function register(
     kwargs...,
 )
     actual_aid::String = "$AGENT_PREFIX$(container.agent_counter)"
-    @debug suggested_aid
     if !isnothing(suggested_aid) && !haskey(container.agents, suggested_aid)
         actual_aid = suggested_aid
     end
@@ -366,4 +366,8 @@ function send_message(
     @debug "Send a message to ($receiver_id), from $sender_id" typeof(content)
 
     return forward_message(container, content, meta)
+end
+
+function getindex(container::SimulationContainer, index::String)
+    return container.agents[index]
 end
