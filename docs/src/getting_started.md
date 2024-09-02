@@ -26,8 +26,11 @@ run_with_tcp(2, express_one, express_two) do container_list
     wait(send_message(express_one, "TestMessage", address(express_two)))
     sleep(0.1)
 end
+
 express_two[1].out
+
 # output
+
 "TestMessage"
 ```
 

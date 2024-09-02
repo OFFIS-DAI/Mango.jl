@@ -1,4 +1,5 @@
 using Test
+using Documenter
 
 @testset "Mango Tests" begin
     include("datastructure_util_tests.jl")
@@ -13,4 +14,5 @@ using Test
     include("agent_modeling_tests.jl")
     include("express_api_tests.jl")
     include("topology_tests.jl")
+    doctest(Mango)
 end

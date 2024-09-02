@@ -103,7 +103,12 @@ end
     agent_desc = (express_one, :topics => ["Uni"], :something => "")
     agent2_desc = (express_two, :topics => ["Uni"])
     container_list = nothing
+    mqtt_not_test_here = false
     run_with_mqtt(2, agent_desc, agent2_desc, broker_port=1883) do cl
+        if !cl[1].protocol.connected
+            mqtt_not_test_here = true
+            return
+        end
         wait(send_message(express_one, "TestMessage", MQTTAddress(cl[1].protocol.broker_addr, "Uni")))
         wait(Threads.@spawn begin
             while express_two[1].counter != 1
@@ -113,6 +118,9 @@ end
         container_list = cl
     end
 
+    if mqtt_not_test_here
+        return
+    end
     @test roles(express_two)[1].counter == 1
     @test roles(express_two)[2].counter == 1
     @test container_list[1][1] == agent_desc[1]
