@@ -2,7 +2,7 @@ using Mango
 using Test
 using Logging
 import Mango.handle_message
-
+using Sockets: InetAddr
 
 @agent struct ExpressAgent
     counter::Int
@@ -74,4 +74,48 @@ end
     @test aid(express_two) == "test"
 end
 
+@testset "TestRunTcpContainerExpressAPI" begin
+    # Create agents based on roles
+    express_one = agent_composed_of(ExpressRole(0), ExpressRole(0))
+    express_two = agent_composed_of(ExpressRole(0), ExpressRole(0))
 
+    run_with_tcp(2, express_one, express_two) do cl
+        wait(send_message(express_one, "TestMessage", address(express_two)))
+        wait(Threads.@spawn begin
+            while express_two[1].counter != 1
+                sleep(0.01)
+            end
+        end)
+    end
+
+    @test roles(express_two)[1].counter == 1
+    @test roles(express_two)[2].counter == 1
+    @test address(express_one).address == InetAddr("127.0.0.1", 5555)
+    @test address(express_two).address == InetAddr("127.0.0.1", 5556)
+    @test aid(express_two) == "agent0"
+end
+
+@testset "TestRunMQTTContainerExpressAPI" begin
+    # Create agents based on roles
+    express_one = agent_composed_of(ExpressRole(0), ExpressRole(0))
+    express_two = agent_composed_of(ExpressRole(0), ExpressRole(0))
+
+    agent_desc = (express_one, :topics => ["Uni"], :something => "")
+    agent2_desc = (express_two, :topics => ["Uni"])
+    container_list = nothing
+    run_with_mqtt(2, agent_desc, agent2_desc, broker_port=1883) do cl
+        wait(send_message(express_one, "TestMessage", MQTTAddress(cl[1].protocol.broker_addr, "Uni")))
+        wait(Threads.@spawn begin
+            while express_two[1].counter != 1
+                sleep(0.01)
+            end
+        end)
+        container_list = cl
+    end
+
+    @test roles(express_two)[1].counter == 1
+    @test roles(express_two)[2].counter == 1
+    @test container_list[1][1] == agent_desc[1]
+    @test container_list[2][1] == agent2_desc[1]
+    @test aid(express_two) == "agent0"
+end

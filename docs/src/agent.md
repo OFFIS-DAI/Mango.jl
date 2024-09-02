@@ -102,7 +102,7 @@ end
 end
 
 agent = MyAgent("")
-role = MyAgent("")
+role = MyRole("")
 
 send_message(agent, "Message", AgentAddress("receiver_id", "receiver_addr", "optional tracking id"))
 send_message(role, "Message", AgentAddress("receiver_id", "receiver_addr", "optional tracking id"))

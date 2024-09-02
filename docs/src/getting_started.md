@@ -1,18 +1,48 @@
 # Getting Started with Mango.jl
 
-In this getting started guide, we will explore the essential features of Mango.jl by creating a simple simulation of two ping pong agents that exchange messages in a container. We will set up a container with the TCP protocol, define ping pong agents, and enable them to exchange messages.
+In this getting started guide, we will explore the essential features of Mango.jl, starting with a simple example using the express-api, followed by a more in-depth example of two ping pong agents that exchange messages in a container. Here, we will manually set up a container with the TCP protocol, define ping pong agents, and enable them to exchange messages. This way allows better customization but may need more boilerplate code. Because of this we recommend using the express-api-style if possible.
+
 You can also find working examples of the following code in [examples.jl](../../test/examples.jl).
+
+## 0. Quickstart
+
+In Mango.jl, you can define agents using a number of roles using [`@role`](@ref) and [`agent_composed_of`](@ref), or directly [`@agent`](@ref). To define the behavior of the agents, [`handle_message`](@ref) can be defined, and messages can be send using [`send_message`](@ref). To run the agents with a specific protocol in real time the express-way is to use [`run_with_tcp`](@ref), which will distribute the agents to tcp-containers and accepts a function in which some agent intializiation and/or trigger-code could be put in The following example illustrates the basic usage of the functions.
+
+```jldoctest
+using Mango
+
+@role struct PrintingRole
+    out::Any = ""
+end
+
+function Mango.handle_message(role::PrintingRole, msg::Any, meta::AbstractDict)
+    role.out = msg
+end
+
+express_one = agent_composed_of(PrintingRole())
+express_two = agent_composed_of(PrintingRole(), PrintingRole())
+
+run_with_tcp(2, express_one, express_two) do container_list
+    wait(send_message(express_one, "TestMessage", address(express_two)))
+    sleep(0.1)
+end
+express_two[1].out
+# output
+"TestMessage"
+```
 
 ## 1. Creating a Container with a TCP Protocol
 
-To get started, we need to create a container to manage ping pong agents and facilitate communication using the TCP protocol:
+, we need to create a container to manage ping pong agents and facilitate communication using the TCP protocol:
 
-```julia
+```jldoctest
 using Mango
 
 # Create the container instances with TCP protocol
 container = create_tcp_container("127.0.0.1", 5555)
 container2 = create_tcp_container("127.0.0.1", 5556)
+# output
+Test
 ```
 
 ## 2. Defining Ping Pong Agents
