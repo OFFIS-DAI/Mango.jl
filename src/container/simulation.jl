@@ -122,7 +122,7 @@ Result of one simulation step.
 """
 struct SimulationResult
     time_elapsed::Real
-    messasing_result::MessagingSimulationResult
+    messaging_result::MessagingSimulationResult
     task_result::TaskSimulationResult
     simulation_step_size_s::Real
 end
@@ -338,8 +338,12 @@ function process_message(container::SimulationContainer, msg::Any, meta::Abstrac
     end
 end
 
+struct NonWaitable end
+function Base.wait(waitable::NonWaitable) end
+
 function forward_message(container::SimulationContainer, msg::Any, meta::AbstractDict)
     push!(container.message_queue, MessageData(msg, meta, container.clock.simulation_time))
+    return NonWaitable()
 end
 
 function send_message(
@@ -375,6 +379,6 @@ Return the agent indexed by `index` (aid).
 function Base.getindex(container::SimulationContainer, index::String)
     return container.agents[index]
 end
-function getindex(container::SimulationContainer, index::Int)
+function Base.getindex(container::SimulationContainer, index::Int)
     return agents(container)[index]
 end

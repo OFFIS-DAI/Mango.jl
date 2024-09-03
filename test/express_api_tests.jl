@@ -102,6 +102,28 @@ end
     @test aid(express_two) == "agent0"
 end
 
+@testset "TestRunTcpContainerExpressAPITooMuchContainer" begin
+    # Create agents based on roles
+    express_one = agent_composed_of(ExpressRole(0), ExpressRole(0))
+    express_two = agent_composed_of(ExpressRole(0), ExpressRole(0))
+
+    run_with_tcp(3, express_one, express_two) do cl
+        wait(send_message(express_one, "TestMessage", address(express_two)))
+        wait(Threads.@spawn begin
+            while express_two[1].counter != 1
+                sleep(0.01)
+            end
+        end)
+        @test length(cl) == 2
+    end
+
+    @test roles(express_two)[1].counter == 1
+    @test roles(express_two)[2].counter == 1
+    @test address(express_one).address == InetAddr("127.0.0.1", 5555)
+    @test address(express_two).address == InetAddr("127.0.0.1", 5556)
+    @test aid(express_two) == "agent0"
+end
+
 @testset "TestRunMQTTContainerExpressAPI" begin
     # Create agents based on roles
     express_one = agent_composed_of(ExpressRole(0), ExpressRole(0))
@@ -133,4 +155,17 @@ end
     @test container_list[1][1] == agent_desc[1]
     @test container_list[2][1] == agent2_desc[1]
     @test aid(express_two) == "agent0"
+end
+
+@testset "TestRunSimulationContainerExpress" begin
+    # Create agents based on roles
+    express_one = agent_composed_of(ExpressRole(0), ExpressRole(0))
+    express_two = agent_composed_of(ExpressRole(0), ExpressRole(0))
+
+    result = run_in_simulation(1, express_one, express_two) do container
+        wait(send_message(express_one, "TestMessage", address(express_two)))
+    end
+
+    @test length(result) == 1
+    @test length(result[1].messaging_result.results) == 2
 end

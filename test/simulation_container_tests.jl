@@ -391,4 +391,5 @@ end
     @test agents(container)[3] == a3
     @test agents(container)[4] == a4
     @test container[aid(a1)] == a1
+    @test container[1] == a1
 end
