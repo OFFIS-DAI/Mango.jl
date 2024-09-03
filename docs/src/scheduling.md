@@ -24,10 +24,12 @@ using Mango
 agent = MyAgent()
 result = 0
 
-wait(schedule(agent, InstantTaskData()) do 
+t = schedule(agent, InstantTaskData()) do 
     # some expensive calculation
     result = 10       
-end)
+end
+
+wait(t)
 ```
 
 [`PeriodicTaskData`](@ref) creates tasks that get executed repeatedly forever. 
@@ -40,7 +42,7 @@ result = 0
 
 t = schedule(agent, PeriodicTaskData(delay_in_s)) do 
     # some expensive calculation
-    @info "iterated" 
+    println("iterated") 
 end
 
 sleep(0.2)
@@ -56,7 +58,7 @@ delay_in_s = 0.1 # delay between executions of the task in seconds
 for i in 1:10
     schedule(agent, PeriodicTaskData(delay_in_s)) do 
         # some expensive calculation
-        @info "iterated"       
+        println("iterated") 
     end
 end
 
