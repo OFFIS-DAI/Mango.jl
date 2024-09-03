@@ -55,9 +55,9 @@ end
 
 @testset "TestAgentComposedBaseAgent" begin
     base_agent = ExpressAgent(0)
-    agent = agent_composed_of(container, ExpressRole(0), ExpressRole(0), base_agent=base_agent)
+    agent = agent_composed_of(ExpressRole(0), ExpressRole(0), base_agent=base_agent)
 
-    @test typeof(agent) == base_agent
+    @test agent == base_agent
 end
 
 @testset "TestRoleComposedAgents" begin
