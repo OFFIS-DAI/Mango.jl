@@ -20,7 +20,6 @@ export @agent,
 using UUIDs
 
 using Dates: Dates
-import Base.getindex
 
 FORWARDED_FROM_ADDR = "forwarded_from_address"
 FORWARDED_FROM_ID = "forwarded_from_id"
@@ -516,6 +515,11 @@ function add_service!(agent::Agent, service::Any)
     agent.services[typeof(service)] = service
 end
 
-function getindex(agent::T, index::Int) where {T<:Agent}
+"""
+    Base.getindex(agent::T, index::Int) where {T<:Agent}
+
+Return the `index`'th role of the agent.
+"""
+function Base.getindex(agent::T, index::Int) where {T<:Agent}
     return roles(agent)[index]
 end
