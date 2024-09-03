@@ -1,4 +1,4 @@
-export create_tcp_container, create_mqtt_container, GeneralAgent, add_agent_composed_of, agent_composed_of, activate, run_in_real_time, run_in_simulation, run_with_mqtt, run_with_tcp
+export create_tcp_container, create_mqtt_container, GeneralAgent, add_agent_composed_of, agent_composed_of, activate, run_in_real_time, run_in_simulation, run_with_mqtt, run_with_tcp, PrintingAgent
 
 function _set_codec(container::Container, codec::Union{Nothing,Tuple{Function,Function}})
     if !isnothing(codec)
@@ -20,7 +20,7 @@ can also provide a codec as tuple of functions (first encode, second decode, see
 agent = create_mqtt_container("127.0.0.1", 5555, "MyClient")
 ```
 """
-function create_tcp_container(host::String, port::Int; codec::Union{Nothing,Tuple{Function,Function}}=nothing)
+function create_tcp_container(host::String="127.0.0.1", port::Int=5555; codec::Union{Nothing,Tuple{Function,Function}}=nothing)
     container = Container()
     container.protocol = TCPProtocol(address=InetAddr(host, port))
     _set_codec(container, codec)
@@ -42,7 +42,7 @@ Optionally you can also provide a codec as tuple of functions (first encode, sec
 agent = create_mqtt_container("127.0.0.1", 5555, "MyClient")
 ```
 """
-function create_mqtt_container(host::String, port::Int, client_id::String; codec::Union{Nothing,Tuple{Function,Function}}=nothing)
+function create_mqtt_container(host::String="127.0.0.1", port::Int=1883, client_id::String="default"; codec::Union{Nothing,Tuple{Function,Function}}=nothing)
     container = Container()
     container.protocol = MQTTProtocol(client_id, InetAddr(host, port))
     _set_codec(container, codec)
@@ -53,20 +53,20 @@ end
 end
 
 """
-    agent_composed_of(roles::Role...)
+    agent_composed_of(roles::Role...; base_agent::Union{Nothing,Agent}=nothing)
 
 Create an agent which is composed of the given roles `roles...`.
 
-The agent struct used is an empty struct, it is only used as a container
-for the roles. The created agent will be returned by the function.
-
+If no `base_agent` is provided the agent struct used is an empty struct, which is 
+only used as a container for the roles. The agent will be returned by the function.
+    
 # Examples
 ```julia
 agent = agent_composed_of(RoleA(), RoleB(), RoleC())
 ```
 """
-function agent_composed_of(roles::Role...)
-    agent = GeneralAgent()
+function agent_composed_of(roles::Role...; base_agent::Union{Nothing,Agent}=nothing)
+    agent = isnothing(base_agent) ? GeneralAgent() : base_agent
     for role in roles
         add(agent, role)
     end
@@ -74,21 +74,21 @@ function agent_composed_of(roles::Role...)
 end
 
 """
-	add_agent_composed_of(container, roles...)
+    add_agent_composed_of(container, roles::Role...; suggested_aid::Union{Nothing,String}=nothing, base_agent::Union{Nothing,Agent}=nothing)
 
 Create an agent which is composed of the given roles `roles...` and register the agent 
 to the `container`. 
 
-The agent struct used is an empty struct, it is only used as a container
-for the roles. The created agent will be returned by the function.
+If no `base_agent` is provided the agent struct used is an empty struct, which is 
+only used as a container for the roles. The agent will be returned by the function.
 
 # Examples
 ```julia
 agent = add_agent_composed_of(your_container, RoleA(), RoleB(), RoleC())
 ```
 """
-function add_agent_composed_of(container::ContainerInterface, roles::Role...; suggested_aid::Union{Nothing,String}=nothing)
-    agent = agent_composed_of(roles...)
+function add_agent_composed_of(container::ContainerInterface, roles::Role...; suggested_aid::Union{Nothing,String}=nothing, base_agent::Union{Nothing,Agent}=nothing)
+    agent = agent_composed_of(roles...; base_agent=base_agent)
     register(container, agent, suggested_aid)
     return agent
 end
@@ -165,7 +165,7 @@ function run_in_real_time(runnable::Function,
     agents::Union{Tuple,Agent}...)
 
     actual_number_container = n_container
-    if n_container < length(agents)
+    if n_container > length(agents)
         actual_number_container = length(agents)
     end
     container_list = container_list_creator(actual_number_container)
@@ -184,7 +184,7 @@ function run_in_real_time(runnable::Function,
         runnable(container_list)
     end
 end
-
+-
 """
     run_with_tcp(runnable::Function,
     n_container::Int,
@@ -241,15 +241,26 @@ Execute the `runnable` in [`SimulationContainer`](@ref) while the container is a
 runnable the simulation container is stepped `n_steps` time with a `step_size_s` (default is discrete event).
 The start time can be specified using `start_time`.
 """
-function run_in_simulation(runnable::Function, n_steps::Int, agents::Agent...; start_time::DateTime=DateTime(2000, 1, 1), step_size_s::Int=DISCRETE_EVENT)
-    sim_container = create_simulation_container(start_time)
+function run_in_simulation(runnable::Function, n_steps::Int, agents::Agent...; start_time::DateTime=DateTime(2000, 1, 1), step_size_s::Int=DISCRETE_EVENT, communication_sim::Union{Nothing,CommunicationSimulation}=nothing)
+    sim_container = create_simulation_container(start_time, communication_sim=communication_sim)
     for agent in agents
         register(sim_container, agent)
     end
+    results = []
     activate(sim_container) do
         runnable(sim_container)
         for _ in 1:n_steps
-            step_simulation(sim_container, step_size_s)
+            push!(results, step_simulation(sim_container, step_size_s))
         end
     end
+    return results
+end
+
+"""
+Simple agent just printing every message to @info.
+"""
+@agent struct PrintingAgent end
+
+function handle_message(agent::PrintingAgent, message::Any, meta::Any)
+    @info "Got" message, meta
 end

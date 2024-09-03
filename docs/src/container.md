@@ -13,7 +13,7 @@ The [`Container`](@ref) struct represents the container as an actor within the e
 
 Before using the container for message handling and agent management, you need to start the container using the [`start`](@ref) function. This function initializes the container's components and enables it to act as the communication layer. After you are done with the container, [`shutdown`](@ref) has to be called.
 
-```julia
+```@example
 using Mango
 
 # Create a container instance
@@ -22,15 +22,16 @@ container = Container()
 # ... setup the container, agents, define handles, ...
 
 # Start the container
-wait(Threads.@spwan start(container))
+wait(Threads.@spawn start(container))
 
 # Execute some functionality to e.g. trigger the agent system
 
 # Shut down the container
 shutdown(container)
+@info "Agent container and agents shutdown"
 ```
 
-However, this approach can be error-prone for multiple reasons. Besides simply forgetting to call shutdown, an exception may occur between the start and shutdown calls on the containers, leading to resource leaks. For this reason, we recommend using [`activate`](@ref). With this function, the above `start/shutdown' pair translates to...
+However, this approach can be error-prone for multiple reasons. Besides simply forgetting to call shutdown, an exception may occur between the start and shutdown calls on the containers, leading to resource leaks. For this reason, we recommend using [`activate`](@ref) instead. With this function, the above `start/shutdown' pair translates to...
 
 ```julia
 # Start the container and shut it down after the runnable (do ... end) has been executed.
@@ -45,7 +46,7 @@ end
 
 To enable the container to manage agents and handle their messaging activities, you can register agents using the [`register`](@ref) function. This function associates an agent with a unique agent ID (AID) and adds the agent to the container's internal list.
 
-```julia
+```@example
 using Mango
 
 # Create a container instance
@@ -66,16 +67,17 @@ register(container, my_agent)
 
 To send messages between agents within the container, you can use the [`send_message`](@ref) function. The container routes the message to the specified receiver agent based on the receiver's AID.
 
-```julia
+```@example
 using Mango
 
 # Create a container instance
 container = Container()
+agent = register(container, PrintingAgent())
 
 # ... Register agents ...
 
 # Sending a message from one agent to another
-send_message(container, "Hello from Agent 1!", "agent2_id")
+wait(send_message(container, "Hello from Agent 1!", address(agent)))
 ```
 
 ## TCP
@@ -97,14 +99,18 @@ The [`TCPProtocol`](@ref) struct represents the TCP Protocol within Mango.jl. It
 
 To use the tcp protocol you need to construct a TCPProtocol struct and assign it to the `protocol` field in the container.
 
-```julia
+```@example
+using Mango, Sockets
+
 container2 = Container()
-container2.protocol = TCPProtocol(address=InetAddr(ip"127.0.0.2", 2940))
+container2.protocol = TCPProtocol(address=Sockets.InetAddr("127.0.0.2", 2940))
 ```
 
 It is also possible to use the convenience function [`create_tcp_container`](@ref).
 
-```julia
+```@example
+using Mango 
+
 container2 = create_tcp_container("127.0.0.2", 2940)
 ```
 
@@ -131,11 +137,15 @@ Internally it also tracks the `msg_channel` and `conn_channel`, internal flags, 
 
 To use the mqtt protocol you need to construct a MQTTProtocol struct and assign it to the `protocol` field in the container. Further it is possible to use a convenience function for this 
 It is also possible to use the convenience function [`create_mqtt_container`](@ref).
-
 ```julia
+using Mango, Sockets
+
 container2 = Container()
-container2.protocol = MQTTProtocol("my_id", InetAddr(ip"127.0.0.2", 2940))
+container2.protocol = MQTTProtocol("my_id", Sockets.InetAddr(ip"127.0.0.2", 2940))
 ```
+
+!!! note "Running MQTT broker expected"
+    The MQTT protocol expects an MQTT broker to run at the specified host and port.
 
 Subscribing an agent to a topic can happen only as registration time and is not allowed otherwise.
 When registering a new agent to the container the topics to subscribe are passed by the `topics` keyword argument, taking a collection of `String` topic names.
@@ -143,6 +153,10 @@ NOTE: It is recommended you pass a `Vector{String}` as this is what is tested.
 Other collections could work but no guarantees are given.
 
 ```julia
-a1 = MyAgent(0)
-register(c1, a1; topics=["topic1", "topic2"])
+using Mango
+
+container2 = create_mqtt_container("127.0.0.2", 2940, "MyMqttClient")
+
+a1 = PrintingAgent()
+register(container2, a1; topics=["topic1", "topic2"])
 ```

@@ -17,46 +17,50 @@ The module provides different [`TaskData`](@ref) types, each catering to specifi
 
 Typically the scheduler is used within methods from the agent. To schedule a task the function [`schedule`](@ref) can be used. It takes two inputs: The agent (which forwards the call to its scheduler) and the TaskData object of the task.
 
-```julia
-agent = MyAgent(0)
+```@example scheduling
+using Mango
+
+@agent struct MyAgent end
+agent = MyAgent()
 result = 0
 
-schedule(agent, InstantTaskData()) do 
+wait(schedule(agent, InstantTaskData()) do 
     # some expensive calculation
     result = 10       
-end
-wait_for_all_tasks(agent)
+end)
 ```
 
 [`PeriodicTaskData`](@ref) creates tasks that get executed repeatedly forever. 
 This means that calling `wait` on such a task will generally simply block forever.
 For this reason a periodic task has to be stopped before it can be waited on.
 
-```julia
-delay_in_s = 0.5 # delay between executions of the task in seconds
+```@example scheduling
+delay_in_s = 0.1 # delay between executions of the task in seconds
+result = 0
 
-t = schedule(agent, PeriodicTaskData(delay)) do 
+t = schedule(agent, PeriodicTaskData(delay_in_s)) do 
     # some expensive calculation
-    result = 10       
+    @info "iterated" 
 end
 
+sleep(0.2)
 stop_task(agent, t)
 wait_for_all_tasks(agent)
 ```
 
 Alternatively, you can stop all `stopable` tasks simultaneously with the [`stop_all_tasks`](@ref) function.
 
-```julia
-delay_in_s = 0.5 # delay between executions of the task in seconds
+```@example scheduling
+delay_in_s = 0.1 # delay between executions of the task in seconds
 
-for i in 1:100
-    schedule(agent, PeriodicTaskData(delay)) do 
+for i in 1:10
+    schedule(agent, PeriodicTaskData(delay_in_s)) do 
         # some expensive calculation
-        result = 10       
+        @info "iterated"       
     end
 end
 
-stop_all_task(agent, t)
+stop_all_tasks(agent)
 wait_for_all_tasks(agent)
 ```
 

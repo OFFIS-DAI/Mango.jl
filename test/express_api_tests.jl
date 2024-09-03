@@ -53,6 +53,13 @@ function handle_message(role::ExpressRole, content::Any, meta::Any)
     role.counter += 1
 end
 
+@testset "TestAgentComposedBaseAgent" begin
+    base_agent = ExpressAgent(0)
+    agent = agent_composed_of(container, ExpressRole(0), ExpressRole(0), base_agent=base_agent)
+
+    @test typeof(agent) == base_agent
+end
+
 @testset "TestRoleComposedAgents" begin
     container = create_tcp_container("127.0.0.1", 5555, codec=(encode, decode))
     container2 = create_tcp_container("127.0.0.1", 5556)

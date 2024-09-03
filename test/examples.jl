@@ -44,9 +44,7 @@ end
         send_message(ping_agent, "Ping", address(pong_agent))
 
         # wait for 5 messages to have been sent
-        while ping_agent.counter < 5
-            sleep(1)
-        end
+        sleep_until(() -> ping_agent.counter >= 5)
     end
 
     @test ping_agent.counter >= 5
@@ -92,17 +90,13 @@ end
         end
 
         # Send the first message to start the exchange
-        
+
         wait(send_message(ping_agent, "Ping", MQTTAddress(c1.protocol.broker_addr, "pings")))
 
         # Wait for a moment to see the result
         # In general you want to use a Condition() instead to
         # Define a clear stopping signal for the agents
-        wait(Threads.@spawn begin
-            while ping_agent.counter < 5
-                sleep(1)
-            end
-        end)
+        sleep_until(() -> ping_agent.counter >= 5)
     end
 
     if mqtt_not_test_here

@@ -371,3 +371,6 @@ end
 function getindex(container::SimulationContainer, index::String)
     return container.agents[index]
 end
+function getindex(container::SimulationContainer, index::Int)
+    return agents(container)[index]
+end
