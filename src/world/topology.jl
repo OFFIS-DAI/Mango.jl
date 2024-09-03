@@ -1,4 +1,4 @@
-export complete_topology, star_topology, cycle_topology, graph_topology, per_node, add!, topology_neighbors, create_topology, add_node!, add_edge!, Topology, modify_topolology, choose_agent, assign_agent, NORMAL, BROKEN, INACTIVE, set_edge_state!, remove_edge!, remove_node!
+export complete_topology, star_topology, cycle_topology, graph_topology, per_node, add!, topology_neighbors, create_topology, add_node!, add_edge!, Topology, modify_topology, choose_agent, assign_agent, NORMAL, BROKEN, INACTIVE, set_edge_state!, remove_edge!, remove_node!
 
 using MetaGraphsNext
 using Graphs
@@ -154,14 +154,14 @@ function create_topology(create_runnable::Function; directed::Bool=false)
 end
 
 """
-    modify_topolology(modify_runnable::Functino, topology::Topology)
+    modify_topology(modify_runnable::Functino, topology::Topology)
 
 Modify a topology using the `modify_runnable` function which is a one-argument
 function with the provided topology as argument.
 
 # Example
 ```julia
-modify_topolology(my_topology) do topology
+modify_topology(my_topology) do topology
     agent = register(container, TopologyAgent())
     agent2 = register(container, TopologyAgent())
     agent3 = register(container, TopologyAgent())
@@ -173,7 +173,7 @@ modify_topolology(my_topology) do topology
 end
 ```
 """
-function modify_topolology(modify_runnable::Function, topology::Topology)
+function modify_topology(modify_runnable::Function, topology::Topology)
     modify_runnable(topology)
     _build_neighborhoods_and_inject(topology)
     return topology

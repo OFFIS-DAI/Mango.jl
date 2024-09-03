@@ -3,7 +3,6 @@ export Container, notify_ready
 using Parameters
 using OrderedCollections
 using Base.Threads
-import Base.getindex
 
 # id key for the receiver
 RECEIVER_ID::String = "receiver_id"
@@ -234,6 +233,11 @@ function send_message(
     )
 end
 
-function getindex(container::Container, index::String)
+"""
+    Base.getindex(container::Container, index::String)
+
+Return the agent indexed by `index` (aid).
+"""
+function Base.getindex(container::Container, index::String)
     return container.agents[index]
 end

@@ -49,7 +49,7 @@ end
     agent = nothing
     topology = cycle_topology(4)
 
-    modify_topolology(topology) do topology
+    modify_topology(topology) do topology
         agent = register(container, TopologyAgent())
         agent2 = register(container, TopologyAgent())
         agent3 = register(container, TopologyAgent())
@@ -175,7 +175,7 @@ end
     agent = nothing
     topology = cycle_topology(4)
 
-    modify_topolology(topology) do topology
+    modify_topology(topology) do topology
         agent = register(container, TopologyAgent())
         agent2 = register(container, TopologyAgent())
         agent3 = register(container, TopologyAgent())
@@ -200,7 +200,7 @@ end
         add!(node, register(container, TopologyAgent()))
     end
 
-    modify_topolology(topology) do topology
+    modify_topology(topology) do topology
         remove_edge!(topology, 1, 2)
         remove_node!(topology, 3)
     end

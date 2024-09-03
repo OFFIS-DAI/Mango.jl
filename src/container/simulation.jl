@@ -4,7 +4,6 @@ using Base.Threads
 using Dates
 using ConcurrentCollections
 using OrderedCollections
-import Base.getindex
 
 """ 
 Id key for the receiver in the meta dict
@@ -368,6 +367,11 @@ function send_message(
     return forward_message(container, content, meta)
 end
 
-function getindex(container::SimulationContainer, index::String)
+"""
+    Base.getindex(container::SimulationContainer, index::String)
+
+Return the agent indexed by `index` (aid).
+"""
+function Base.getindex(container::SimulationContainer, index::String)
     return container.agents[index]
 end
