@@ -18,7 +18,7 @@ end
 
 sleep(0.2)
 stop_task(agent, t)
-wait_for_all_tasks(agent)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">┌ Error: An error occurred while waiting for Task (failed) @0x00007f24ad6a0650
+wait_for_all_tasks(agent)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">┌ Error: An error occurred while waiting for Task (failed) @0x00007f586cdc92d0
 │   exception =
 │    TaskFailedException
 │    Stacktrace:
@@ -27,7 +27,7 @@ wait_for_all_tasks(agent)</code></pre><pre class="documenter-example-output"><co
 │      [2] wait_for_all_tasks(scheduler::Scheduler)
 │        @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:266
 │      [3] wait_for_all_tasks(agent::Main.MyAgent)
-│        @ Mango ~/work/Mango.jl/Mango.jl/src/agent/core.jl:363
+│        @ Mango ~/work/Mango.jl/Mango.jl/src/agent/core.jl:362
 │      [4] top-level scope
 │        @ scheduling.md:48
 │      [5] eval
@@ -121,7 +121,7 @@ for i in 1:10
 end
 
 stop_all_tasks(agent)
-wait_for_all_tasks(agent)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">┌ Error: An error occurred while waiting for Task (failed) @0x00007f24ad6a0650
+wait_for_all_tasks(agent)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">┌ Error: An error occurred while waiting for Task (failed) @0x00007f5847742400
 │   exception =
 │    TaskFailedException
 │    Stacktrace:
@@ -130,7 +130,665 @@ wait_for_all_tasks(agent)</code></pre><pre class="documenter-example-output"><co
 │      [2] wait_for_all_tasks(scheduler::Scheduler)
 │        @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:266
 │      [3] wait_for_all_tasks(agent::Main.MyAgent)
-│        @ Mango ~/work/Mango.jl/Mango.jl/src/agent/core.jl:363
+│        @ Mango ~/work/Mango.jl/Mango.jl/src/agent/core.jl:362
+│      [4] top-level scope
+│        @ scheduling.md:64
+│      [5] eval
+│        @ ./boot.jl:370 [inlined]
+│      [6] #17
+│        @ ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:629 [inlined]
+│      [7] cd(f::Documenter.Expanders.var&quot;#17#19&quot;{Module, Expr}, dir::String)
+│        @ Base.Filesystem ./file.jl:112
+│      [8] (::Documenter.Expanders.var&quot;#16#18&quot;{Documenter.Documents.Page, Module, Expr})()
+│        @ Documenter.Expanders ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:628
+│      [9] (::IOCapture.var&quot;#5#9&quot;{DataType, Documenter.Expanders.var&quot;#16#18&quot;{Documenter.Documents.Page, Module, Expr}, IOContext{Base.PipeEndpoint}, IOContext{Base.PipeEndpoint}, Base.PipeEndpoint, Base.PipeEndpoint})()
+│        @ IOCapture ~/.julia/packages/IOCapture/Y5rEA/src/IOCapture.jl:170
+│     [10] with_logstate(f::Function, logstate::Any)
+│        @ Base.CoreLogging ./logging.jl:514
+│     [11] with_logger
+│        @ ./logging.jl:626 [inlined]
+│     [12] capture(f::Documenter.Expanders.var&quot;#16#18&quot;{Documenter.Documents.Page, Module, Expr}; rethrow::Type, color::Bool, passthrough::Bool, capture_buffer::IOBuffer, io_context::Vector{Any})
+│        @ IOCapture ~/.julia/packages/IOCapture/Y5rEA/src/IOCapture.jl:167
+│     [13] runner(#unused#::Type{Documenter.Expanders.ExampleBlocks}, x::Markdown.Code, page::Documenter.Documents.Page, doc::Documenter.Documents.Document)
+│        @ Documenter.Expanders ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:627
+│     [14] dispatch(::Type{Documenter.Expanders.ExpanderPipeline}, ::Markdown.Code, ::Vararg{Any})
+│        @ Documenter.Utilities.Selectors ~/.julia/packages/Documenter/bYYzK/src/Utilities/Selectors.jl:170
+│     [15] expand(doc::Documenter.Documents.Document)
+│        @ Documenter.Expanders ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:42
+│     [16] runner(#unused#::Type{Documenter.Builder.ExpandTemplates}, doc::Documenter.Documents.Document)
+│        @ Documenter.Builder ~/.julia/packages/Documenter/bYYzK/src/Builder.jl:226
+│     [17] dispatch(#unused#::Type{Documenter.Builder.DocumentPipeline}, x::Documenter.Documents.Document)
+│        @ Documenter.Utilities.Selectors ~/.julia/packages/Documenter/bYYzK/src/Utilities/Selectors.jl:170
+│     [18] #2
+│        @ ~/.julia/packages/Documenter/bYYzK/src/Documenter.jl:273 [inlined]
+│     [19] cd(f::Documenter.var&quot;#2#3&quot;{Documenter.Documents.Document}, dir::String)
+│        @ Base.Filesystem ./file.jl:112
+│     [20] makedocs(; debug::Bool, format::Documenter.Writers.HTMLWriter.HTML, kwargs::Base.Pairs{Symbol, Any, NTuple{5, Symbol}, NamedTuple{(:modules, :authors, :sitename, :pages, :repo), Tuple{Vector{Module}, String, String, Vector{Any}, String}}})
+│        @ Documenter ~/.julia/packages/Documenter/bYYzK/src/Documenter.jl:272
+│     [21] makedocs
+│        @ ~/.julia/packages/Documenter/bYYzK/src/Documenter.jl:266 [inlined]
+│     [22] (::var&quot;#3#4&quot;)()
+│        @ Main ~/work/Mango.jl/Mango.jl/docs/make.jl:7
+│     [23] with_logstate(f::Function, logstate::Any)
+│        @ Base.CoreLogging ./logging.jl:514
+│     [24] with_logger(f::Function, logger::TestLogger)
+│        @ Base.CoreLogging ./logging.jl:626
+│     [25] top-level scope
+│        @ ~/work/Mango.jl/Mango.jl/docs/make.jl:6
+│     [26] include(mod::Module, _path::String)
+│        @ Base ./Base.jl:457
+│     [27] exec_options(opts::Base.JLOptions)
+│        @ Base ./client.jl:307
+│     [28] _start()
+│        @ Base ./client.jl:522
+│
+│        nested task error: IOError: stream is closed or unusable
+│        Stacktrace:
+│          [1] check_open
+│            @ ./stream.jl:388 [inlined]
+│          [2] uv_write_async(s::Base.PipeEndpoint, p::Ptr{UInt8}, n::UInt64)
+│            @ Base ./stream.jl:1074
+│          [3] uv_write(s::Base.PipeEndpoint, p::Ptr{UInt8}, n::UInt64)
+│            @ Base ./stream.jl:1037
+│          [4] unsafe_write(s::Base.PipeEndpoint, p::Ptr{UInt8}, n::UInt64)
+│            @ Base ./stream.jl:1120
+│          [5] unsafe_write
+│            @ ./io.jl:430 [inlined]
+│          [6] unsafe_write
+│            @ ./io.jl:685 [inlined]
+│          [7] write(s::IOContext{Base.PipeEndpoint}, a::Vector{UInt8})
+│            @ Base ./io.jl:708
+│          [8] handle_message(logger::ConsoleLogger, level::Base.CoreLogging.LogLevel, message::Any, _module::Any, group::Any, id::Any, filepath::Any, line::Any; kwargs::Base.Pairs{Symbol, V, Tuple{Vararg{Symbol, N}}, NamedTuple{names, T}} where {V, N, names, T&lt;:Tuple{Vararg{Any, N}}})
+│            @ Logging /opt/hostedtoolcache/julia/1.9.4/x64/share/julia/stdlib/v1.9/Logging/src/ConsoleLogger.jl:178
+│          [9] handle_message(logger::ConsoleLogger, level::Base.CoreLogging.LogLevel, message::Any, _module::Any, group::Any, id::Any, filepath::Any, line::Any)
+│            @ Logging /opt/hostedtoolcache/julia/1.9.4/x64/share/julia/stdlib/v1.9/Logging/src/ConsoleLogger.jl:106
+│         [10] #invokelatest#2
+│            @ ./essentials.jl:819 [inlined]
+│         [11] invokelatest
+│            @ ./essentials.jl:816 [inlined]
+│         [12] macro expansion
+│            @ ./logging.jl:330 [inlined]
+│         [13] #7
+│            @ ./scheduling.md:59 [inlined]
+│         [14] execute_task(f::Main.var&quot;#7#8&quot;, scheduler::Scheduler, data::PeriodicTaskData)
+│            @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:188
+│         [15] (::Mango.var&quot;#7#8&quot;{Main.var&quot;#7#8&quot;, Scheduler, PeriodicTaskData})()
+│            @ Mango ./threadingconstructs.jl:416
+└ @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:271
+┌ Error: An error occurred while waiting for Task (failed) @0x00007f5847741f50
+│   exception =
+│    TaskFailedException
+│    Stacktrace:
+│      [1] wait(t::Task)
+│        @ Base ./task.jl:349
+│      [2] wait_for_all_tasks(scheduler::Scheduler)
+│        @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:266
+│      [3] wait_for_all_tasks(agent::Main.MyAgent)
+│        @ Mango ~/work/Mango.jl/Mango.jl/src/agent/core.jl:362
+│      [4] top-level scope
+│        @ scheduling.md:64
+│      [5] eval
+│        @ ./boot.jl:370 [inlined]
+│      [6] #17
+│        @ ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:629 [inlined]
+│      [7] cd(f::Documenter.Expanders.var&quot;#17#19&quot;{Module, Expr}, dir::String)
+│        @ Base.Filesystem ./file.jl:112
+│      [8] (::Documenter.Expanders.var&quot;#16#18&quot;{Documenter.Documents.Page, Module, Expr})()
+│        @ Documenter.Expanders ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:628
+│      [9] (::IOCapture.var&quot;#5#9&quot;{DataType, Documenter.Expanders.var&quot;#16#18&quot;{Documenter.Documents.Page, Module, Expr}, IOContext{Base.PipeEndpoint}, IOContext{Base.PipeEndpoint}, Base.PipeEndpoint, Base.PipeEndpoint})()
+│        @ IOCapture ~/.julia/packages/IOCapture/Y5rEA/src/IOCapture.jl:170
+│     [10] with_logstate(f::Function, logstate::Any)
+│        @ Base.CoreLogging ./logging.jl:514
+│     [11] with_logger
+│        @ ./logging.jl:626 [inlined]
+│     [12] capture(f::Documenter.Expanders.var&quot;#16#18&quot;{Documenter.Documents.Page, Module, Expr}; rethrow::Type, color::Bool, passthrough::Bool, capture_buffer::IOBuffer, io_context::Vector{Any})
+│        @ IOCapture ~/.julia/packages/IOCapture/Y5rEA/src/IOCapture.jl:167
+│     [13] runner(#unused#::Type{Documenter.Expanders.ExampleBlocks}, x::Markdown.Code, page::Documenter.Documents.Page, doc::Documenter.Documents.Document)
+│        @ Documenter.Expanders ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:627
+│     [14] dispatch(::Type{Documenter.Expanders.ExpanderPipeline}, ::Markdown.Code, ::Vararg{Any})
+│        @ Documenter.Utilities.Selectors ~/.julia/packages/Documenter/bYYzK/src/Utilities/Selectors.jl:170
+│     [15] expand(doc::Documenter.Documents.Document)
+│        @ Documenter.Expanders ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:42
+│     [16] runner(#unused#::Type{Documenter.Builder.ExpandTemplates}, doc::Documenter.Documents.Document)
+│        @ Documenter.Builder ~/.julia/packages/Documenter/bYYzK/src/Builder.jl:226
+│     [17] dispatch(#unused#::Type{Documenter.Builder.DocumentPipeline}, x::Documenter.Documents.Document)
+│        @ Documenter.Utilities.Selectors ~/.julia/packages/Documenter/bYYzK/src/Utilities/Selectors.jl:170
+│     [18] #2
+│        @ ~/.julia/packages/Documenter/bYYzK/src/Documenter.jl:273 [inlined]
+│     [19] cd(f::Documenter.var&quot;#2#3&quot;{Documenter.Documents.Document}, dir::String)
+│        @ Base.Filesystem ./file.jl:112
+│     [20] makedocs(; debug::Bool, format::Documenter.Writers.HTMLWriter.HTML, kwargs::Base.Pairs{Symbol, Any, NTuple{5, Symbol}, NamedTuple{(:modules, :authors, :sitename, :pages, :repo), Tuple{Vector{Module}, String, String, Vector{Any}, String}}})
+│        @ Documenter ~/.julia/packages/Documenter/bYYzK/src/Documenter.jl:272
+│     [21] makedocs
+│        @ ~/.julia/packages/Documenter/bYYzK/src/Documenter.jl:266 [inlined]
+│     [22] (::var&quot;#3#4&quot;)()
+│        @ Main ~/work/Mango.jl/Mango.jl/docs/make.jl:7
+│     [23] with_logstate(f::Function, logstate::Any)
+│        @ Base.CoreLogging ./logging.jl:514
+│     [24] with_logger(f::Function, logger::TestLogger)
+│        @ Base.CoreLogging ./logging.jl:626
+│     [25] top-level scope
+│        @ ~/work/Mango.jl/Mango.jl/docs/make.jl:6
+│     [26] include(mod::Module, _path::String)
+│        @ Base ./Base.jl:457
+│     [27] exec_options(opts::Base.JLOptions)
+│        @ Base ./client.jl:307
+│     [28] _start()
+│        @ Base ./client.jl:522
+│
+│        nested task error: IOError: stream is closed or unusable
+│        Stacktrace:
+│          [1] check_open
+│            @ ./stream.jl:388 [inlined]
+│          [2] uv_write_async(s::Base.PipeEndpoint, p::Ptr{UInt8}, n::UInt64)
+│            @ Base ./stream.jl:1074
+│          [3] uv_write(s::Base.PipeEndpoint, p::Ptr{UInt8}, n::UInt64)
+│            @ Base ./stream.jl:1037
+│          [4] unsafe_write(s::Base.PipeEndpoint, p::Ptr{UInt8}, n::UInt64)
+│            @ Base ./stream.jl:1120
+│          [5] unsafe_write
+│            @ ./io.jl:430 [inlined]
+│          [6] unsafe_write
+│            @ ./io.jl:685 [inlined]
+│          [7] write(s::IOContext{Base.PipeEndpoint}, a::Vector{UInt8})
+│            @ Base ./io.jl:708
+│          [8] handle_message(logger::ConsoleLogger, level::Base.CoreLogging.LogLevel, message::Any, _module::Any, group::Any, id::Any, filepath::Any, line::Any; kwargs::Base.Pairs{Symbol, V, Tuple{Vararg{Symbol, N}}, NamedTuple{names, T}} where {V, N, names, T&lt;:Tuple{Vararg{Any, N}}})
+│            @ Logging /opt/hostedtoolcache/julia/1.9.4/x64/share/julia/stdlib/v1.9/Logging/src/ConsoleLogger.jl:178
+│          [9] handle_message(logger::ConsoleLogger, level::Base.CoreLogging.LogLevel, message::Any, _module::Any, group::Any, id::Any, filepath::Any, line::Any)
+│            @ Logging /opt/hostedtoolcache/julia/1.9.4/x64/share/julia/stdlib/v1.9/Logging/src/ConsoleLogger.jl:106
+│         [10] #invokelatest#2
+│            @ ./essentials.jl:819 [inlined]
+│         [11] invokelatest
+│            @ ./essentials.jl:816 [inlined]
+│         [12] macro expansion
+│            @ ./logging.jl:330 [inlined]
+│         [13] #7
+│            @ ./scheduling.md:59 [inlined]
+│         [14] execute_task(f::Main.var&quot;#7#8&quot;, scheduler::Scheduler, data::PeriodicTaskData)
+│            @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:188
+│         [15] (::Mango.var&quot;#7#8&quot;{Main.var&quot;#7#8&quot;, Scheduler, PeriodicTaskData})()
+│            @ Mango ./threadingconstructs.jl:416
+└ @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:271
+┌ Error: An error occurred while waiting for Task (failed) @0x00007f5847742270
+│   exception =
+│    TaskFailedException
+│    Stacktrace:
+│      [1] wait(t::Task)
+│        @ Base ./task.jl:349
+│      [2] wait_for_all_tasks(scheduler::Scheduler)
+│        @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:266
+│      [3] wait_for_all_tasks(agent::Main.MyAgent)
+│        @ Mango ~/work/Mango.jl/Mango.jl/src/agent/core.jl:362
+│      [4] top-level scope
+│        @ scheduling.md:64
+│      [5] eval
+│        @ ./boot.jl:370 [inlined]
+│      [6] #17
+│        @ ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:629 [inlined]
+│      [7] cd(f::Documenter.Expanders.var&quot;#17#19&quot;{Module, Expr}, dir::String)
+│        @ Base.Filesystem ./file.jl:112
+│      [8] (::Documenter.Expanders.var&quot;#16#18&quot;{Documenter.Documents.Page, Module, Expr})()
+│        @ Documenter.Expanders ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:628
+│      [9] (::IOCapture.var&quot;#5#9&quot;{DataType, Documenter.Expanders.var&quot;#16#18&quot;{Documenter.Documents.Page, Module, Expr}, IOContext{Base.PipeEndpoint}, IOContext{Base.PipeEndpoint}, Base.PipeEndpoint, Base.PipeEndpoint})()
+│        @ IOCapture ~/.julia/packages/IOCapture/Y5rEA/src/IOCapture.jl:170
+│     [10] with_logstate(f::Function, logstate::Any)
+│        @ Base.CoreLogging ./logging.jl:514
+│     [11] with_logger
+│        @ ./logging.jl:626 [inlined]
+│     [12] capture(f::Documenter.Expanders.var&quot;#16#18&quot;{Documenter.Documents.Page, Module, Expr}; rethrow::Type, color::Bool, passthrough::Bool, capture_buffer::IOBuffer, io_context::Vector{Any})
+│        @ IOCapture ~/.julia/packages/IOCapture/Y5rEA/src/IOCapture.jl:167
+│     [13] runner(#unused#::Type{Documenter.Expanders.ExampleBlocks}, x::Markdown.Code, page::Documenter.Documents.Page, doc::Documenter.Documents.Document)
+│        @ Documenter.Expanders ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:627
+│     [14] dispatch(::Type{Documenter.Expanders.ExpanderPipeline}, ::Markdown.Code, ::Vararg{Any})
+│        @ Documenter.Utilities.Selectors ~/.julia/packages/Documenter/bYYzK/src/Utilities/Selectors.jl:170
+│     [15] expand(doc::Documenter.Documents.Document)
+│        @ Documenter.Expanders ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:42
+│     [16] runner(#unused#::Type{Documenter.Builder.ExpandTemplates}, doc::Documenter.Documents.Document)
+│        @ Documenter.Builder ~/.julia/packages/Documenter/bYYzK/src/Builder.jl:226
+│     [17] dispatch(#unused#::Type{Documenter.Builder.DocumentPipeline}, x::Documenter.Documents.Document)
+│        @ Documenter.Utilities.Selectors ~/.julia/packages/Documenter/bYYzK/src/Utilities/Selectors.jl:170
+│     [18] #2
+│        @ ~/.julia/packages/Documenter/bYYzK/src/Documenter.jl:273 [inlined]
+│     [19] cd(f::Documenter.var&quot;#2#3&quot;{Documenter.Documents.Document}, dir::String)
+│        @ Base.Filesystem ./file.jl:112
+│     [20] makedocs(; debug::Bool, format::Documenter.Writers.HTMLWriter.HTML, kwargs::Base.Pairs{Symbol, Any, NTuple{5, Symbol}, NamedTuple{(:modules, :authors, :sitename, :pages, :repo), Tuple{Vector{Module}, String, String, Vector{Any}, String}}})
+│        @ Documenter ~/.julia/packages/Documenter/bYYzK/src/Documenter.jl:272
+│     [21] makedocs
+│        @ ~/.julia/packages/Documenter/bYYzK/src/Documenter.jl:266 [inlined]
+│     [22] (::var&quot;#3#4&quot;)()
+│        @ Main ~/work/Mango.jl/Mango.jl/docs/make.jl:7
+│     [23] with_logstate(f::Function, logstate::Any)
+│        @ Base.CoreLogging ./logging.jl:514
+│     [24] with_logger(f::Function, logger::TestLogger)
+│        @ Base.CoreLogging ./logging.jl:626
+│     [25] top-level scope
+│        @ ~/work/Mango.jl/Mango.jl/docs/make.jl:6
+│     [26] include(mod::Module, _path::String)
+│        @ Base ./Base.jl:457
+│     [27] exec_options(opts::Base.JLOptions)
+│        @ Base ./client.jl:307
+│     [28] _start()
+│        @ Base ./client.jl:522
+│
+│        nested task error: IOError: stream is closed or unusable
+│        Stacktrace:
+│          [1] check_open
+│            @ ./stream.jl:388 [inlined]
+│          [2] uv_write_async(s::Base.PipeEndpoint, p::Ptr{UInt8}, n::UInt64)
+│            @ Base ./stream.jl:1074
+│          [3] uv_write(s::Base.PipeEndpoint, p::Ptr{UInt8}, n::UInt64)
+│            @ Base ./stream.jl:1037
+│          [4] unsafe_write(s::Base.PipeEndpoint, p::Ptr{UInt8}, n::UInt64)
+│            @ Base ./stream.jl:1120
+│          [5] unsafe_write
+│            @ ./io.jl:430 [inlined]
+│          [6] unsafe_write
+│            @ ./io.jl:685 [inlined]
+│          [7] write(s::IOContext{Base.PipeEndpoint}, a::Vector{UInt8})
+│            @ Base ./io.jl:708
+│          [8] handle_message(logger::ConsoleLogger, level::Base.CoreLogging.LogLevel, message::Any, _module::Any, group::Any, id::Any, filepath::Any, line::Any; kwargs::Base.Pairs{Symbol, V, Tuple{Vararg{Symbol, N}}, NamedTuple{names, T}} where {V, N, names, T&lt;:Tuple{Vararg{Any, N}}})
+│            @ Logging /opt/hostedtoolcache/julia/1.9.4/x64/share/julia/stdlib/v1.9/Logging/src/ConsoleLogger.jl:178
+│          [9] handle_message(logger::ConsoleLogger, level::Base.CoreLogging.LogLevel, message::Any, _module::Any, group::Any, id::Any, filepath::Any, line::Any)
+│            @ Logging /opt/hostedtoolcache/julia/1.9.4/x64/share/julia/stdlib/v1.9/Logging/src/ConsoleLogger.jl:106
+│         [10] #invokelatest#2
+│            @ ./essentials.jl:819 [inlined]
+│         [11] invokelatest
+│            @ ./essentials.jl:816 [inlined]
+│         [12] macro expansion
+│            @ ./logging.jl:330 [inlined]
+│         [13] #7
+│            @ ./scheduling.md:59 [inlined]
+│         [14] execute_task(f::Main.var&quot;#7#8&quot;, scheduler::Scheduler, data::PeriodicTaskData)
+│            @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:188
+│         [15] (::Mango.var&quot;#7#8&quot;{Main.var&quot;#7#8&quot;, Scheduler, PeriodicTaskData})()
+│            @ Mango ./threadingconstructs.jl:416
+└ @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:271
+┌ Error: An error occurred while waiting for Task (failed) @0x00007f5847741aa0
+│   exception =
+│    TaskFailedException
+│    Stacktrace:
+│      [1] wait(t::Task)
+│        @ Base ./task.jl:349
+│      [2] wait_for_all_tasks(scheduler::Scheduler)
+│        @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:266
+│      [3] wait_for_all_tasks(agent::Main.MyAgent)
+│        @ Mango ~/work/Mango.jl/Mango.jl/src/agent/core.jl:362
+│      [4] top-level scope
+│        @ scheduling.md:64
+│      [5] eval
+│        @ ./boot.jl:370 [inlined]
+│      [6] #17
+│        @ ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:629 [inlined]
+│      [7] cd(f::Documenter.Expanders.var&quot;#17#19&quot;{Module, Expr}, dir::String)
+│        @ Base.Filesystem ./file.jl:112
+│      [8] (::Documenter.Expanders.var&quot;#16#18&quot;{Documenter.Documents.Page, Module, Expr})()
+│        @ Documenter.Expanders ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:628
+│      [9] (::IOCapture.var&quot;#5#9&quot;{DataType, Documenter.Expanders.var&quot;#16#18&quot;{Documenter.Documents.Page, Module, Expr}, IOContext{Base.PipeEndpoint}, IOContext{Base.PipeEndpoint}, Base.PipeEndpoint, Base.PipeEndpoint})()
+│        @ IOCapture ~/.julia/packages/IOCapture/Y5rEA/src/IOCapture.jl:170
+│     [10] with_logstate(f::Function, logstate::Any)
+│        @ Base.CoreLogging ./logging.jl:514
+│     [11] with_logger
+│        @ ./logging.jl:626 [inlined]
+│     [12] capture(f::Documenter.Expanders.var&quot;#16#18&quot;{Documenter.Documents.Page, Module, Expr}; rethrow::Type, color::Bool, passthrough::Bool, capture_buffer::IOBuffer, io_context::Vector{Any})
+│        @ IOCapture ~/.julia/packages/IOCapture/Y5rEA/src/IOCapture.jl:167
+│     [13] runner(#unused#::Type{Documenter.Expanders.ExampleBlocks}, x::Markdown.Code, page::Documenter.Documents.Page, doc::Documenter.Documents.Document)
+│        @ Documenter.Expanders ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:627
+│     [14] dispatch(::Type{Documenter.Expanders.ExpanderPipeline}, ::Markdown.Code, ::Vararg{Any})
+│        @ Documenter.Utilities.Selectors ~/.julia/packages/Documenter/bYYzK/src/Utilities/Selectors.jl:170
+│     [15] expand(doc::Documenter.Documents.Document)
+│        @ Documenter.Expanders ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:42
+│     [16] runner(#unused#::Type{Documenter.Builder.ExpandTemplates}, doc::Documenter.Documents.Document)
+│        @ Documenter.Builder ~/.julia/packages/Documenter/bYYzK/src/Builder.jl:226
+│     [17] dispatch(#unused#::Type{Documenter.Builder.DocumentPipeline}, x::Documenter.Documents.Document)
+│        @ Documenter.Utilities.Selectors ~/.julia/packages/Documenter/bYYzK/src/Utilities/Selectors.jl:170
+│     [18] #2
+│        @ ~/.julia/packages/Documenter/bYYzK/src/Documenter.jl:273 [inlined]
+│     [19] cd(f::Documenter.var&quot;#2#3&quot;{Documenter.Documents.Document}, dir::String)
+│        @ Base.Filesystem ./file.jl:112
+│     [20] makedocs(; debug::Bool, format::Documenter.Writers.HTMLWriter.HTML, kwargs::Base.Pairs{Symbol, Any, NTuple{5, Symbol}, NamedTuple{(:modules, :authors, :sitename, :pages, :repo), Tuple{Vector{Module}, String, String, Vector{Any}, String}}})
+│        @ Documenter ~/.julia/packages/Documenter/bYYzK/src/Documenter.jl:272
+│     [21] makedocs
+│        @ ~/.julia/packages/Documenter/bYYzK/src/Documenter.jl:266 [inlined]
+│     [22] (::var&quot;#3#4&quot;)()
+│        @ Main ~/work/Mango.jl/Mango.jl/docs/make.jl:7
+│     [23] with_logstate(f::Function, logstate::Any)
+│        @ Base.CoreLogging ./logging.jl:514
+│     [24] with_logger(f::Function, logger::TestLogger)
+│        @ Base.CoreLogging ./logging.jl:626
+│     [25] top-level scope
+│        @ ~/work/Mango.jl/Mango.jl/docs/make.jl:6
+│     [26] include(mod::Module, _path::String)
+│        @ Base ./Base.jl:457
+│     [27] exec_options(opts::Base.JLOptions)
+│        @ Base ./client.jl:307
+│     [28] _start()
+│        @ Base ./client.jl:522
+│
+│        nested task error: IOError: stream is closed or unusable
+│        Stacktrace:
+│          [1] check_open
+│            @ ./stream.jl:388 [inlined]
+│          [2] uv_write_async(s::Base.PipeEndpoint, p::Ptr{UInt8}, n::UInt64)
+│            @ Base ./stream.jl:1074
+│          [3] uv_write(s::Base.PipeEndpoint, p::Ptr{UInt8}, n::UInt64)
+│            @ Base ./stream.jl:1037
+│          [4] unsafe_write(s::Base.PipeEndpoint, p::Ptr{UInt8}, n::UInt64)
+│            @ Base ./stream.jl:1120
+│          [5] unsafe_write
+│            @ ./io.jl:430 [inlined]
+│          [6] unsafe_write
+│            @ ./io.jl:685 [inlined]
+│          [7] write(s::IOContext{Base.PipeEndpoint}, a::Vector{UInt8})
+│            @ Base ./io.jl:708
+│          [8] handle_message(logger::ConsoleLogger, level::Base.CoreLogging.LogLevel, message::Any, _module::Any, group::Any, id::Any, filepath::Any, line::Any; kwargs::Base.Pairs{Symbol, V, Tuple{Vararg{Symbol, N}}, NamedTuple{names, T}} where {V, N, names, T&lt;:Tuple{Vararg{Any, N}}})
+│            @ Logging /opt/hostedtoolcache/julia/1.9.4/x64/share/julia/stdlib/v1.9/Logging/src/ConsoleLogger.jl:178
+│          [9] handle_message(logger::ConsoleLogger, level::Base.CoreLogging.LogLevel, message::Any, _module::Any, group::Any, id::Any, filepath::Any, line::Any)
+│            @ Logging /opt/hostedtoolcache/julia/1.9.4/x64/share/julia/stdlib/v1.9/Logging/src/ConsoleLogger.jl:106
+│         [10] #invokelatest#2
+│            @ ./essentials.jl:819 [inlined]
+│         [11] invokelatest
+│            @ ./essentials.jl:816 [inlined]
+│         [12] macro expansion
+│            @ ./logging.jl:330 [inlined]
+│         [13] #7
+│            @ ./scheduling.md:59 [inlined]
+│         [14] execute_task(f::Main.var&quot;#7#8&quot;, scheduler::Scheduler, data::PeriodicTaskData)
+│            @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:188
+│         [15] (::Mango.var&quot;#7#8&quot;{Main.var&quot;#7#8&quot;, Scheduler, PeriodicTaskData})()
+│            @ Mango ./threadingconstructs.jl:416
+└ @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:271
+┌ Error: An error occurred while waiting for Task (failed) @0x00007f5847741c30
+│   exception =
+│    TaskFailedException
+│    Stacktrace:
+│      [1] wait(t::Task)
+│        @ Base ./task.jl:349
+│      [2] wait_for_all_tasks(scheduler::Scheduler)
+│        @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:266
+│      [3] wait_for_all_tasks(agent::Main.MyAgent)
+│        @ Mango ~/work/Mango.jl/Mango.jl/src/agent/core.jl:362
+│      [4] top-level scope
+│        @ scheduling.md:64
+│      [5] eval
+│        @ ./boot.jl:370 [inlined]
+│      [6] #17
+│        @ ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:629 [inlined]
+│      [7] cd(f::Documenter.Expanders.var&quot;#17#19&quot;{Module, Expr}, dir::String)
+│        @ Base.Filesystem ./file.jl:112
+│      [8] (::Documenter.Expanders.var&quot;#16#18&quot;{Documenter.Documents.Page, Module, Expr})()
+│        @ Documenter.Expanders ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:628
+│      [9] (::IOCapture.var&quot;#5#9&quot;{DataType, Documenter.Expanders.var&quot;#16#18&quot;{Documenter.Documents.Page, Module, Expr}, IOContext{Base.PipeEndpoint}, IOContext{Base.PipeEndpoint}, Base.PipeEndpoint, Base.PipeEndpoint})()
+│        @ IOCapture ~/.julia/packages/IOCapture/Y5rEA/src/IOCapture.jl:170
+│     [10] with_logstate(f::Function, logstate::Any)
+│        @ Base.CoreLogging ./logging.jl:514
+│     [11] with_logger
+│        @ ./logging.jl:626 [inlined]
+│     [12] capture(f::Documenter.Expanders.var&quot;#16#18&quot;{Documenter.Documents.Page, Module, Expr}; rethrow::Type, color::Bool, passthrough::Bool, capture_buffer::IOBuffer, io_context::Vector{Any})
+│        @ IOCapture ~/.julia/packages/IOCapture/Y5rEA/src/IOCapture.jl:167
+│     [13] runner(#unused#::Type{Documenter.Expanders.ExampleBlocks}, x::Markdown.Code, page::Documenter.Documents.Page, doc::Documenter.Documents.Document)
+│        @ Documenter.Expanders ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:627
+│     [14] dispatch(::Type{Documenter.Expanders.ExpanderPipeline}, ::Markdown.Code, ::Vararg{Any})
+│        @ Documenter.Utilities.Selectors ~/.julia/packages/Documenter/bYYzK/src/Utilities/Selectors.jl:170
+│     [15] expand(doc::Documenter.Documents.Document)
+│        @ Documenter.Expanders ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:42
+│     [16] runner(#unused#::Type{Documenter.Builder.ExpandTemplates}, doc::Documenter.Documents.Document)
+│        @ Documenter.Builder ~/.julia/packages/Documenter/bYYzK/src/Builder.jl:226
+│     [17] dispatch(#unused#::Type{Documenter.Builder.DocumentPipeline}, x::Documenter.Documents.Document)
+│        @ Documenter.Utilities.Selectors ~/.julia/packages/Documenter/bYYzK/src/Utilities/Selectors.jl:170
+│     [18] #2
+│        @ ~/.julia/packages/Documenter/bYYzK/src/Documenter.jl:273 [inlined]
+│     [19] cd(f::Documenter.var&quot;#2#3&quot;{Documenter.Documents.Document}, dir::String)
+│        @ Base.Filesystem ./file.jl:112
+│     [20] makedocs(; debug::Bool, format::Documenter.Writers.HTMLWriter.HTML, kwargs::Base.Pairs{Symbol, Any, NTuple{5, Symbol}, NamedTuple{(:modules, :authors, :sitename, :pages, :repo), Tuple{Vector{Module}, String, String, Vector{Any}, String}}})
+│        @ Documenter ~/.julia/packages/Documenter/bYYzK/src/Documenter.jl:272
+│     [21] makedocs
+│        @ ~/.julia/packages/Documenter/bYYzK/src/Documenter.jl:266 [inlined]
+│     [22] (::var&quot;#3#4&quot;)()
+│        @ Main ~/work/Mango.jl/Mango.jl/docs/make.jl:7
+│     [23] with_logstate(f::Function, logstate::Any)
+│        @ Base.CoreLogging ./logging.jl:514
+│     [24] with_logger(f::Function, logger::TestLogger)
+│        @ Base.CoreLogging ./logging.jl:626
+│     [25] top-level scope
+│        @ ~/work/Mango.jl/Mango.jl/docs/make.jl:6
+│     [26] include(mod::Module, _path::String)
+│        @ Base ./Base.jl:457
+│     [27] exec_options(opts::Base.JLOptions)
+│        @ Base ./client.jl:307
+│     [28] _start()
+│        @ Base ./client.jl:522
+│
+│        nested task error: IOError: stream is closed or unusable
+│        Stacktrace:
+│          [1] check_open
+│            @ ./stream.jl:388 [inlined]
+│          [2] uv_write_async(s::Base.PipeEndpoint, p::Ptr{UInt8}, n::UInt64)
+│            @ Base ./stream.jl:1074
+│          [3] uv_write(s::Base.PipeEndpoint, p::Ptr{UInt8}, n::UInt64)
+│            @ Base ./stream.jl:1037
+│          [4] unsafe_write(s::Base.PipeEndpoint, p::Ptr{UInt8}, n::UInt64)
+│            @ Base ./stream.jl:1120
+│          [5] unsafe_write
+│            @ ./io.jl:430 [inlined]
+│          [6] unsafe_write
+│            @ ./io.jl:685 [inlined]
+│          [7] write(s::IOContext{Base.PipeEndpoint}, a::Vector{UInt8})
+│            @ Base ./io.jl:708
+│          [8] handle_message(logger::ConsoleLogger, level::Base.CoreLogging.LogLevel, message::Any, _module::Any, group::Any, id::Any, filepath::Any, line::Any; kwargs::Base.Pairs{Symbol, V, Tuple{Vararg{Symbol, N}}, NamedTuple{names, T}} where {V, N, names, T&lt;:Tuple{Vararg{Any, N}}})
+│            @ Logging /opt/hostedtoolcache/julia/1.9.4/x64/share/julia/stdlib/v1.9/Logging/src/ConsoleLogger.jl:178
+│          [9] handle_message(logger::ConsoleLogger, level::Base.CoreLogging.LogLevel, message::Any, _module::Any, group::Any, id::Any, filepath::Any, line::Any)
+│            @ Logging /opt/hostedtoolcache/julia/1.9.4/x64/share/julia/stdlib/v1.9/Logging/src/ConsoleLogger.jl:106
+│         [10] #invokelatest#2
+│            @ ./essentials.jl:819 [inlined]
+│         [11] invokelatest
+│            @ ./essentials.jl:816 [inlined]
+│         [12] macro expansion
+│            @ ./logging.jl:330 [inlined]
+│         [13] #7
+│            @ ./scheduling.md:59 [inlined]
+│         [14] execute_task(f::Main.var&quot;#7#8&quot;, scheduler::Scheduler, data::PeriodicTaskData)
+│            @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:188
+│         [15] (::Mango.var&quot;#7#8&quot;{Main.var&quot;#7#8&quot;, Scheduler, PeriodicTaskData})()
+│            @ Mango ./threadingconstructs.jl:416
+└ @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:271
+┌ Error: An error occurred while waiting for Task (failed) @0x00007f5847741dc0
+│   exception =
+│    TaskFailedException
+│    Stacktrace:
+│      [1] wait(t::Task)
+│        @ Base ./task.jl:349
+│      [2] wait_for_all_tasks(scheduler::Scheduler)
+│        @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:266
+│      [3] wait_for_all_tasks(agent::Main.MyAgent)
+│        @ Mango ~/work/Mango.jl/Mango.jl/src/agent/core.jl:362
+│      [4] top-level scope
+│        @ scheduling.md:64
+│      [5] eval
+│        @ ./boot.jl:370 [inlined]
+│      [6] #17
+│        @ ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:629 [inlined]
+│      [7] cd(f::Documenter.Expanders.var&quot;#17#19&quot;{Module, Expr}, dir::String)
+│        @ Base.Filesystem ./file.jl:112
+│      [8] (::Documenter.Expanders.var&quot;#16#18&quot;{Documenter.Documents.Page, Module, Expr})()
+│        @ Documenter.Expanders ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:628
+│      [9] (::IOCapture.var&quot;#5#9&quot;{DataType, Documenter.Expanders.var&quot;#16#18&quot;{Documenter.Documents.Page, Module, Expr}, IOContext{Base.PipeEndpoint}, IOContext{Base.PipeEndpoint}, Base.PipeEndpoint, Base.PipeEndpoint})()
+│        @ IOCapture ~/.julia/packages/IOCapture/Y5rEA/src/IOCapture.jl:170
+│     [10] with_logstate(f::Function, logstate::Any)
+│        @ Base.CoreLogging ./logging.jl:514
+│     [11] with_logger
+│        @ ./logging.jl:626 [inlined]
+│     [12] capture(f::Documenter.Expanders.var&quot;#16#18&quot;{Documenter.Documents.Page, Module, Expr}; rethrow::Type, color::Bool, passthrough::Bool, capture_buffer::IOBuffer, io_context::Vector{Any})
+│        @ IOCapture ~/.julia/packages/IOCapture/Y5rEA/src/IOCapture.jl:167
+│     [13] runner(#unused#::Type{Documenter.Expanders.ExampleBlocks}, x::Markdown.Code, page::Documenter.Documents.Page, doc::Documenter.Documents.Document)
+│        @ Documenter.Expanders ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:627
+│     [14] dispatch(::Type{Documenter.Expanders.ExpanderPipeline}, ::Markdown.Code, ::Vararg{Any})
+│        @ Documenter.Utilities.Selectors ~/.julia/packages/Documenter/bYYzK/src/Utilities/Selectors.jl:170
+│     [15] expand(doc::Documenter.Documents.Document)
+│        @ Documenter.Expanders ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:42
+│     [16] runner(#unused#::Type{Documenter.Builder.ExpandTemplates}, doc::Documenter.Documents.Document)
+│        @ Documenter.Builder ~/.julia/packages/Documenter/bYYzK/src/Builder.jl:226
+│     [17] dispatch(#unused#::Type{Documenter.Builder.DocumentPipeline}, x::Documenter.Documents.Document)
+│        @ Documenter.Utilities.Selectors ~/.julia/packages/Documenter/bYYzK/src/Utilities/Selectors.jl:170
+│     [18] #2
+│        @ ~/.julia/packages/Documenter/bYYzK/src/Documenter.jl:273 [inlined]
+│     [19] cd(f::Documenter.var&quot;#2#3&quot;{Documenter.Documents.Document}, dir::String)
+│        @ Base.Filesystem ./file.jl:112
+│     [20] makedocs(; debug::Bool, format::Documenter.Writers.HTMLWriter.HTML, kwargs::Base.Pairs{Symbol, Any, NTuple{5, Symbol}, NamedTuple{(:modules, :authors, :sitename, :pages, :repo), Tuple{Vector{Module}, String, String, Vector{Any}, String}}})
+│        @ Documenter ~/.julia/packages/Documenter/bYYzK/src/Documenter.jl:272
+│     [21] makedocs
+│        @ ~/.julia/packages/Documenter/bYYzK/src/Documenter.jl:266 [inlined]
+│     [22] (::var&quot;#3#4&quot;)()
+│        @ Main ~/work/Mango.jl/Mango.jl/docs/make.jl:7
+│     [23] with_logstate(f::Function, logstate::Any)
+│        @ Base.CoreLogging ./logging.jl:514
+│     [24] with_logger(f::Function, logger::TestLogger)
+│        @ Base.CoreLogging ./logging.jl:626
+│     [25] top-level scope
+│        @ ~/work/Mango.jl/Mango.jl/docs/make.jl:6
+│     [26] include(mod::Module, _path::String)
+│        @ Base ./Base.jl:457
+│     [27] exec_options(opts::Base.JLOptions)
+│        @ Base ./client.jl:307
+│     [28] _start()
+│        @ Base ./client.jl:522
+│
+│        nested task error: IOError: stream is closed or unusable
+│        Stacktrace:
+│          [1] check_open
+│            @ ./stream.jl:388 [inlined]
+│          [2] uv_write_async(s::Base.PipeEndpoint, p::Ptr{UInt8}, n::UInt64)
+│            @ Base ./stream.jl:1074
+│          [3] uv_write(s::Base.PipeEndpoint, p::Ptr{UInt8}, n::UInt64)
+│            @ Base ./stream.jl:1037
+│          [4] unsafe_write(s::Base.PipeEndpoint, p::Ptr{UInt8}, n::UInt64)
+│            @ Base ./stream.jl:1120
+│          [5] unsafe_write
+│            @ ./io.jl:430 [inlined]
+│          [6] unsafe_write
+│            @ ./io.jl:685 [inlined]
+│          [7] write(s::IOContext{Base.PipeEndpoint}, a::Vector{UInt8})
+│            @ Base ./io.jl:708
+│          [8] handle_message(logger::ConsoleLogger, level::Base.CoreLogging.LogLevel, message::Any, _module::Any, group::Any, id::Any, filepath::Any, line::Any; kwargs::Base.Pairs{Symbol, V, Tuple{Vararg{Symbol, N}}, NamedTuple{names, T}} where {V, N, names, T&lt;:Tuple{Vararg{Any, N}}})
+│            @ Logging /opt/hostedtoolcache/julia/1.9.4/x64/share/julia/stdlib/v1.9/Logging/src/ConsoleLogger.jl:178
+│          [9] handle_message(logger::ConsoleLogger, level::Base.CoreLogging.LogLevel, message::Any, _module::Any, group::Any, id::Any, filepath::Any, line::Any)
+│            @ Logging /opt/hostedtoolcache/julia/1.9.4/x64/share/julia/stdlib/v1.9/Logging/src/ConsoleLogger.jl:106
+│         [10] #invokelatest#2
+│            @ ./essentials.jl:819 [inlined]
+│         [11] invokelatest
+│            @ ./essentials.jl:816 [inlined]
+│         [12] macro expansion
+│            @ ./logging.jl:330 [inlined]
+│         [13] #7
+│            @ ./scheduling.md:59 [inlined]
+│         [14] execute_task(f::Main.var&quot;#7#8&quot;, scheduler::Scheduler, data::PeriodicTaskData)
+│            @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:188
+│         [15] (::Mango.var&quot;#7#8&quot;{Main.var&quot;#7#8&quot;, Scheduler, PeriodicTaskData})()
+│            @ Mango ./threadingconstructs.jl:416
+└ @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:271
+┌ Error: An error occurred while waiting for Task (failed) @0x00007f5847741910
+│   exception =
+│    TaskFailedException
+│    Stacktrace:
+│      [1] wait(t::Task)
+│        @ Base ./task.jl:349
+│      [2] wait_for_all_tasks(scheduler::Scheduler)
+│        @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:266
+│      [3] wait_for_all_tasks(agent::Main.MyAgent)
+│        @ Mango ~/work/Mango.jl/Mango.jl/src/agent/core.jl:362
+│      [4] top-level scope
+│        @ scheduling.md:64
+│      [5] eval
+│        @ ./boot.jl:370 [inlined]
+│      [6] #17
+│        @ ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:629 [inlined]
+│      [7] cd(f::Documenter.Expanders.var&quot;#17#19&quot;{Module, Expr}, dir::String)
+│        @ Base.Filesystem ./file.jl:112
+│      [8] (::Documenter.Expanders.var&quot;#16#18&quot;{Documenter.Documents.Page, Module, Expr})()
+│        @ Documenter.Expanders ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:628
+│      [9] (::IOCapture.var&quot;#5#9&quot;{DataType, Documenter.Expanders.var&quot;#16#18&quot;{Documenter.Documents.Page, Module, Expr}, IOContext{Base.PipeEndpoint}, IOContext{Base.PipeEndpoint}, Base.PipeEndpoint, Base.PipeEndpoint})()
+│        @ IOCapture ~/.julia/packages/IOCapture/Y5rEA/src/IOCapture.jl:170
+│     [10] with_logstate(f::Function, logstate::Any)
+│        @ Base.CoreLogging ./logging.jl:514
+│     [11] with_logger
+│        @ ./logging.jl:626 [inlined]
+│     [12] capture(f::Documenter.Expanders.var&quot;#16#18&quot;{Documenter.Documents.Page, Module, Expr}; rethrow::Type, color::Bool, passthrough::Bool, capture_buffer::IOBuffer, io_context::Vector{Any})
+│        @ IOCapture ~/.julia/packages/IOCapture/Y5rEA/src/IOCapture.jl:167
+│     [13] runner(#unused#::Type{Documenter.Expanders.ExampleBlocks}, x::Markdown.Code, page::Documenter.Documents.Page, doc::Documenter.Documents.Document)
+│        @ Documenter.Expanders ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:627
+│     [14] dispatch(::Type{Documenter.Expanders.ExpanderPipeline}, ::Markdown.Code, ::Vararg{Any})
+│        @ Documenter.Utilities.Selectors ~/.julia/packages/Documenter/bYYzK/src/Utilities/Selectors.jl:170
+│     [15] expand(doc::Documenter.Documents.Document)
+│        @ Documenter.Expanders ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:42
+│     [16] runner(#unused#::Type{Documenter.Builder.ExpandTemplates}, doc::Documenter.Documents.Document)
+│        @ Documenter.Builder ~/.julia/packages/Documenter/bYYzK/src/Builder.jl:226
+│     [17] dispatch(#unused#::Type{Documenter.Builder.DocumentPipeline}, x::Documenter.Documents.Document)
+│        @ Documenter.Utilities.Selectors ~/.julia/packages/Documenter/bYYzK/src/Utilities/Selectors.jl:170
+│     [18] #2
+│        @ ~/.julia/packages/Documenter/bYYzK/src/Documenter.jl:273 [inlined]
+│     [19] cd(f::Documenter.var&quot;#2#3&quot;{Documenter.Documents.Document}, dir::String)
+│        @ Base.Filesystem ./file.jl:112
+│     [20] makedocs(; debug::Bool, format::Documenter.Writers.HTMLWriter.HTML, kwargs::Base.Pairs{Symbol, Any, NTuple{5, Symbol}, NamedTuple{(:modules, :authors, :sitename, :pages, :repo), Tuple{Vector{Module}, String, String, Vector{Any}, String}}})
+│        @ Documenter ~/.julia/packages/Documenter/bYYzK/src/Documenter.jl:272
+│     [21] makedocs
+│        @ ~/.julia/packages/Documenter/bYYzK/src/Documenter.jl:266 [inlined]
+│     [22] (::var&quot;#3#4&quot;)()
+│        @ Main ~/work/Mango.jl/Mango.jl/docs/make.jl:7
+│     [23] with_logstate(f::Function, logstate::Any)
+│        @ Base.CoreLogging ./logging.jl:514
+│     [24] with_logger(f::Function, logger::TestLogger)
+│        @ Base.CoreLogging ./logging.jl:626
+│     [25] top-level scope
+│        @ ~/work/Mango.jl/Mango.jl/docs/make.jl:6
+│     [26] include(mod::Module, _path::String)
+│        @ Base ./Base.jl:457
+│     [27] exec_options(opts::Base.JLOptions)
+│        @ Base ./client.jl:307
+│     [28] _start()
+│        @ Base ./client.jl:522
+│
+│        nested task error: IOError: stream is closed or unusable
+│        Stacktrace:
+│          [1] check_open
+│            @ ./stream.jl:388 [inlined]
+│          [2] uv_write_async(s::Base.PipeEndpoint, p::Ptr{UInt8}, n::UInt64)
+│            @ Base ./stream.jl:1074
+│          [3] uv_write(s::Base.PipeEndpoint, p::Ptr{UInt8}, n::UInt64)
+│            @ Base ./stream.jl:1037
+│          [4] unsafe_write(s::Base.PipeEndpoint, p::Ptr{UInt8}, n::UInt64)
+│            @ Base ./stream.jl:1120
+│          [5] unsafe_write
+│            @ ./io.jl:430 [inlined]
+│          [6] unsafe_write
+│            @ ./io.jl:685 [inlined]
+│          [7] write(s::IOContext{Base.PipeEndpoint}, a::Vector{UInt8})
+│            @ Base ./io.jl:708
+│          [8] handle_message(logger::ConsoleLogger, level::Base.CoreLogging.LogLevel, message::Any, _module::Any, group::Any, id::Any, filepath::Any, line::Any; kwargs::Base.Pairs{Symbol, V, Tuple{Vararg{Symbol, N}}, NamedTuple{names, T}} where {V, N, names, T&lt;:Tuple{Vararg{Any, N}}})
+│            @ Logging /opt/hostedtoolcache/julia/1.9.4/x64/share/julia/stdlib/v1.9/Logging/src/ConsoleLogger.jl:178
+│          [9] handle_message(logger::ConsoleLogger, level::Base.CoreLogging.LogLevel, message::Any, _module::Any, group::Any, id::Any, filepath::Any, line::Any)
+│            @ Logging /opt/hostedtoolcache/julia/1.9.4/x64/share/julia/stdlib/v1.9/Logging/src/ConsoleLogger.jl:106
+│         [10] #invokelatest#2
+│            @ ./essentials.jl:819 [inlined]
+│         [11] invokelatest
+│            @ ./essentials.jl:816 [inlined]
+│         [12] macro expansion
+│            @ ./logging.jl:330 [inlined]
+│         [13] #7
+│            @ ./scheduling.md:59 [inlined]
+│         [14] execute_task(f::Main.var&quot;#7#8&quot;, scheduler::Scheduler, data::PeriodicTaskData)
+│            @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:188
+│         [15] (::Mango.var&quot;#7#8&quot;{Main.var&quot;#7#8&quot;, Scheduler, PeriodicTaskData})()
+│            @ Mango ./threadingconstructs.jl:416
+└ @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:271
+┌ Error: An error occurred while waiting for Task (failed) @0x00007f586cdc92d0
+│   exception =
+│    TaskFailedException
+│    Stacktrace:
+│      [1] wait(t::Task)
+│        @ Base ./task.jl:349
+│      [2] wait_for_all_tasks(scheduler::Scheduler)
+│        @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:266
+│      [3] wait_for_all_tasks(agent::Main.MyAgent)
+│        @ Mango ~/work/Mango.jl/Mango.jl/src/agent/core.jl:362
 │      [4] top-level scope
 │        @ scheduling.md:64
 │      [5] eval
@@ -215,7 +873,7 @@ wait_for_all_tasks(agent)</code></pre><pre class="documenter-example-output"><co
 │         [15] (::Mango.var&quot;#7#8&quot;{Main.var&quot;#5#6&quot;, Scheduler, PeriodicTaskData})()
 │            @ Mango ./threadingconstructs.jl:416
 └ @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:271
-┌ Error: An error occurred while waiting for Task (failed) @0x00007f24ad392590
+┌ Error: An error occurred while waiting for Task (failed) @0x00007f5847742590
 │   exception =
 │    TaskFailedException
 │    Stacktrace:
@@ -224,7 +882,7 @@ wait_for_all_tasks(agent)</code></pre><pre class="documenter-example-output"><co
 │      [2] wait_for_all_tasks(scheduler::Scheduler)
 │        @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:266
 │      [3] wait_for_all_tasks(agent::Main.MyAgent)
-│        @ Mango ~/work/Mango.jl/Mango.jl/src/agent/core.jl:363
+│        @ Mango ~/work/Mango.jl/Mango.jl/src/agent/core.jl:362
 │      [4] top-level scope
 │        @ scheduling.md:64
 │      [5] eval
@@ -309,7 +967,7 @@ wait_for_all_tasks(agent)</code></pre><pre class="documenter-example-output"><co
 │         [15] (::Mango.var&quot;#7#8&quot;{Main.var&quot;#7#8&quot;, Scheduler, PeriodicTaskData})()
 │            @ Mango ./threadingconstructs.jl:416
 └ @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:271
-┌ Error: An error occurred while waiting for Task (failed) @0x00007f24ad391aa0
+┌ Error: An error occurred while waiting for Task (failed) @0x00007f5847741780
 │   exception =
 │    TaskFailedException
 │    Stacktrace:
@@ -318,7 +976,7 @@ wait_for_all_tasks(agent)</code></pre><pre class="documenter-example-output"><co
 │      [2] wait_for_all_tasks(scheduler::Scheduler)
 │        @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:266
 │      [3] wait_for_all_tasks(agent::Main.MyAgent)
-│        @ Mango ~/work/Mango.jl/Mango.jl/src/agent/core.jl:363
+│        @ Mango ~/work/Mango.jl/Mango.jl/src/agent/core.jl:362
 │      [4] top-level scope
 │        @ scheduling.md:64
 │      [5] eval
@@ -403,7 +1061,7 @@ wait_for_all_tasks(agent)</code></pre><pre class="documenter-example-output"><co
 │         [15] (::Mango.var&quot;#7#8&quot;{Main.var&quot;#7#8&quot;, Scheduler, PeriodicTaskData})()
 │            @ Mango ./threadingconstructs.jl:416
 └ @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:271
-┌ Error: An error occurred while waiting for Task (failed) @0x00007f24ad3920e0
+┌ Error: An error occurred while waiting for Task (failed) @0x00007f58477420e0
 │   exception =
 │    TaskFailedException
 │    Stacktrace:
@@ -412,665 +1070,7 @@ wait_for_all_tasks(agent)</code></pre><pre class="documenter-example-output"><co
 │      [2] wait_for_all_tasks(scheduler::Scheduler)
 │        @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:266
 │      [3] wait_for_all_tasks(agent::Main.MyAgent)
-│        @ Mango ~/work/Mango.jl/Mango.jl/src/agent/core.jl:363
-│      [4] top-level scope
-│        @ scheduling.md:64
-│      [5] eval
-│        @ ./boot.jl:370 [inlined]
-│      [6] #17
-│        @ ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:629 [inlined]
-│      [7] cd(f::Documenter.Expanders.var&quot;#17#19&quot;{Module, Expr}, dir::String)
-│        @ Base.Filesystem ./file.jl:112
-│      [8] (::Documenter.Expanders.var&quot;#16#18&quot;{Documenter.Documents.Page, Module, Expr})()
-│        @ Documenter.Expanders ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:628
-│      [9] (::IOCapture.var&quot;#5#9&quot;{DataType, Documenter.Expanders.var&quot;#16#18&quot;{Documenter.Documents.Page, Module, Expr}, IOContext{Base.PipeEndpoint}, IOContext{Base.PipeEndpoint}, Base.PipeEndpoint, Base.PipeEndpoint})()
-│        @ IOCapture ~/.julia/packages/IOCapture/Y5rEA/src/IOCapture.jl:170
-│     [10] with_logstate(f::Function, logstate::Any)
-│        @ Base.CoreLogging ./logging.jl:514
-│     [11] with_logger
-│        @ ./logging.jl:626 [inlined]
-│     [12] capture(f::Documenter.Expanders.var&quot;#16#18&quot;{Documenter.Documents.Page, Module, Expr}; rethrow::Type, color::Bool, passthrough::Bool, capture_buffer::IOBuffer, io_context::Vector{Any})
-│        @ IOCapture ~/.julia/packages/IOCapture/Y5rEA/src/IOCapture.jl:167
-│     [13] runner(#unused#::Type{Documenter.Expanders.ExampleBlocks}, x::Markdown.Code, page::Documenter.Documents.Page, doc::Documenter.Documents.Document)
-│        @ Documenter.Expanders ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:627
-│     [14] dispatch(::Type{Documenter.Expanders.ExpanderPipeline}, ::Markdown.Code, ::Vararg{Any})
-│        @ Documenter.Utilities.Selectors ~/.julia/packages/Documenter/bYYzK/src/Utilities/Selectors.jl:170
-│     [15] expand(doc::Documenter.Documents.Document)
-│        @ Documenter.Expanders ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:42
-│     [16] runner(#unused#::Type{Documenter.Builder.ExpandTemplates}, doc::Documenter.Documents.Document)
-│        @ Documenter.Builder ~/.julia/packages/Documenter/bYYzK/src/Builder.jl:226
-│     [17] dispatch(#unused#::Type{Documenter.Builder.DocumentPipeline}, x::Documenter.Documents.Document)
-│        @ Documenter.Utilities.Selectors ~/.julia/packages/Documenter/bYYzK/src/Utilities/Selectors.jl:170
-│     [18] #2
-│        @ ~/.julia/packages/Documenter/bYYzK/src/Documenter.jl:273 [inlined]
-│     [19] cd(f::Documenter.var&quot;#2#3&quot;{Documenter.Documents.Document}, dir::String)
-│        @ Base.Filesystem ./file.jl:112
-│     [20] makedocs(; debug::Bool, format::Documenter.Writers.HTMLWriter.HTML, kwargs::Base.Pairs{Symbol, Any, NTuple{5, Symbol}, NamedTuple{(:modules, :authors, :sitename, :pages, :repo), Tuple{Vector{Module}, String, String, Vector{Any}, String}}})
-│        @ Documenter ~/.julia/packages/Documenter/bYYzK/src/Documenter.jl:272
-│     [21] makedocs
-│        @ ~/.julia/packages/Documenter/bYYzK/src/Documenter.jl:266 [inlined]
-│     [22] (::var&quot;#3#4&quot;)()
-│        @ Main ~/work/Mango.jl/Mango.jl/docs/make.jl:7
-│     [23] with_logstate(f::Function, logstate::Any)
-│        @ Base.CoreLogging ./logging.jl:514
-│     [24] with_logger(f::Function, logger::TestLogger)
-│        @ Base.CoreLogging ./logging.jl:626
-│     [25] top-level scope
-│        @ ~/work/Mango.jl/Mango.jl/docs/make.jl:6
-│     [26] include(mod::Module, _path::String)
-│        @ Base ./Base.jl:457
-│     [27] exec_options(opts::Base.JLOptions)
-│        @ Base ./client.jl:307
-│     [28] _start()
-│        @ Base ./client.jl:522
-│
-│        nested task error: IOError: stream is closed or unusable
-│        Stacktrace:
-│          [1] check_open
-│            @ ./stream.jl:388 [inlined]
-│          [2] uv_write_async(s::Base.PipeEndpoint, p::Ptr{UInt8}, n::UInt64)
-│            @ Base ./stream.jl:1074
-│          [3] uv_write(s::Base.PipeEndpoint, p::Ptr{UInt8}, n::UInt64)
-│            @ Base ./stream.jl:1037
-│          [4] unsafe_write(s::Base.PipeEndpoint, p::Ptr{UInt8}, n::UInt64)
-│            @ Base ./stream.jl:1120
-│          [5] unsafe_write
-│            @ ./io.jl:430 [inlined]
-│          [6] unsafe_write
-│            @ ./io.jl:685 [inlined]
-│          [7] write(s::IOContext{Base.PipeEndpoint}, a::Vector{UInt8})
-│            @ Base ./io.jl:708
-│          [8] handle_message(logger::ConsoleLogger, level::Base.CoreLogging.LogLevel, message::Any, _module::Any, group::Any, id::Any, filepath::Any, line::Any; kwargs::Base.Pairs{Symbol, V, Tuple{Vararg{Symbol, N}}, NamedTuple{names, T}} where {V, N, names, T&lt;:Tuple{Vararg{Any, N}}})
-│            @ Logging /opt/hostedtoolcache/julia/1.9.4/x64/share/julia/stdlib/v1.9/Logging/src/ConsoleLogger.jl:178
-│          [9] handle_message(logger::ConsoleLogger, level::Base.CoreLogging.LogLevel, message::Any, _module::Any, group::Any, id::Any, filepath::Any, line::Any)
-│            @ Logging /opt/hostedtoolcache/julia/1.9.4/x64/share/julia/stdlib/v1.9/Logging/src/ConsoleLogger.jl:106
-│         [10] #invokelatest#2
-│            @ ./essentials.jl:819 [inlined]
-│         [11] invokelatest
-│            @ ./essentials.jl:816 [inlined]
-│         [12] macro expansion
-│            @ ./logging.jl:330 [inlined]
-│         [13] #7
-│            @ ./scheduling.md:59 [inlined]
-│         [14] execute_task(f::Main.var&quot;#7#8&quot;, scheduler::Scheduler, data::PeriodicTaskData)
-│            @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:188
-│         [15] (::Mango.var&quot;#7#8&quot;{Main.var&quot;#7#8&quot;, Scheduler, PeriodicTaskData})()
-│            @ Mango ./threadingconstructs.jl:416
-└ @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:271
-┌ Error: An error occurred while waiting for Task (failed) @0x00007f24ad391c30
-│   exception =
-│    TaskFailedException
-│    Stacktrace:
-│      [1] wait(t::Task)
-│        @ Base ./task.jl:349
-│      [2] wait_for_all_tasks(scheduler::Scheduler)
-│        @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:266
-│      [3] wait_for_all_tasks(agent::Main.MyAgent)
-│        @ Mango ~/work/Mango.jl/Mango.jl/src/agent/core.jl:363
-│      [4] top-level scope
-│        @ scheduling.md:64
-│      [5] eval
-│        @ ./boot.jl:370 [inlined]
-│      [6] #17
-│        @ ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:629 [inlined]
-│      [7] cd(f::Documenter.Expanders.var&quot;#17#19&quot;{Module, Expr}, dir::String)
-│        @ Base.Filesystem ./file.jl:112
-│      [8] (::Documenter.Expanders.var&quot;#16#18&quot;{Documenter.Documents.Page, Module, Expr})()
-│        @ Documenter.Expanders ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:628
-│      [9] (::IOCapture.var&quot;#5#9&quot;{DataType, Documenter.Expanders.var&quot;#16#18&quot;{Documenter.Documents.Page, Module, Expr}, IOContext{Base.PipeEndpoint}, IOContext{Base.PipeEndpoint}, Base.PipeEndpoint, Base.PipeEndpoint})()
-│        @ IOCapture ~/.julia/packages/IOCapture/Y5rEA/src/IOCapture.jl:170
-│     [10] with_logstate(f::Function, logstate::Any)
-│        @ Base.CoreLogging ./logging.jl:514
-│     [11] with_logger
-│        @ ./logging.jl:626 [inlined]
-│     [12] capture(f::Documenter.Expanders.var&quot;#16#18&quot;{Documenter.Documents.Page, Module, Expr}; rethrow::Type, color::Bool, passthrough::Bool, capture_buffer::IOBuffer, io_context::Vector{Any})
-│        @ IOCapture ~/.julia/packages/IOCapture/Y5rEA/src/IOCapture.jl:167
-│     [13] runner(#unused#::Type{Documenter.Expanders.ExampleBlocks}, x::Markdown.Code, page::Documenter.Documents.Page, doc::Documenter.Documents.Document)
-│        @ Documenter.Expanders ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:627
-│     [14] dispatch(::Type{Documenter.Expanders.ExpanderPipeline}, ::Markdown.Code, ::Vararg{Any})
-│        @ Documenter.Utilities.Selectors ~/.julia/packages/Documenter/bYYzK/src/Utilities/Selectors.jl:170
-│     [15] expand(doc::Documenter.Documents.Document)
-│        @ Documenter.Expanders ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:42
-│     [16] runner(#unused#::Type{Documenter.Builder.ExpandTemplates}, doc::Documenter.Documents.Document)
-│        @ Documenter.Builder ~/.julia/packages/Documenter/bYYzK/src/Builder.jl:226
-│     [17] dispatch(#unused#::Type{Documenter.Builder.DocumentPipeline}, x::Documenter.Documents.Document)
-│        @ Documenter.Utilities.Selectors ~/.julia/packages/Documenter/bYYzK/src/Utilities/Selectors.jl:170
-│     [18] #2
-│        @ ~/.julia/packages/Documenter/bYYzK/src/Documenter.jl:273 [inlined]
-│     [19] cd(f::Documenter.var&quot;#2#3&quot;{Documenter.Documents.Document}, dir::String)
-│        @ Base.Filesystem ./file.jl:112
-│     [20] makedocs(; debug::Bool, format::Documenter.Writers.HTMLWriter.HTML, kwargs::Base.Pairs{Symbol, Any, NTuple{5, Symbol}, NamedTuple{(:modules, :authors, :sitename, :pages, :repo), Tuple{Vector{Module}, String, String, Vector{Any}, String}}})
-│        @ Documenter ~/.julia/packages/Documenter/bYYzK/src/Documenter.jl:272
-│     [21] makedocs
-│        @ ~/.julia/packages/Documenter/bYYzK/src/Documenter.jl:266 [inlined]
-│     [22] (::var&quot;#3#4&quot;)()
-│        @ Main ~/work/Mango.jl/Mango.jl/docs/make.jl:7
-│     [23] with_logstate(f::Function, logstate::Any)
-│        @ Base.CoreLogging ./logging.jl:514
-│     [24] with_logger(f::Function, logger::TestLogger)
-│        @ Base.CoreLogging ./logging.jl:626
-│     [25] top-level scope
-│        @ ~/work/Mango.jl/Mango.jl/docs/make.jl:6
-│     [26] include(mod::Module, _path::String)
-│        @ Base ./Base.jl:457
-│     [27] exec_options(opts::Base.JLOptions)
-│        @ Base ./client.jl:307
-│     [28] _start()
-│        @ Base ./client.jl:522
-│
-│        nested task error: IOError: stream is closed or unusable
-│        Stacktrace:
-│          [1] check_open
-│            @ ./stream.jl:388 [inlined]
-│          [2] uv_write_async(s::Base.PipeEndpoint, p::Ptr{UInt8}, n::UInt64)
-│            @ Base ./stream.jl:1074
-│          [3] uv_write(s::Base.PipeEndpoint, p::Ptr{UInt8}, n::UInt64)
-│            @ Base ./stream.jl:1037
-│          [4] unsafe_write(s::Base.PipeEndpoint, p::Ptr{UInt8}, n::UInt64)
-│            @ Base ./stream.jl:1120
-│          [5] unsafe_write
-│            @ ./io.jl:430 [inlined]
-│          [6] unsafe_write
-│            @ ./io.jl:685 [inlined]
-│          [7] write(s::IOContext{Base.PipeEndpoint}, a::Vector{UInt8})
-│            @ Base ./io.jl:708
-│          [8] handle_message(logger::ConsoleLogger, level::Base.CoreLogging.LogLevel, message::Any, _module::Any, group::Any, id::Any, filepath::Any, line::Any; kwargs::Base.Pairs{Symbol, V, Tuple{Vararg{Symbol, N}}, NamedTuple{names, T}} where {V, N, names, T&lt;:Tuple{Vararg{Any, N}}})
-│            @ Logging /opt/hostedtoolcache/julia/1.9.4/x64/share/julia/stdlib/v1.9/Logging/src/ConsoleLogger.jl:178
-│          [9] handle_message(logger::ConsoleLogger, level::Base.CoreLogging.LogLevel, message::Any, _module::Any, group::Any, id::Any, filepath::Any, line::Any)
-│            @ Logging /opt/hostedtoolcache/julia/1.9.4/x64/share/julia/stdlib/v1.9/Logging/src/ConsoleLogger.jl:106
-│         [10] #invokelatest#2
-│            @ ./essentials.jl:819 [inlined]
-│         [11] invokelatest
-│            @ ./essentials.jl:816 [inlined]
-│         [12] macro expansion
-│            @ ./logging.jl:330 [inlined]
-│         [13] #7
-│            @ ./scheduling.md:59 [inlined]
-│         [14] execute_task(f::Main.var&quot;#7#8&quot;, scheduler::Scheduler, data::PeriodicTaskData)
-│            @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:188
-│         [15] (::Mango.var&quot;#7#8&quot;{Main.var&quot;#7#8&quot;, Scheduler, PeriodicTaskData})()
-│            @ Mango ./threadingconstructs.jl:416
-└ @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:271
-┌ Error: An error occurred while waiting for Task (failed) @0x00007f24ad392270
-│   exception =
-│    TaskFailedException
-│    Stacktrace:
-│      [1] wait(t::Task)
-│        @ Base ./task.jl:349
-│      [2] wait_for_all_tasks(scheduler::Scheduler)
-│        @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:266
-│      [3] wait_for_all_tasks(agent::Main.MyAgent)
-│        @ Mango ~/work/Mango.jl/Mango.jl/src/agent/core.jl:363
-│      [4] top-level scope
-│        @ scheduling.md:64
-│      [5] eval
-│        @ ./boot.jl:370 [inlined]
-│      [6] #17
-│        @ ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:629 [inlined]
-│      [7] cd(f::Documenter.Expanders.var&quot;#17#19&quot;{Module, Expr}, dir::String)
-│        @ Base.Filesystem ./file.jl:112
-│      [8] (::Documenter.Expanders.var&quot;#16#18&quot;{Documenter.Documents.Page, Module, Expr})()
-│        @ Documenter.Expanders ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:628
-│      [9] (::IOCapture.var&quot;#5#9&quot;{DataType, Documenter.Expanders.var&quot;#16#18&quot;{Documenter.Documents.Page, Module, Expr}, IOContext{Base.PipeEndpoint}, IOContext{Base.PipeEndpoint}, Base.PipeEndpoint, Base.PipeEndpoint})()
-│        @ IOCapture ~/.julia/packages/IOCapture/Y5rEA/src/IOCapture.jl:170
-│     [10] with_logstate(f::Function, logstate::Any)
-│        @ Base.CoreLogging ./logging.jl:514
-│     [11] with_logger
-│        @ ./logging.jl:626 [inlined]
-│     [12] capture(f::Documenter.Expanders.var&quot;#16#18&quot;{Documenter.Documents.Page, Module, Expr}; rethrow::Type, color::Bool, passthrough::Bool, capture_buffer::IOBuffer, io_context::Vector{Any})
-│        @ IOCapture ~/.julia/packages/IOCapture/Y5rEA/src/IOCapture.jl:167
-│     [13] runner(#unused#::Type{Documenter.Expanders.ExampleBlocks}, x::Markdown.Code, page::Documenter.Documents.Page, doc::Documenter.Documents.Document)
-│        @ Documenter.Expanders ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:627
-│     [14] dispatch(::Type{Documenter.Expanders.ExpanderPipeline}, ::Markdown.Code, ::Vararg{Any})
-│        @ Documenter.Utilities.Selectors ~/.julia/packages/Documenter/bYYzK/src/Utilities/Selectors.jl:170
-│     [15] expand(doc::Documenter.Documents.Document)
-│        @ Documenter.Expanders ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:42
-│     [16] runner(#unused#::Type{Documenter.Builder.ExpandTemplates}, doc::Documenter.Documents.Document)
-│        @ Documenter.Builder ~/.julia/packages/Documenter/bYYzK/src/Builder.jl:226
-│     [17] dispatch(#unused#::Type{Documenter.Builder.DocumentPipeline}, x::Documenter.Documents.Document)
-│        @ Documenter.Utilities.Selectors ~/.julia/packages/Documenter/bYYzK/src/Utilities/Selectors.jl:170
-│     [18] #2
-│        @ ~/.julia/packages/Documenter/bYYzK/src/Documenter.jl:273 [inlined]
-│     [19] cd(f::Documenter.var&quot;#2#3&quot;{Documenter.Documents.Document}, dir::String)
-│        @ Base.Filesystem ./file.jl:112
-│     [20] makedocs(; debug::Bool, format::Documenter.Writers.HTMLWriter.HTML, kwargs::Base.Pairs{Symbol, Any, NTuple{5, Symbol}, NamedTuple{(:modules, :authors, :sitename, :pages, :repo), Tuple{Vector{Module}, String, String, Vector{Any}, String}}})
-│        @ Documenter ~/.julia/packages/Documenter/bYYzK/src/Documenter.jl:272
-│     [21] makedocs
-│        @ ~/.julia/packages/Documenter/bYYzK/src/Documenter.jl:266 [inlined]
-│     [22] (::var&quot;#3#4&quot;)()
-│        @ Main ~/work/Mango.jl/Mango.jl/docs/make.jl:7
-│     [23] with_logstate(f::Function, logstate::Any)
-│        @ Base.CoreLogging ./logging.jl:514
-│     [24] with_logger(f::Function, logger::TestLogger)
-│        @ Base.CoreLogging ./logging.jl:626
-│     [25] top-level scope
-│        @ ~/work/Mango.jl/Mango.jl/docs/make.jl:6
-│     [26] include(mod::Module, _path::String)
-│        @ Base ./Base.jl:457
-│     [27] exec_options(opts::Base.JLOptions)
-│        @ Base ./client.jl:307
-│     [28] _start()
-│        @ Base ./client.jl:522
-│
-│        nested task error: IOError: stream is closed or unusable
-│        Stacktrace:
-│          [1] check_open
-│            @ ./stream.jl:388 [inlined]
-│          [2] uv_write_async(s::Base.PipeEndpoint, p::Ptr{UInt8}, n::UInt64)
-│            @ Base ./stream.jl:1074
-│          [3] uv_write(s::Base.PipeEndpoint, p::Ptr{UInt8}, n::UInt64)
-│            @ Base ./stream.jl:1037
-│          [4] unsafe_write(s::Base.PipeEndpoint, p::Ptr{UInt8}, n::UInt64)
-│            @ Base ./stream.jl:1120
-│          [5] unsafe_write
-│            @ ./io.jl:430 [inlined]
-│          [6] unsafe_write
-│            @ ./io.jl:685 [inlined]
-│          [7] write(s::IOContext{Base.PipeEndpoint}, a::Vector{UInt8})
-│            @ Base ./io.jl:708
-│          [8] handle_message(logger::ConsoleLogger, level::Base.CoreLogging.LogLevel, message::Any, _module::Any, group::Any, id::Any, filepath::Any, line::Any; kwargs::Base.Pairs{Symbol, V, Tuple{Vararg{Symbol, N}}, NamedTuple{names, T}} where {V, N, names, T&lt;:Tuple{Vararg{Any, N}}})
-│            @ Logging /opt/hostedtoolcache/julia/1.9.4/x64/share/julia/stdlib/v1.9/Logging/src/ConsoleLogger.jl:178
-│          [9] handle_message(logger::ConsoleLogger, level::Base.CoreLogging.LogLevel, message::Any, _module::Any, group::Any, id::Any, filepath::Any, line::Any)
-│            @ Logging /opt/hostedtoolcache/julia/1.9.4/x64/share/julia/stdlib/v1.9/Logging/src/ConsoleLogger.jl:106
-│         [10] #invokelatest#2
-│            @ ./essentials.jl:819 [inlined]
-│         [11] invokelatest
-│            @ ./essentials.jl:816 [inlined]
-│         [12] macro expansion
-│            @ ./logging.jl:330 [inlined]
-│         [13] #7
-│            @ ./scheduling.md:59 [inlined]
-│         [14] execute_task(f::Main.var&quot;#7#8&quot;, scheduler::Scheduler, data::PeriodicTaskData)
-│            @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:188
-│         [15] (::Mango.var&quot;#7#8&quot;{Main.var&quot;#7#8&quot;, Scheduler, PeriodicTaskData})()
-│            @ Mango ./threadingconstructs.jl:416
-└ @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:271
-┌ Error: An error occurred while waiting for Task (failed) @0x00007f24ad391780
-│   exception =
-│    TaskFailedException
-│    Stacktrace:
-│      [1] wait(t::Task)
-│        @ Base ./task.jl:349
-│      [2] wait_for_all_tasks(scheduler::Scheduler)
-│        @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:266
-│      [3] wait_for_all_tasks(agent::Main.MyAgent)
-│        @ Mango ~/work/Mango.jl/Mango.jl/src/agent/core.jl:363
-│      [4] top-level scope
-│        @ scheduling.md:64
-│      [5] eval
-│        @ ./boot.jl:370 [inlined]
-│      [6] #17
-│        @ ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:629 [inlined]
-│      [7] cd(f::Documenter.Expanders.var&quot;#17#19&quot;{Module, Expr}, dir::String)
-│        @ Base.Filesystem ./file.jl:112
-│      [8] (::Documenter.Expanders.var&quot;#16#18&quot;{Documenter.Documents.Page, Module, Expr})()
-│        @ Documenter.Expanders ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:628
-│      [9] (::IOCapture.var&quot;#5#9&quot;{DataType, Documenter.Expanders.var&quot;#16#18&quot;{Documenter.Documents.Page, Module, Expr}, IOContext{Base.PipeEndpoint}, IOContext{Base.PipeEndpoint}, Base.PipeEndpoint, Base.PipeEndpoint})()
-│        @ IOCapture ~/.julia/packages/IOCapture/Y5rEA/src/IOCapture.jl:170
-│     [10] with_logstate(f::Function, logstate::Any)
-│        @ Base.CoreLogging ./logging.jl:514
-│     [11] with_logger
-│        @ ./logging.jl:626 [inlined]
-│     [12] capture(f::Documenter.Expanders.var&quot;#16#18&quot;{Documenter.Documents.Page, Module, Expr}; rethrow::Type, color::Bool, passthrough::Bool, capture_buffer::IOBuffer, io_context::Vector{Any})
-│        @ IOCapture ~/.julia/packages/IOCapture/Y5rEA/src/IOCapture.jl:167
-│     [13] runner(#unused#::Type{Documenter.Expanders.ExampleBlocks}, x::Markdown.Code, page::Documenter.Documents.Page, doc::Documenter.Documents.Document)
-│        @ Documenter.Expanders ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:627
-│     [14] dispatch(::Type{Documenter.Expanders.ExpanderPipeline}, ::Markdown.Code, ::Vararg{Any})
-│        @ Documenter.Utilities.Selectors ~/.julia/packages/Documenter/bYYzK/src/Utilities/Selectors.jl:170
-│     [15] expand(doc::Documenter.Documents.Document)
-│        @ Documenter.Expanders ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:42
-│     [16] runner(#unused#::Type{Documenter.Builder.ExpandTemplates}, doc::Documenter.Documents.Document)
-│        @ Documenter.Builder ~/.julia/packages/Documenter/bYYzK/src/Builder.jl:226
-│     [17] dispatch(#unused#::Type{Documenter.Builder.DocumentPipeline}, x::Documenter.Documents.Document)
-│        @ Documenter.Utilities.Selectors ~/.julia/packages/Documenter/bYYzK/src/Utilities/Selectors.jl:170
-│     [18] #2
-│        @ ~/.julia/packages/Documenter/bYYzK/src/Documenter.jl:273 [inlined]
-│     [19] cd(f::Documenter.var&quot;#2#3&quot;{Documenter.Documents.Document}, dir::String)
-│        @ Base.Filesystem ./file.jl:112
-│     [20] makedocs(; debug::Bool, format::Documenter.Writers.HTMLWriter.HTML, kwargs::Base.Pairs{Symbol, Any, NTuple{5, Symbol}, NamedTuple{(:modules, :authors, :sitename, :pages, :repo), Tuple{Vector{Module}, String, String, Vector{Any}, String}}})
-│        @ Documenter ~/.julia/packages/Documenter/bYYzK/src/Documenter.jl:272
-│     [21] makedocs
-│        @ ~/.julia/packages/Documenter/bYYzK/src/Documenter.jl:266 [inlined]
-│     [22] (::var&quot;#3#4&quot;)()
-│        @ Main ~/work/Mango.jl/Mango.jl/docs/make.jl:7
-│     [23] with_logstate(f::Function, logstate::Any)
-│        @ Base.CoreLogging ./logging.jl:514
-│     [24] with_logger(f::Function, logger::TestLogger)
-│        @ Base.CoreLogging ./logging.jl:626
-│     [25] top-level scope
-│        @ ~/work/Mango.jl/Mango.jl/docs/make.jl:6
-│     [26] include(mod::Module, _path::String)
-│        @ Base ./Base.jl:457
-│     [27] exec_options(opts::Base.JLOptions)
-│        @ Base ./client.jl:307
-│     [28] _start()
-│        @ Base ./client.jl:522
-│
-│        nested task error: IOError: stream is closed or unusable
-│        Stacktrace:
-│          [1] check_open
-│            @ ./stream.jl:388 [inlined]
-│          [2] uv_write_async(s::Base.PipeEndpoint, p::Ptr{UInt8}, n::UInt64)
-│            @ Base ./stream.jl:1074
-│          [3] uv_write(s::Base.PipeEndpoint, p::Ptr{UInt8}, n::UInt64)
-│            @ Base ./stream.jl:1037
-│          [4] unsafe_write(s::Base.PipeEndpoint, p::Ptr{UInt8}, n::UInt64)
-│            @ Base ./stream.jl:1120
-│          [5] unsafe_write
-│            @ ./io.jl:430 [inlined]
-│          [6] unsafe_write
-│            @ ./io.jl:685 [inlined]
-│          [7] write(s::IOContext{Base.PipeEndpoint}, a::Vector{UInt8})
-│            @ Base ./io.jl:708
-│          [8] handle_message(logger::ConsoleLogger, level::Base.CoreLogging.LogLevel, message::Any, _module::Any, group::Any, id::Any, filepath::Any, line::Any; kwargs::Base.Pairs{Symbol, V, Tuple{Vararg{Symbol, N}}, NamedTuple{names, T}} where {V, N, names, T&lt;:Tuple{Vararg{Any, N}}})
-│            @ Logging /opt/hostedtoolcache/julia/1.9.4/x64/share/julia/stdlib/v1.9/Logging/src/ConsoleLogger.jl:178
-│          [9] handle_message(logger::ConsoleLogger, level::Base.CoreLogging.LogLevel, message::Any, _module::Any, group::Any, id::Any, filepath::Any, line::Any)
-│            @ Logging /opt/hostedtoolcache/julia/1.9.4/x64/share/julia/stdlib/v1.9/Logging/src/ConsoleLogger.jl:106
-│         [10] #invokelatest#2
-│            @ ./essentials.jl:819 [inlined]
-│         [11] invokelatest
-│            @ ./essentials.jl:816 [inlined]
-│         [12] macro expansion
-│            @ ./logging.jl:330 [inlined]
-│         [13] #7
-│            @ ./scheduling.md:59 [inlined]
-│         [14] execute_task(f::Main.var&quot;#7#8&quot;, scheduler::Scheduler, data::PeriodicTaskData)
-│            @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:188
-│         [15] (::Mango.var&quot;#7#8&quot;{Main.var&quot;#7#8&quot;, Scheduler, PeriodicTaskData})()
-│            @ Mango ./threadingconstructs.jl:416
-└ @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:271
-┌ Error: An error occurred while waiting for Task (failed) @0x00007f24ad392400
-│   exception =
-│    TaskFailedException
-│    Stacktrace:
-│      [1] wait(t::Task)
-│        @ Base ./task.jl:349
-│      [2] wait_for_all_tasks(scheduler::Scheduler)
-│        @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:266
-│      [3] wait_for_all_tasks(agent::Main.MyAgent)
-│        @ Mango ~/work/Mango.jl/Mango.jl/src/agent/core.jl:363
-│      [4] top-level scope
-│        @ scheduling.md:64
-│      [5] eval
-│        @ ./boot.jl:370 [inlined]
-│      [6] #17
-│        @ ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:629 [inlined]
-│      [7] cd(f::Documenter.Expanders.var&quot;#17#19&quot;{Module, Expr}, dir::String)
-│        @ Base.Filesystem ./file.jl:112
-│      [8] (::Documenter.Expanders.var&quot;#16#18&quot;{Documenter.Documents.Page, Module, Expr})()
-│        @ Documenter.Expanders ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:628
-│      [9] (::IOCapture.var&quot;#5#9&quot;{DataType, Documenter.Expanders.var&quot;#16#18&quot;{Documenter.Documents.Page, Module, Expr}, IOContext{Base.PipeEndpoint}, IOContext{Base.PipeEndpoint}, Base.PipeEndpoint, Base.PipeEndpoint})()
-│        @ IOCapture ~/.julia/packages/IOCapture/Y5rEA/src/IOCapture.jl:170
-│     [10] with_logstate(f::Function, logstate::Any)
-│        @ Base.CoreLogging ./logging.jl:514
-│     [11] with_logger
-│        @ ./logging.jl:626 [inlined]
-│     [12] capture(f::Documenter.Expanders.var&quot;#16#18&quot;{Documenter.Documents.Page, Module, Expr}; rethrow::Type, color::Bool, passthrough::Bool, capture_buffer::IOBuffer, io_context::Vector{Any})
-│        @ IOCapture ~/.julia/packages/IOCapture/Y5rEA/src/IOCapture.jl:167
-│     [13] runner(#unused#::Type{Documenter.Expanders.ExampleBlocks}, x::Markdown.Code, page::Documenter.Documents.Page, doc::Documenter.Documents.Document)
-│        @ Documenter.Expanders ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:627
-│     [14] dispatch(::Type{Documenter.Expanders.ExpanderPipeline}, ::Markdown.Code, ::Vararg{Any})
-│        @ Documenter.Utilities.Selectors ~/.julia/packages/Documenter/bYYzK/src/Utilities/Selectors.jl:170
-│     [15] expand(doc::Documenter.Documents.Document)
-│        @ Documenter.Expanders ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:42
-│     [16] runner(#unused#::Type{Documenter.Builder.ExpandTemplates}, doc::Documenter.Documents.Document)
-│        @ Documenter.Builder ~/.julia/packages/Documenter/bYYzK/src/Builder.jl:226
-│     [17] dispatch(#unused#::Type{Documenter.Builder.DocumentPipeline}, x::Documenter.Documents.Document)
-│        @ Documenter.Utilities.Selectors ~/.julia/packages/Documenter/bYYzK/src/Utilities/Selectors.jl:170
-│     [18] #2
-│        @ ~/.julia/packages/Documenter/bYYzK/src/Documenter.jl:273 [inlined]
-│     [19] cd(f::Documenter.var&quot;#2#3&quot;{Documenter.Documents.Document}, dir::String)
-│        @ Base.Filesystem ./file.jl:112
-│     [20] makedocs(; debug::Bool, format::Documenter.Writers.HTMLWriter.HTML, kwargs::Base.Pairs{Symbol, Any, NTuple{5, Symbol}, NamedTuple{(:modules, :authors, :sitename, :pages, :repo), Tuple{Vector{Module}, String, String, Vector{Any}, String}}})
-│        @ Documenter ~/.julia/packages/Documenter/bYYzK/src/Documenter.jl:272
-│     [21] makedocs
-│        @ ~/.julia/packages/Documenter/bYYzK/src/Documenter.jl:266 [inlined]
-│     [22] (::var&quot;#3#4&quot;)()
-│        @ Main ~/work/Mango.jl/Mango.jl/docs/make.jl:7
-│     [23] with_logstate(f::Function, logstate::Any)
-│        @ Base.CoreLogging ./logging.jl:514
-│     [24] with_logger(f::Function, logger::TestLogger)
-│        @ Base.CoreLogging ./logging.jl:626
-│     [25] top-level scope
-│        @ ~/work/Mango.jl/Mango.jl/docs/make.jl:6
-│     [26] include(mod::Module, _path::String)
-│        @ Base ./Base.jl:457
-│     [27] exec_options(opts::Base.JLOptions)
-│        @ Base ./client.jl:307
-│     [28] _start()
-│        @ Base ./client.jl:522
-│
-│        nested task error: IOError: stream is closed or unusable
-│        Stacktrace:
-│          [1] check_open
-│            @ ./stream.jl:388 [inlined]
-│          [2] uv_write_async(s::Base.PipeEndpoint, p::Ptr{UInt8}, n::UInt64)
-│            @ Base ./stream.jl:1074
-│          [3] uv_write(s::Base.PipeEndpoint, p::Ptr{UInt8}, n::UInt64)
-│            @ Base ./stream.jl:1037
-│          [4] unsafe_write(s::Base.PipeEndpoint, p::Ptr{UInt8}, n::UInt64)
-│            @ Base ./stream.jl:1120
-│          [5] unsafe_write
-│            @ ./io.jl:430 [inlined]
-│          [6] unsafe_write
-│            @ ./io.jl:685 [inlined]
-│          [7] write(s::IOContext{Base.PipeEndpoint}, a::Vector{UInt8})
-│            @ Base ./io.jl:708
-│          [8] handle_message(logger::ConsoleLogger, level::Base.CoreLogging.LogLevel, message::Any, _module::Any, group::Any, id::Any, filepath::Any, line::Any; kwargs::Base.Pairs{Symbol, V, Tuple{Vararg{Symbol, N}}, NamedTuple{names, T}} where {V, N, names, T&lt;:Tuple{Vararg{Any, N}}})
-│            @ Logging /opt/hostedtoolcache/julia/1.9.4/x64/share/julia/stdlib/v1.9/Logging/src/ConsoleLogger.jl:178
-│          [9] handle_message(logger::ConsoleLogger, level::Base.CoreLogging.LogLevel, message::Any, _module::Any, group::Any, id::Any, filepath::Any, line::Any)
-│            @ Logging /opt/hostedtoolcache/julia/1.9.4/x64/share/julia/stdlib/v1.9/Logging/src/ConsoleLogger.jl:106
-│         [10] #invokelatest#2
-│            @ ./essentials.jl:819 [inlined]
-│         [11] invokelatest
-│            @ ./essentials.jl:816 [inlined]
-│         [12] macro expansion
-│            @ ./logging.jl:330 [inlined]
-│         [13] #7
-│            @ ./scheduling.md:59 [inlined]
-│         [14] execute_task(f::Main.var&quot;#7#8&quot;, scheduler::Scheduler, data::PeriodicTaskData)
-│            @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:188
-│         [15] (::Mango.var&quot;#7#8&quot;{Main.var&quot;#7#8&quot;, Scheduler, PeriodicTaskData})()
-│            @ Mango ./threadingconstructs.jl:416
-└ @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:271
-┌ Error: An error occurred while waiting for Task (failed) @0x00007f24ad391dc0
-│   exception =
-│    TaskFailedException
-│    Stacktrace:
-│      [1] wait(t::Task)
-│        @ Base ./task.jl:349
-│      [2] wait_for_all_tasks(scheduler::Scheduler)
-│        @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:266
-│      [3] wait_for_all_tasks(agent::Main.MyAgent)
-│        @ Mango ~/work/Mango.jl/Mango.jl/src/agent/core.jl:363
-│      [4] top-level scope
-│        @ scheduling.md:64
-│      [5] eval
-│        @ ./boot.jl:370 [inlined]
-│      [6] #17
-│        @ ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:629 [inlined]
-│      [7] cd(f::Documenter.Expanders.var&quot;#17#19&quot;{Module, Expr}, dir::String)
-│        @ Base.Filesystem ./file.jl:112
-│      [8] (::Documenter.Expanders.var&quot;#16#18&quot;{Documenter.Documents.Page, Module, Expr})()
-│        @ Documenter.Expanders ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:628
-│      [9] (::IOCapture.var&quot;#5#9&quot;{DataType, Documenter.Expanders.var&quot;#16#18&quot;{Documenter.Documents.Page, Module, Expr}, IOContext{Base.PipeEndpoint}, IOContext{Base.PipeEndpoint}, Base.PipeEndpoint, Base.PipeEndpoint})()
-│        @ IOCapture ~/.julia/packages/IOCapture/Y5rEA/src/IOCapture.jl:170
-│     [10] with_logstate(f::Function, logstate::Any)
-│        @ Base.CoreLogging ./logging.jl:514
-│     [11] with_logger
-│        @ ./logging.jl:626 [inlined]
-│     [12] capture(f::Documenter.Expanders.var&quot;#16#18&quot;{Documenter.Documents.Page, Module, Expr}; rethrow::Type, color::Bool, passthrough::Bool, capture_buffer::IOBuffer, io_context::Vector{Any})
-│        @ IOCapture ~/.julia/packages/IOCapture/Y5rEA/src/IOCapture.jl:167
-│     [13] runner(#unused#::Type{Documenter.Expanders.ExampleBlocks}, x::Markdown.Code, page::Documenter.Documents.Page, doc::Documenter.Documents.Document)
-│        @ Documenter.Expanders ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:627
-│     [14] dispatch(::Type{Documenter.Expanders.ExpanderPipeline}, ::Markdown.Code, ::Vararg{Any})
-│        @ Documenter.Utilities.Selectors ~/.julia/packages/Documenter/bYYzK/src/Utilities/Selectors.jl:170
-│     [15] expand(doc::Documenter.Documents.Document)
-│        @ Documenter.Expanders ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:42
-│     [16] runner(#unused#::Type{Documenter.Builder.ExpandTemplates}, doc::Documenter.Documents.Document)
-│        @ Documenter.Builder ~/.julia/packages/Documenter/bYYzK/src/Builder.jl:226
-│     [17] dispatch(#unused#::Type{Documenter.Builder.DocumentPipeline}, x::Documenter.Documents.Document)
-│        @ Documenter.Utilities.Selectors ~/.julia/packages/Documenter/bYYzK/src/Utilities/Selectors.jl:170
-│     [18] #2
-│        @ ~/.julia/packages/Documenter/bYYzK/src/Documenter.jl:273 [inlined]
-│     [19] cd(f::Documenter.var&quot;#2#3&quot;{Documenter.Documents.Document}, dir::String)
-│        @ Base.Filesystem ./file.jl:112
-│     [20] makedocs(; debug::Bool, format::Documenter.Writers.HTMLWriter.HTML, kwargs::Base.Pairs{Symbol, Any, NTuple{5, Symbol}, NamedTuple{(:modules, :authors, :sitename, :pages, :repo), Tuple{Vector{Module}, String, String, Vector{Any}, String}}})
-│        @ Documenter ~/.julia/packages/Documenter/bYYzK/src/Documenter.jl:272
-│     [21] makedocs
-│        @ ~/.julia/packages/Documenter/bYYzK/src/Documenter.jl:266 [inlined]
-│     [22] (::var&quot;#3#4&quot;)()
-│        @ Main ~/work/Mango.jl/Mango.jl/docs/make.jl:7
-│     [23] with_logstate(f::Function, logstate::Any)
-│        @ Base.CoreLogging ./logging.jl:514
-│     [24] with_logger(f::Function, logger::TestLogger)
-│        @ Base.CoreLogging ./logging.jl:626
-│     [25] top-level scope
-│        @ ~/work/Mango.jl/Mango.jl/docs/make.jl:6
-│     [26] include(mod::Module, _path::String)
-│        @ Base ./Base.jl:457
-│     [27] exec_options(opts::Base.JLOptions)
-│        @ Base ./client.jl:307
-│     [28] _start()
-│        @ Base ./client.jl:522
-│
-│        nested task error: IOError: stream is closed or unusable
-│        Stacktrace:
-│          [1] check_open
-│            @ ./stream.jl:388 [inlined]
-│          [2] uv_write_async(s::Base.PipeEndpoint, p::Ptr{UInt8}, n::UInt64)
-│            @ Base ./stream.jl:1074
-│          [3] uv_write(s::Base.PipeEndpoint, p::Ptr{UInt8}, n::UInt64)
-│            @ Base ./stream.jl:1037
-│          [4] unsafe_write(s::Base.PipeEndpoint, p::Ptr{UInt8}, n::UInt64)
-│            @ Base ./stream.jl:1120
-│          [5] unsafe_write
-│            @ ./io.jl:430 [inlined]
-│          [6] unsafe_write
-│            @ ./io.jl:685 [inlined]
-│          [7] write(s::IOContext{Base.PipeEndpoint}, a::Vector{UInt8})
-│            @ Base ./io.jl:708
-│          [8] handle_message(logger::ConsoleLogger, level::Base.CoreLogging.LogLevel, message::Any, _module::Any, group::Any, id::Any, filepath::Any, line::Any; kwargs::Base.Pairs{Symbol, V, Tuple{Vararg{Symbol, N}}, NamedTuple{names, T}} where {V, N, names, T&lt;:Tuple{Vararg{Any, N}}})
-│            @ Logging /opt/hostedtoolcache/julia/1.9.4/x64/share/julia/stdlib/v1.9/Logging/src/ConsoleLogger.jl:178
-│          [9] handle_message(logger::ConsoleLogger, level::Base.CoreLogging.LogLevel, message::Any, _module::Any, group::Any, id::Any, filepath::Any, line::Any)
-│            @ Logging /opt/hostedtoolcache/julia/1.9.4/x64/share/julia/stdlib/v1.9/Logging/src/ConsoleLogger.jl:106
-│         [10] #invokelatest#2
-│            @ ./essentials.jl:819 [inlined]
-│         [11] invokelatest
-│            @ ./essentials.jl:816 [inlined]
-│         [12] macro expansion
-│            @ ./logging.jl:330 [inlined]
-│         [13] #7
-│            @ ./scheduling.md:59 [inlined]
-│         [14] execute_task(f::Main.var&quot;#7#8&quot;, scheduler::Scheduler, data::PeriodicTaskData)
-│            @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:188
-│         [15] (::Mango.var&quot;#7#8&quot;{Main.var&quot;#7#8&quot;, Scheduler, PeriodicTaskData})()
-│            @ Mango ./threadingconstructs.jl:416
-└ @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:271
-┌ Error: An error occurred while waiting for Task (failed) @0x00007f24ad391f50
-│   exception =
-│    TaskFailedException
-│    Stacktrace:
-│      [1] wait(t::Task)
-│        @ Base ./task.jl:349
-│      [2] wait_for_all_tasks(scheduler::Scheduler)
-│        @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:266
-│      [3] wait_for_all_tasks(agent::Main.MyAgent)
-│        @ Mango ~/work/Mango.jl/Mango.jl/src/agent/core.jl:363
-│      [4] top-level scope
-│        @ scheduling.md:64
-│      [5] eval
-│        @ ./boot.jl:370 [inlined]
-│      [6] #17
-│        @ ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:629 [inlined]
-│      [7] cd(f::Documenter.Expanders.var&quot;#17#19&quot;{Module, Expr}, dir::String)
-│        @ Base.Filesystem ./file.jl:112
-│      [8] (::Documenter.Expanders.var&quot;#16#18&quot;{Documenter.Documents.Page, Module, Expr})()
-│        @ Documenter.Expanders ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:628
-│      [9] (::IOCapture.var&quot;#5#9&quot;{DataType, Documenter.Expanders.var&quot;#16#18&quot;{Documenter.Documents.Page, Module, Expr}, IOContext{Base.PipeEndpoint}, IOContext{Base.PipeEndpoint}, Base.PipeEndpoint, Base.PipeEndpoint})()
-│        @ IOCapture ~/.julia/packages/IOCapture/Y5rEA/src/IOCapture.jl:170
-│     [10] with_logstate(f::Function, logstate::Any)
-│        @ Base.CoreLogging ./logging.jl:514
-│     [11] with_logger
-│        @ ./logging.jl:626 [inlined]
-│     [12] capture(f::Documenter.Expanders.var&quot;#16#18&quot;{Documenter.Documents.Page, Module, Expr}; rethrow::Type, color::Bool, passthrough::Bool, capture_buffer::IOBuffer, io_context::Vector{Any})
-│        @ IOCapture ~/.julia/packages/IOCapture/Y5rEA/src/IOCapture.jl:167
-│     [13] runner(#unused#::Type{Documenter.Expanders.ExampleBlocks}, x::Markdown.Code, page::Documenter.Documents.Page, doc::Documenter.Documents.Document)
-│        @ Documenter.Expanders ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:627
-│     [14] dispatch(::Type{Documenter.Expanders.ExpanderPipeline}, ::Markdown.Code, ::Vararg{Any})
-│        @ Documenter.Utilities.Selectors ~/.julia/packages/Documenter/bYYzK/src/Utilities/Selectors.jl:170
-│     [15] expand(doc::Documenter.Documents.Document)
-│        @ Documenter.Expanders ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:42
-│     [16] runner(#unused#::Type{Documenter.Builder.ExpandTemplates}, doc::Documenter.Documents.Document)
-│        @ Documenter.Builder ~/.julia/packages/Documenter/bYYzK/src/Builder.jl:226
-│     [17] dispatch(#unused#::Type{Documenter.Builder.DocumentPipeline}, x::Documenter.Documents.Document)
-│        @ Documenter.Utilities.Selectors ~/.julia/packages/Documenter/bYYzK/src/Utilities/Selectors.jl:170
-│     [18] #2
-│        @ ~/.julia/packages/Documenter/bYYzK/src/Documenter.jl:273 [inlined]
-│     [19] cd(f::Documenter.var&quot;#2#3&quot;{Documenter.Documents.Document}, dir::String)
-│        @ Base.Filesystem ./file.jl:112
-│     [20] makedocs(; debug::Bool, format::Documenter.Writers.HTMLWriter.HTML, kwargs::Base.Pairs{Symbol, Any, NTuple{5, Symbol}, NamedTuple{(:modules, :authors, :sitename, :pages, :repo), Tuple{Vector{Module}, String, String, Vector{Any}, String}}})
-│        @ Documenter ~/.julia/packages/Documenter/bYYzK/src/Documenter.jl:272
-│     [21] makedocs
-│        @ ~/.julia/packages/Documenter/bYYzK/src/Documenter.jl:266 [inlined]
-│     [22] (::var&quot;#3#4&quot;)()
-│        @ Main ~/work/Mango.jl/Mango.jl/docs/make.jl:7
-│     [23] with_logstate(f::Function, logstate::Any)
-│        @ Base.CoreLogging ./logging.jl:514
-│     [24] with_logger(f::Function, logger::TestLogger)
-│        @ Base.CoreLogging ./logging.jl:626
-│     [25] top-level scope
-│        @ ~/work/Mango.jl/Mango.jl/docs/make.jl:6
-│     [26] include(mod::Module, _path::String)
-│        @ Base ./Base.jl:457
-│     [27] exec_options(opts::Base.JLOptions)
-│        @ Base ./client.jl:307
-│     [28] _start()
-│        @ Base ./client.jl:522
-│
-│        nested task error: IOError: stream is closed or unusable
-│        Stacktrace:
-│          [1] check_open
-│            @ ./stream.jl:388 [inlined]
-│          [2] uv_write_async(s::Base.PipeEndpoint, p::Ptr{UInt8}, n::UInt64)
-│            @ Base ./stream.jl:1074
-│          [3] uv_write(s::Base.PipeEndpoint, p::Ptr{UInt8}, n::UInt64)
-│            @ Base ./stream.jl:1037
-│          [4] unsafe_write(s::Base.PipeEndpoint, p::Ptr{UInt8}, n::UInt64)
-│            @ Base ./stream.jl:1120
-│          [5] unsafe_write
-│            @ ./io.jl:430 [inlined]
-│          [6] unsafe_write
-│            @ ./io.jl:685 [inlined]
-│          [7] write(s::IOContext{Base.PipeEndpoint}, a::Vector{UInt8})
-│            @ Base ./io.jl:708
-│          [8] handle_message(logger::ConsoleLogger, level::Base.CoreLogging.LogLevel, message::Any, _module::Any, group::Any, id::Any, filepath::Any, line::Any; kwargs::Base.Pairs{Symbol, V, Tuple{Vararg{Symbol, N}}, NamedTuple{names, T}} where {V, N, names, T&lt;:Tuple{Vararg{Any, N}}})
-│            @ Logging /opt/hostedtoolcache/julia/1.9.4/x64/share/julia/stdlib/v1.9/Logging/src/ConsoleLogger.jl:178
-│          [9] handle_message(logger::ConsoleLogger, level::Base.CoreLogging.LogLevel, message::Any, _module::Any, group::Any, id::Any, filepath::Any, line::Any)
-│            @ Logging /opt/hostedtoolcache/julia/1.9.4/x64/share/julia/stdlib/v1.9/Logging/src/ConsoleLogger.jl:106
-│         [10] #invokelatest#2
-│            @ ./essentials.jl:819 [inlined]
-│         [11] invokelatest
-│            @ ./essentials.jl:816 [inlined]
-│         [12] macro expansion
-│            @ ./logging.jl:330 [inlined]
-│         [13] #7
-│            @ ./scheduling.md:59 [inlined]
-│         [14] execute_task(f::Main.var&quot;#7#8&quot;, scheduler::Scheduler, data::PeriodicTaskData)
-│            @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:188
-│         [15] (::Mango.var&quot;#7#8&quot;{Main.var&quot;#7#8&quot;, Scheduler, PeriodicTaskData})()
-│            @ Mango ./threadingconstructs.jl:416
-└ @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:271
-┌ Error: An error occurred while waiting for Task (failed) @0x00007f24ad391910
-│   exception =
-│    TaskFailedException
-│    Stacktrace:
-│      [1] wait(t::Task)
-│        @ Base ./task.jl:349
-│      [2] wait_for_all_tasks(scheduler::Scheduler)
-│        @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:266
-│      [3] wait_for_all_tasks(agent::Main.MyAgent)
-│        @ Mango ~/work/Mango.jl/Mango.jl/src/agent/core.jl:363
+│        @ Mango ~/work/Mango.jl/Mango.jl/src/agent/core.jl:362
 │      [4] top-level scope
 │        @ scheduling.md:64
 │      [5] eval
@@ -1160,4 +1160,4 @@ end</code></pre><p>The <a href="@ref"><code>execute_task</code></a> function exe
 execute_task(f::Function, data::InstantTaskData)
 execute_task(f::Function, data::DateTimeTaskData)
 execute_task(f::Function, data::AwaitableTaskData)
-execute_task(f::Function, data::ConditionalTaskData)</code></pre><p>The <a href="../api/#Base.schedule-Tuple{Function, Agent, TaskData}"><code>schedule</code></a> function adds a task to the scheduler with the specified <a href="../api/#Mango.TaskData"><code>TaskData</code></a> and scheduling type.</p><pre><code class="language-julia hljs">schedule(f::Function, scheduler::Union{Scheduler,Agent}, data::TaskData, scheduling_type::SchedulingType=ASYNC)</code></pre><p>The <a href="../api/#Mango.wait_for_all_tasks-Tuple{Agent}"><code>wait_for_all_tasks</code></a> function waits for all the scheduled tasks in the provided scheduler to complete.</p><pre><code class="language-julia hljs">wait_for_all_tasks(scheduler::Scheduler)</code></pre><p>The <a href="../api/#Mango.stop_task-Tuple{Agent, Task}"><code>stop_task</code></a> function sends the stop signal to a task <code>t</code>. This will result in its completion once the next execution cycle is finished. If <code>t</code> is not stopable this will output a warning.</p><pre><code class="language-julia hljs">stop_task(scheduler::Scheduler, t::Task)</code></pre><p>The <a href="../api/#Mango.stop_all_tasks-Tuple{Agent}"><code>stop_all_tasks</code></a> function sends the stop signal to all stopable tasks. This will result in their completion once the next execution cycle is finished.</p><pre><code class="language-julia hljs">stop_all_tasks(scheduler::Scheduler)</code></pre><p>The <a href="../api/#Mango.stop_and_wait_for_all_tasks-Tuple{Agent}"><code>stop_and_wait_for_all_tasks</code></a> function sends the stop signal to all stopable tasks. It then waits for all scheduled tasks to finish.</p><pre><code class="language-julia hljs">stop_and_wait_for_all_tasks(scheduler::Scheduler)</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../encode_decode/">« Codecs</a><a class="docs-footer-nextpage" href="../topology/">Topologies »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Tuesday 3 September 2024 14:56">Tuesday 3 September 2024</span>. Using Julia version 1.9.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+execute_task(f::Function, data::ConditionalTaskData)</code></pre><p>The <a href="../api/#Base.schedule-Tuple{Function, Agent, TaskData}"><code>schedule</code></a> function adds a task to the scheduler with the specified <a href="../api/#Mango.TaskData"><code>TaskData</code></a> and scheduling type.</p><pre><code class="language-julia hljs">schedule(f::Function, scheduler::Union{Scheduler,Agent}, data::TaskData, scheduling_type::SchedulingType=ASYNC)</code></pre><p>The <a href="../api/#Mango.wait_for_all_tasks-Tuple{Agent}"><code>wait_for_all_tasks</code></a> function waits for all the scheduled tasks in the provided scheduler to complete.</p><pre><code class="language-julia hljs">wait_for_all_tasks(scheduler::Scheduler)</code></pre><p>The <a href="../api/#Mango.stop_task-Tuple{Agent, Task}"><code>stop_task</code></a> function sends the stop signal to a task <code>t</code>. This will result in its completion once the next execution cycle is finished. If <code>t</code> is not stopable this will output a warning.</p><pre><code class="language-julia hljs">stop_task(scheduler::Scheduler, t::Task)</code></pre><p>The <a href="../api/#Mango.stop_all_tasks-Tuple{Agent}"><code>stop_all_tasks</code></a> function sends the stop signal to all stopable tasks. This will result in their completion once the next execution cycle is finished.</p><pre><code class="language-julia hljs">stop_all_tasks(scheduler::Scheduler)</code></pre><p>The <a href="../api/#Mango.stop_and_wait_for_all_tasks-Tuple{Agent}"><code>stop_and_wait_for_all_tasks</code></a> function sends the stop signal to all stopable tasks. It then waits for all scheduled tasks to finish.</p><pre><code class="language-julia hljs">stop_and_wait_for_all_tasks(scheduler::Scheduler)</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../encode_decode/">« Codecs</a><a class="docs-footer-nextpage" href="../topology/">Topologies »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Tuesday 3 September 2024 15:00">Tuesday 3 September 2024</span>. Using Julia version 1.9.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
