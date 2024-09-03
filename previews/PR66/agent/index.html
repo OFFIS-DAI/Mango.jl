@@ -7,7 +7,7 @@
 end
 
 # Create an instance of the agent
-my_agent = MyAgent(&quot;MyValue&quot;)</code></pre><p>The <a href="../api/#Mango.@agent-Tuple{Any}"><code>@agent</code></a> macro adds some internal baseline fields to the struct. You can initialize the agent with exclusive fields like <code>my_own_field</code> in the example.</p><h2 id="Role-Management"><a class="docs-heading-anchor" href="#Role-Management">Role Management</a><a id="Role-Management-1"></a><a class="docs-heading-anchor-permalink" href="#Role-Management" title="Permalink"></a></h2><p>Agents can have multiple roles associated with them. Roles can be added using the <a href="../api/#Mango.add-Tuple{Agent, Role}"><code>add</code></a> function, allowing the agent to interact with its environment based on different roles. Here&#39;s how you can add roles to an agent:</p><pre><code class="language-julia hljs">using Mango
+my_agent = MyAgent(&quot;MyValue&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Main.MyAgent(ReentrantLock(nothing, 0x00000000, 0x00, Base.GenericCondition{Base.Threads.SpinLock}(Base.IntrusiveLinkedList{Task}(nothing, nothing), Base.Threads.SpinLock(0)), (2, 139796170779408, 139795539606784)), nothing, AgentRoleHandler(Role[], Tuple{Role, Function, Function}[], Tuple{Role, Function}[], Dict{Any, Vector{Tuple{Role, Function, Function}}}(), Dict{DataType, Any}()), Scheduler(ConcurrentCollections.Implementations.LinearProbingDict{Task, TaskData, Union{ConcurrentCollections.Implementations.Empty, Task}, Union{ConcurrentCollections.Implementations.Empty, ConcurrentCollections.Implementations.Moved{ConcurrentCollections.Implementations.Empty}, ConcurrentCollections.Implementations.Moved{TaskData}, TaskData}}(), Mango.DateTimeClock()), nothing, Dict{String, Tuple}(), ForwardingRule[], Dict{DataType, Any}(), &quot;MyValue&quot;)</code></pre><p>The <a href="../api/#Mango.@agent-Tuple{Any}"><code>@agent</code></a> macro adds some internal baseline fields to the struct. You can initialize the agent with exclusive fields like <code>my_own_field</code> in the example.</p><h2 id="Role-Management"><a class="docs-heading-anchor" href="#Role-Management">Role Management</a><a id="Role-Management-1"></a><a class="docs-heading-anchor-permalink" href="#Role-Management" title="Permalink"></a></h2><p>Agents can have multiple roles associated with them. Roles can be added using the <a href="../api/#Mango.add-Tuple{Agent, Role}"><code>add</code></a> function, allowing the agent to interact with its environment based on different roles. Here&#39;s how you can add roles to an agent:</p><pre><code class="language-julia hljs">using Mango
 
 # Define your role struct using @role macro
 @role struct MyRole
@@ -19,78 +19,110 @@ role1 = MyRole(&quot;Role1&quot;)
 role2 = MyRole(&quot;Role2&quot;)
 
 # Define your agent struct using @agent macro
-@agent struct MyAgent
-    my_own_field::String
-end
+@agent struct MyContainerAgent end
 
 # Create an instance of the agent
-my_agent = MyAgent(&quot;MyValue&quot;)
+my_agent = MyContainerAgent()
 
 # Add roles to the agent
 add(my_agent, role1)
 add(my_agent, role2)
 
-# Now you can interact with the roles as needed</code></pre><p>As this can be clunky at some time, there is the possibility to create an agent using only roles and add it to the container using <a href="../api/#Mango.add_agent_composed_of-Tuple{ContainerInterface, Vararg{Role}}"><code>add_agent_composed_of</code></a>.</p><pre><code class="language-julia hljs"># internally an empty agent definition is used, the roles are added and the agent
-# is added to the given container
-created_agent = add_agent_composed_of(your_container, RoleA(), RoleB(), RoleC())</code></pre><p>For more information on roles, take a look at <a href="../role/#Role-definition">Role definition</a></p><h2 id="Message-Handling"><a class="docs-heading-anchor" href="#Message-Handling">Message Handling</a><a id="Message-Handling-1"></a><a class="docs-heading-anchor-permalink" href="#Message-Handling" title="Permalink"></a></h2><p>Agents and Roles can handle incoming messages through the <a href="../api/#Mango.handle_message-Tuple{Agent, Any, Any}"><code>handle_message</code></a> function. By default, it does nothing, but you can override it to define message-specific behavior. You can also add custom message handlers for specific roles using the <a href="../api/#Mango.subscribe_message-Tuple{Role, Function, Function}"><code>subscribe_message</code></a> function. Here&#39;s how to handle messages:</p><pre><code class="language-julia hljs">using Mango
+# Now you can interact with the roles as neededs</code></pre><p>As this can be clunky at some time, there is the possibility to create an agent using only roles and add it to the container using <a href="../api/#Mango.add_agent_composed_of-Tuple{ContainerInterface, Vararg{Role}}"><code>add_agent_composed_of</code></a> or without a container <a href="../api/#Mango.agent_composed_of-Tuple{Vararg{Role}}"><code>agent_composed_of</code></a>.</p><pre><code class="language-julia hljs">using Mango
 
-# Define your agent struct using @agent macro
-@agent struct MyAgent
-    my_own_field::String
-end
-@role struct MyRole
-    my_own_field::String
-end
+c = create_tcp_container()
+
+@role struct RoleA end
+@role struct RoleB end
+@role struct RoleC end
+
+# internally an empty agent definition is used, the roles are added and the agent
+# is added to the given container
+created_agent = add_agent_composed_of(c, RoleA(), RoleB(), RoleC())</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">GeneralAgent(ReentrantLock(nothing, 0x00000000, 0x00, Base.GenericCondition{Base.Threads.SpinLock}(Base.IntrusiveLinkedList{Task}(nothing, nothing), Base.Threads.SpinLock(0)), (8, 0, 139779710648320)), AgentContext(Container(OrderedCollections.OrderedDict{String, Agent}(&quot;agent0&quot; =&gt; GeneralAgent(#= circular reference @-4 =#)), 1, TCPProtocol(Sockets.InetAddr{Sockets.IPv4}(ip&quot;127.0.0.1&quot;, 5555), nothing, Mango.TCPConnectionPool(100000, ConcurrentUtilities.Pools.Pool{Sockets.InetAddr, Tuple{Sockets.TCPSocket, Dates.DateTime}}(Base.GenericCondition{ReentrantLock}(Base.IntrusiveLinkedList{Task}(nothing, nothing), ReentrantLock(nothing, 0x00000000, 0x00, Base.GenericCondition{Base.Threads.SpinLock}(Base.IntrusiveLinkedList{Task}(nothing, nothing), Base.Threads.SpinLock(0)), (1, 139796145146512, 141733920768))), 100, 0, Dict{Sockets.InetAddr, Vector{Tuple{Sockets.TCPSocket, Dates.DateTime}}}(), #undef), ConcurrentUtilities.ReadWriteLock(ReentrantLock(nothing, 0x00000000, 0x00, Base.GenericCondition{Base.Threads.SpinLock}(Base.IntrusiveLinkedList{Task}(nothing, nothing), Base.Threads.SpinLock(0)), (8, 139796081672280, 141733920768)), Base.GenericCondition{ReentrantLock}(Base.IntrusiveLinkedList{Task}(nothing, nothing), ReentrantLock(nothing, 0x00000000, 0x00, Base.GenericCondition{Base.Threads.SpinLock}(Base.IntrusiveLinkedList{Task}(nothing, nothing), Base.Threads.SpinLock(0)), (0, 0, 141733920768))), Base.Event(Base.GenericCondition{ReentrantLock}(Base.IntrusiveLinkedList{Task}(nothing, nothing), ReentrantLock(nothing, 0x00000000, 0x00, Base.GenericCondition{Base.Threads.SpinLock}(Base.IntrusiveLinkedList{Task}(nothing, nothing), Base.Threads.SpinLock(0)), (8, 0, 139779710648320))), true, false), 0, 0), false, Mango.AtomicCounter(0))), (Mango.encode, Mango.decode), false, nothing, nothing)), AgentRoleHandler(Role[Main.RoleA(RoleContext(GeneralAgent(#= circular reference @-5 =#)), Any[]), Main.RoleB(RoleContext(GeneralAgent(#= circular reference @-5 =#)), Any[]), Main.RoleC(RoleContext(GeneralAgent(#= circular reference @-5 =#)), Any[])], Tuple{Role, Function, Function}[], Tuple{Role, Function}[], Dict{Any, Vector{Tuple{Role, Function, Function}}}(), Dict{DataType, Any}()), Scheduler(ConcurrentCollections.Implementations.LinearProbingDict{Task, TaskData, Union{ConcurrentCollections.Implementations.Empty, Task}, Union{ConcurrentCollections.Implementations.Empty, ConcurrentCollections.Implementations.Moved{ConcurrentCollections.Implementations.Empty}, ConcurrentCollections.Implementations.Moved{TaskData}, TaskData}}(), Mango.DateTimeClock()), &quot;agent0&quot;, Dict{String, Tuple}(), ForwardingRule[], Dict{DataType, Any}())</code></pre><p>For more information on roles, take a look at <a href="../role/#Role-definition">Role definition</a></p><h2 id="Message-Handling"><a class="docs-heading-anchor" href="#Message-Handling">Message Handling</a><a id="Message-Handling-1"></a><a class="docs-heading-anchor-permalink" href="#Message-Handling" title="Permalink"></a></h2><p>Agents and Roles can handle incoming messages through the <a href="../api/#Mango.handle_message-Tuple{Agent, Any, Any}"><code>handle_message</code></a> function. By default, it does nothing, but you can override it to define message-specific behavior. You can also add custom message handlers for specific roles using the <a href="../api/#Mango.subscribe_message-Tuple{Role, Function, Function}"><code>subscribe_message</code></a> function. Here&#39;s how to handle messages:</p><pre><code class="language-julia hljs">using Mango
+
+@agent struct MySecondContainerAgent end
+@role struct MyHandlingRole end
 
 # Override the default handle_message function for custom behavior
-function handle_message(agent::MyAgent, message::Any, meta::Any)
+function Mango.handle_message(agent::MySecondContainerAgent, message::Any, meta::Any)
     println(&quot;Received message @agent: &quot;, message)
 end
 # Override the default handle_message function for custom behavior
-function handle_message(role::MyRole, message::Any, meta::Any)
+function Mango.handle_message(role::MyHandlingRole, message::Any, meta::Any)
     println(&quot;Received message @role: &quot;, message)
-end</code></pre><p>Besides the ability to handle messages, there also must be a possibility to send messages. This is implemented using the <a href="../api/#Mango.send_message-Tuple{Mango.AgentInterface, Any, Address}"><code>send_message</code></a> function, defined on roles and agents.</p><pre><code class="language-julia hljs">using Mango
+end
+
+# Use the express API to show the effect
+run_with_tcp(1, agent_composed_of(MyHandlingRole(), base_agent=MySecondContainerAgent())) do cl
+    wait(send_message(cl[1], &quot;Message&quot;, address(cl[1][1])))
+    sleep(0.1)
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Received message @role: Message
+Received message @agent: Message</code></pre><p>Besides the ability to handle messages, there also must be a possibility to send messages. This is implemented using the <a href="../api/#Mango.send_message-Tuple{Mango.AgentInterface, Any, Address}"><code>send_message</code></a> function, defined on roles and agents.</p><pre><code class="language-julia hljs">using Mango
 
 # Define your agent struct using @agent macro
-@agent struct MyAgent
+@agent struct MySendingAgent
     my_own_field::String
 end
-@role struct MyRole
+@role struct MySendingRole
     my_own_field::String
 end
 
-agent = MyAgent(&quot;&quot;)
-role = MyRole(&quot;&quot;)
+agent = MySendingAgent(&quot;&quot;)
+role = MySendingRole(&quot;&quot;)
 
-send_message(agent, &quot;Message&quot;, AgentAddress(&quot;receiver_id&quot;, &quot;receiver_addr&quot;, &quot;optional tracking id&quot;))
-send_message(role, &quot;Message&quot;, AgentAddress(&quot;receiver_id&quot;, &quot;receiver_addr&quot;, &quot;optional tracking id&quot;))</code></pre><p>Further, there are several specialized methods for sending messages, (1) <a href="../api/#Mango.send_tracked_message-Tuple{Mango.AgentInterface, Any, Address}"><code>send_tracked_message</code></a>, (2) <a href="../api/#Mango.send_and_handle_answer-Tuple{Function, Mango.AgentInterface, Any, Address}"><code>send_and_handle_answer</code></a>, (3) <a href="../api/#Mango.reply_to-Tuple{Mango.AgentInterface, Any, AbstractDict}"><code>reply_to</code></a>, (4) <a href="../api/#Mango.forward_to-Tuple{Mango.AgentInterface, Any, Address, AbstractDict}"><code>forward_to</code></a>.</p><p>(1) This function can be used to send a message with an automatically generated tracking id (uuid1) and it also accepts a response handler, which will     automatically be called when a response arrives to the tracked message (care to include the tracking id when responding or just use <a href="../api/#Mango.reply_to-Tuple{Mango.AgentInterface, Any, AbstractDict}"><code>reply_to</code></a>). (2) Variant of (1) which requires a response handler and enables the usage of the <code>do</code> syntax (see following code snippet). (3) Convenience function to respond to a received message without the need to create the AgentAddress by yourself. (4) Convenience function to forward messages to another agent. This function will set the approriate fields in the meta container to identify that a message has been forwarded and from which address it has been forwarded.</p><pre><code class="language-julia hljs">agent1 = MyAgent(&quot;&quot;)
-agent2 = MyAgent(&quot;&quot;)
-agent3 = MyAgent(&quot;&quot;)
+run_with_tcp(1, agent_composed_of(role, base_agent=agent), PrintingAgent()) do cl
+    wait(send_message(agent, &quot;Message&quot;, address(cl[1][2])))
+    wait(send_message(role, &quot;Message&quot;, address(cl[1][2])))
+    sleep(0.1)
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">┌ Info: Got
+└   (message, meta) = (&quot;Message&quot;, OrderedCollections.OrderedDict{String, Any}(&quot;receiver_id&quot; =&gt; &quot;agent1&quot;, &quot;sender_id&quot; =&gt; &quot;agent0&quot;, &quot;tracking_id&quot; =&gt; nothing, &quot;sender_addr&quot; =&gt; Sockets.InetAddr{Sockets.IPv4}(ip&quot;127.0.0.1&quot;, 5555)))
+┌ Info: Got
+└   (message, meta) = (&quot;Message&quot;, OrderedCollections.OrderedDict{String, Any}(&quot;receiver_id&quot; =&gt; &quot;agent1&quot;, &quot;sender_id&quot; =&gt; &quot;agent0&quot;, &quot;tracking_id&quot; =&gt; nothing, &quot;sender_addr&quot; =&gt; Sockets.InetAddr{Sockets.IPv4}(ip&quot;127.0.0.1&quot;, 5555)))</code></pre><p>Further, there are several specialized methods for sending messages, (1) <a href="../api/#Mango.send_tracked_message-Tuple{Mango.AgentInterface, Any, Address}"><code>send_tracked_message</code></a>, (2) <a href="../api/#Mango.send_and_handle_answer-Tuple{Function, Mango.AgentInterface, Any, Address}"><code>send_and_handle_answer</code></a>, (3) <a href="../api/#Mango.reply_to-Tuple{Mango.AgentInterface, Any, AbstractDict}"><code>reply_to</code></a>, (4) <a href="../api/#Mango.forward_to-Tuple{Mango.AgentInterface, Any, Address, AbstractDict}"><code>forward_to</code></a>.</p><p>(1) This function can be used to send a message with an automatically generated tracking id (uuid1) and it also accepts a response handler, which will     automatically be called when a response arrives to the tracked message (care to include the tracking id when responding or just use <a href="../api/#Mango.reply_to-Tuple{Mango.AgentInterface, Any, AbstractDict}"><code>reply_to</code></a>). (2) Variant of (1) which requires a response handler and enables the usage of the <code>do</code> syntax (see following code snippet). (3) Convenience function to respond to a received message without the need to create the AgentAddress by yourself. (4) Convenience function to forward messages to another agent. This function will set the approriate fields in the meta container to identify that a message has been forwarded and from which address it has been forwarded.</p><pre><code class="language-julia hljs">using Mango
 
-function handle_message(agent::MyAgent, message::Any, meta::Any)
-    # agent 2
+@agent struct MyMessageAgent end
+@agent struct ReplyAgent end
+
+agent1 = MyMessageAgent()
+agent2 = PrintingAgent() # defined in Mango
+agent3 = ReplyAgent()
+
+function Mango.handle_message(agent::ReplyAgent, message::Any, meta::Any)
+    # agent 3
     reply_to(agent, &quot;Hello Agent, this is a response&quot;, meta) # (3)
+
+    @info &quot;Reply&quot;
 end
-function handle_response(agent::MyAgent, message::Any, meta::Any)
+function handle_response(agent::MyMessageAgent, message::Any, meta::Any)
     # agent 1
-    forward_to(agent, &quot;Forwarded message&quot;, address(agent3), meta) # (4)
+    forward_to(agent, &quot;Forwarded message&quot;, address(agent2), meta) # (4)
+
+    @info &quot;Handled response and forwarded the message&quot; message
 end
 
-send_tracked_message(agent1, &quot;Hello Agent, this is a tracked message&quot;, AgentAddress(aid=agent2.aid); response_handler=handle_response) # (1)
-send_and_handle_answer(agent1, &quot;Hello Agent, this is a different tracked message&quot;, AgentAddress(aid=agent2.aid)) do agent, message, meta # (2)
-    # agent 1
-end</code></pre><p>There is also a possibility to enable automatic forwarding with adding so-called forwarding rules. For this you can use the function <a href="../api/#Mango.add_forwarding_rule-Tuple{Agent, AgentAddress, AgentAddress, Bool}"><code>add_forwarding_rule</code></a>. To delete these rules the function <a href="../api/#Mango.delete_forwarding_rule-Tuple{Agent, AgentAddress, Union{Nothing, AgentAddress}}"><code>delete_forwarding_rule</code></a> exists.</p><h2 id="Task-Scheduling"><a class="docs-heading-anchor" href="#Task-Scheduling">Task Scheduling</a><a id="Task-Scheduling-1"></a><a class="docs-heading-anchor-permalink" href="#Task-Scheduling" title="Permalink"></a></h2><p>Agents can schedule tasks using the <a href="../api/#Base.schedule-Tuple{Function, Agent, TaskData}"><code>schedule</code></a> function, which delegates to the <a href="../api/#Base.schedule-Tuple{Function, Agent, TaskData}"><code>Mango.schedule</code></a> function. You can wait for all scheduled tasks to be completed using <a href="../api/#Mango.wait_for_all_tasks-Tuple{Agent}"><code>wait_for_all_tasks</code></a>. Here&#39;s how to schedule tasks:</p><pre><code class="language-julia hljs">using Mango
+run_with_tcp(1, agent1, agent2, agent3) do cl
+    wait(send_tracked_message(agent1, &quot;Hello Agent, this is a tracked message&quot;, address(agent3); response_handler=handle_response)) # (1)
+    wait(send_and_handle_answer(agent2, &quot;Hello Agent, this is a different tracked message&quot;, address(agent3)) do agent, message, meta # (2)
+        @info &quot;Got an answer!&quot;
+    end)
+    sleep(0.1)
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">[ Info: Reply
+┌ Info: Handled response and forwarded the message
+└   message = &quot;Hello Agent, this is a response&quot;
+┌ Info: Got
+└   (message, meta) = (&quot;Forwarded message&quot;, OrderedCollections.OrderedDict{String, Any}(&quot;forwarded&quot; =&gt; true, &quot;forwarded_from_address&quot; =&gt; Sockets.InetAddr{Sockets.IPv4}(ip&quot;127.0.0.1&quot;, 5555), &quot;forwarded_from_id&quot; =&gt; &quot;agent2&quot;, &quot;receiver_id&quot; =&gt; &quot;agent1&quot;, &quot;sender_id&quot; =&gt; &quot;agent0&quot;, &quot;tracking_id&quot; =&gt; nothing, &quot;sender_addr&quot; =&gt; Sockets.InetAddr{Sockets.IPv4}(ip&quot;127.0.0.1&quot;, 5555)))
+[ Info: Reply
+[ Info: Got an answer!</code></pre><p>There is also a possibility to enable automatic forwarding with adding so-called forwarding rules. For this you can use the function <a href="../api/#Mango.add_forwarding_rule-Tuple{Agent, AgentAddress, AgentAddress, Bool}"><code>add_forwarding_rule</code></a>. To delete these rules the function <a href="../api/#Mango.delete_forwarding_rule-Tuple{Agent, AgentAddress, Union{Nothing, AgentAddress}}"><code>delete_forwarding_rule</code></a> exists.</p><h2 id="Task-Scheduling"><a class="docs-heading-anchor" href="#Task-Scheduling">Task Scheduling</a><a id="Task-Scheduling-1"></a><a class="docs-heading-anchor-permalink" href="#Task-Scheduling" title="Permalink"></a></h2><p>Agents can schedule tasks using the <a href="../api/#Base.schedule-Tuple{Function, Agent, TaskData}"><code>schedule</code></a> function, which delegates to the <a href="../api/#Base.schedule-Tuple{Function, Agent, TaskData}"><code>Mango.schedule</code></a> function. You can wait for all scheduled tasks to be completed using <a href="../api/#Mango.wait_for_all_tasks-Tuple{Agent}"><code>wait_for_all_tasks</code></a>. Here&#39;s how to schedule tasks:</p><pre><code class="language-julia hljs">using Mango
 
 # Define your agent struct using @agent macro
-@agent struct MyAgent
+@agent struct MyTaskAgent
     my_own_field::String
+end
+function my_task_function()
+    @info &quot;Task completed&quot;
 end
 
 # Create an instance of the agent
-my_agent = MyAgent(&quot;MyValue&quot;)
+my_agent = MyTaskAgent(&quot;MyValue&quot;)
 
 # Schedule a task for the agent
-schedule(my_task_function, my_agent, PeriodicTaskData(5.0)) # Schedule a task to run every 5 seconds
-
-# Wait for all scheduled tasks to complete
-wait_for_all_tasks(my_agent)</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../getting_started/">« Getting Started</a><a class="docs-footer-nextpage" href="../container/">Container »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Monday 2 September 2024 16:32">Monday 2 September 2024</span>. Using Julia version 1.9.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+wait(schedule(my_task_function, my_agent, InstantTaskData()))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">[ Info: Task completed</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../getting_started/">« Getting Started</a><a class="docs-footer-nextpage" href="../container/">Container »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Tuesday 3 September 2024 14:56">Tuesday 3 September 2024</span>. Using Julia version 1.9.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
