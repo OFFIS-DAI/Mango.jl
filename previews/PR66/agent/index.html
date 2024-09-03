@@ -7,7 +7,7 @@
 end
 
 # Create an instance of the agent
-my_agent = MyAgent(&quot;MyValue&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Main.MyAgent(ReentrantLock(nothing, 0x00000000, 0x00, Base.GenericCondition{Base.Threads.SpinLock}(Base.IntrusiveLinkedList{Task}(nothing, nothing), Base.Threads.SpinLock(0)), (8, 140107057618016, 0)), nothing, AgentRoleHandler(Role[], Tuple{Role, Function, Function}[], Tuple{Role, Function}[], Dict{Any, Vector{Tuple{Role, Function, Function}}}(), Dict{DataType, Any}()), Scheduler(ConcurrentCollections.Implementations.LinearProbingDict{Task, TaskData, Union{ConcurrentCollections.Implementations.Empty, Task}, Union{ConcurrentCollections.Implementations.Empty, ConcurrentCollections.Implementations.Moved{ConcurrentCollections.Implementations.Empty}, ConcurrentCollections.Implementations.Moved{TaskData}, TaskData}}(), Mango.DateTimeClock()), nothing, Dict{String, Tuple}(), ForwardingRule[], Dict{DataType, Any}(), &quot;MyValue&quot;)</code></pre><p>The <a href="../api/#Mango.@agent-Tuple{Any}"><code>@agent</code></a> macro adds some internal baseline fields to the struct. You can initialize the agent with exclusive fields like <code>my_own_field</code> in the example.</p><h2 id="Role-Management"><a class="docs-heading-anchor" href="#Role-Management">Role Management</a><a id="Role-Management-1"></a><a class="docs-heading-anchor-permalink" href="#Role-Management" title="Permalink"></a></h2><p>Agents can have multiple roles associated with them. Roles can be added using the <a href="../api/#Mango.add-Tuple{Agent, Role}"><code>add</code></a> function, allowing the agent to interact with its environment based on different roles. Here&#39;s how you can add roles to an agent:</p><pre><code class="language-julia hljs">using Mango
+my_agent = MyAgent(&quot;MyValue&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Main.MyAgent(ReentrantLock(nothing, 0x00000000, 0x00, Base.GenericCondition{Base.Threads.SpinLock}(Base.IntrusiveLinkedList{Task}(nothing, nothing), Base.Threads.SpinLock(0)), (0, 139991063742768, 4)), nothing, AgentRoleHandler(Role[], Tuple{Role, Function, Function}[], Tuple{Role, Function}[], Dict{Any, Vector{Tuple{Role, Function, Function}}}(), Dict{DataType, Any}()), Scheduler(ConcurrentCollections.Implementations.LinearProbingDict{Task, TaskData, Union{ConcurrentCollections.Implementations.Empty, Task}, Union{ConcurrentCollections.Implementations.Empty, ConcurrentCollections.Implementations.Moved{ConcurrentCollections.Implementations.Empty}, ConcurrentCollections.Implementations.Moved{TaskData}, TaskData}}(), Mango.DateTimeClock()), nothing, Dict{String, Tuple}(), ForwardingRule[], Dict{DataType, Any}(), &quot;MyValue&quot;)</code></pre><p>The <a href="../api/#Mango.@agent-Tuple{Any}"><code>@agent</code></a> macro adds some internal baseline fields to the struct. You can initialize the agent with exclusive fields like <code>my_own_field</code> in the example.</p><h2 id="Role-Management"><a class="docs-heading-anchor" href="#Role-Management">Role Management</a><a id="Role-Management-1"></a><a class="docs-heading-anchor-permalink" href="#Role-Management" title="Permalink"></a></h2><p>Agents can have multiple roles associated with them. Roles can be added using the <a href="../api/#Mango.add-Tuple{Agent, Role}"><code>add</code></a> function, allowing the agent to interact with its environment based on different roles. Here&#39;s how you can add roles to an agent:</p><pre><code class="language-julia hljs">using Mango
 
 # Define your role struct using @role macro
 @role struct MyRole
@@ -38,7 +38,7 @@ c = create_tcp_container()
 
 # internally an empty agent definition is used, the roles are added and the agent
 # is added to the given container
-created_agent = add_agent_composed_of(c, RoleA(), RoleB(), RoleC())</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">GeneralAgent(ReentrantLock(nothing, 0x00000000, 0x00, Base.GenericCondition{Base.Threads.SpinLock}(Base.IntrusiveLinkedList{Task}(nothing, nothing), Base.Threads.SpinLock(0)), (0, 140107747192864, 0)), AgentContext(Container(OrderedCollections.OrderedDict{String, Agent}(&quot;agent0&quot; =&gt; GeneralAgent(#= circular reference @-4 =#)), 1, TCPProtocol(Sockets.InetAddr{Sockets.IPv4}(ip&quot;127.0.0.1&quot;, 5555), nothing, Mango.TCPConnectionPool(100000, ConcurrentUtilities.Pools.Pool{Sockets.InetAddr, Tuple{Sockets.TCPSocket, Dates.DateTime}}(Base.GenericCondition{ReentrantLock}(Base.IntrusiveLinkedList{Task}(nothing, nothing), ReentrantLock(nothing, 0x00000000, 0x00, Base.GenericCondition{Base.Threads.SpinLock}(Base.IntrusiveLinkedList{Task}(nothing, nothing), Base.Threads.SpinLock(0)), (1, 140107747160304, 4))), 100, 0, Dict{Sockets.InetAddr, Vector{Tuple{Sockets.TCPSocket, Dates.DateTime}}}(), #undef), ConcurrentUtilities.ReadWriteLock(ReentrantLock(nothing, 0x00000000, 0x00, Base.GenericCondition{Base.Threads.SpinLock}(Base.IntrusiveLinkedList{Task}(nothing, nothing), Base.Threads.SpinLock(0)), (0, 0, 0)), Base.GenericCondition{ReentrantLock}(Base.IntrusiveLinkedList{Task}(nothing, nothing), ReentrantLock(nothing, 0x00000000, 0x00, Base.GenericCondition{Base.Threads.SpinLock}(Base.IntrusiveLinkedList{Task}(nothing, nothing), Base.Threads.SpinLock(0)), (0, 140107692663808, 141733920768))), Base.Event(Base.GenericCondition{ReentrantLock}(Base.IntrusiveLinkedList{Task}(nothing, nothing), ReentrantLock(nothing, 0x00000000, 0x00, Base.GenericCondition{Base.Threads.SpinLock}(Base.IntrusiveLinkedList{Task}(nothing, nothing), Base.Threads.SpinLock(0)), (0, 24576, 3))), true, false), 0, 0), false, Mango.AtomicCounter(0))), (Mango.encode, Mango.decode), false, nothing, nothing)), AgentRoleHandler(Role[Main.RoleA(RoleContext(GeneralAgent(#= circular reference @-5 =#)), Any[]), Main.RoleB(RoleContext(GeneralAgent(#= circular reference @-5 =#)), Any[]), Main.RoleC(RoleContext(GeneralAgent(#= circular reference @-5 =#)), Any[])], Tuple{Role, Function, Function}[], Tuple{Role, Function}[], Dict{Any, Vector{Tuple{Role, Function, Function}}}(), Dict{DataType, Any}()), Scheduler(ConcurrentCollections.Implementations.LinearProbingDict{Task, TaskData, Union{ConcurrentCollections.Implementations.Empty, Task}, Union{ConcurrentCollections.Implementations.Empty, ConcurrentCollections.Implementations.Moved{ConcurrentCollections.Implementations.Empty}, ConcurrentCollections.Implementations.Moved{TaskData}, TaskData}}(), Mango.DateTimeClock()), &quot;agent0&quot;, Dict{String, Tuple}(), ForwardingRule[], Dict{DataType, Any}())</code></pre><p>For more information on roles, take a look at <a href="../role/#Role-definition">Role definition</a></p><h2 id="Message-Handling"><a class="docs-heading-anchor" href="#Message-Handling">Message Handling</a><a id="Message-Handling-1"></a><a class="docs-heading-anchor-permalink" href="#Message-Handling" title="Permalink"></a></h2><p>Agents and Roles can handle incoming messages through the <a href="../api/#Mango.handle_message-Tuple{Agent, Any, Any}"><code>handle_message</code></a> function. By default, it does nothing, but you can override it to define message-specific behavior. You can also add custom message handlers for specific roles using the <a href="../api/#Mango.subscribe_message-Tuple{Role, Function, Function}"><code>subscribe_message</code></a> function. Here&#39;s how to handle messages:</p><pre><code class="language-julia hljs">using Mango
+created_agent = add_agent_composed_of(c, RoleA(), RoleB(), RoleC())</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">GeneralAgent(ReentrantLock(nothing, 0x00000000, 0x00, Base.GenericCondition{Base.Threads.SpinLock}(Base.IntrusiveLinkedList{Task}(nothing, nothing), Base.Threads.SpinLock(0)), (8, 139990369144912, 0)), AgentContext(Container(OrderedCollections.OrderedDict{String, Agent}(&quot;agent0&quot; =&gt; GeneralAgent(#= circular reference @-4 =#)), 1, TCPProtocol(Sockets.InetAddr{Sockets.IPv4}(ip&quot;127.0.0.1&quot;, 5555), nothing, Mango.TCPConnectionPool(100000, ConcurrentUtilities.Pools.Pool{Sockets.InetAddr, Tuple{Sockets.TCPSocket, Dates.DateTime}}(Base.GenericCondition{ReentrantLock}(Base.IntrusiveLinkedList{Task}(nothing, nothing), ReentrantLock(nothing, 0x00000000, 0x00, Base.GenericCondition{Base.Threads.SpinLock}(Base.IntrusiveLinkedList{Task}(nothing, nothing), Base.Threads.SpinLock(0)), (8, 139990920017792, 0))), 100, 0, Dict{Sockets.InetAddr, Vector{Tuple{Sockets.TCPSocket, Dates.DateTime}}}(), #undef), ConcurrentUtilities.ReadWriteLock(ReentrantLock(nothing, 0x00000000, 0x00, Base.GenericCondition{Base.Threads.SpinLock}(Base.IntrusiveLinkedList{Task}(nothing, nothing), Base.Threads.SpinLock(0)), (8, 139991004104592, 139990842497552)), Base.GenericCondition{ReentrantLock}(Base.IntrusiveLinkedList{Task}(nothing, nothing), ReentrantLock(nothing, 0x00000000, 0x00, Base.GenericCondition{Base.Threads.SpinLock}(Base.IntrusiveLinkedList{Task}(nothing, nothing), Base.Threads.SpinLock(0)), (0, 139990920017792, 0))), Base.Event(Base.GenericCondition{ReentrantLock}(Base.IntrusiveLinkedList{Task}(nothing, nothing), ReentrantLock(nothing, 0x00000000, 0x00, Base.GenericCondition{Base.Threads.SpinLock}(Base.IntrusiveLinkedList{Task}(nothing, nothing), Base.Threads.SpinLock(0)), (0, 139637976752160, 0))), true, false), 0, 0), false, Mango.AtomicCounter(0))), (Mango.encode, Mango.decode), false, nothing, nothing)), AgentRoleHandler(Role[Main.RoleA(RoleContext(GeneralAgent(#= circular reference @-5 =#)), Any[]), Main.RoleB(RoleContext(GeneralAgent(#= circular reference @-5 =#)), Any[]), Main.RoleC(RoleContext(GeneralAgent(#= circular reference @-5 =#)), Any[])], Tuple{Role, Function, Function}[], Tuple{Role, Function}[], Dict{Any, Vector{Tuple{Role, Function, Function}}}(), Dict{DataType, Any}()), Scheduler(ConcurrentCollections.Implementations.LinearProbingDict{Task, TaskData, Union{ConcurrentCollections.Implementations.Empty, Task}, Union{ConcurrentCollections.Implementations.Empty, ConcurrentCollections.Implementations.Moved{ConcurrentCollections.Implementations.Empty}, ConcurrentCollections.Implementations.Moved{TaskData}, TaskData}}(), Mango.DateTimeClock()), &quot;agent0&quot;, Dict{String, Tuple}(), ForwardingRule[], Dict{DataType, Any}())</code></pre><p>For more information on roles, take a look at <a href="../role/#Role-definition">Role definition</a></p><h2 id="Message-Handling"><a class="docs-heading-anchor" href="#Message-Handling">Message Handling</a><a id="Message-Handling-1"></a><a class="docs-heading-anchor-permalink" href="#Message-Handling" title="Permalink"></a></h2><p>Agents and Roles can handle incoming messages through the <a href="../api/#Mango.handle_message-Tuple{Agent, Any, Any}"><code>handle_message</code></a> function. By default, it does nothing, but you can override it to define message-specific behavior. You can also add custom message handlers for specific roles using the <a href="../api/#Mango.subscribe_message-Tuple{Role, Function, Function}"><code>subscribe_message</code></a> function. Here&#39;s how to handle messages:</p><pre><code class="language-julia hljs">using Mango
 
 @agent struct MySecondContainerAgent end
 @role struct MyHandlingRole end
@@ -56,78 +56,8 @@ end
 run_with_tcp(1, agent_composed_of(MyHandlingRole(), base_agent=MySecondContainerAgent())) do cl
     wait(send_message(cl[1], &quot;Message&quot;, address(cl[1][1])))
     sleep(0.1)
-end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">┌ Error: A nested error ocurred while running a mango simulation
-│   exception =
-│    MethodError: no method matching getindex(::Container, ::Int64)
-│
-│    Closest candidates are:
-│      getindex(::Container, !Matched::String)
-│       @ Mango ~/work/Mango.jl/Mango.jl/src/container/core.jl:241
-│
-│    Stacktrace:
-│      [1] (::Main.var&quot;#5#6&quot;)(cl::Vector{Container})
-│        @ Main ./agent.md:92
-│      [2] (::Mango.var&quot;#155#156&quot;{Main.var&quot;#5#6&quot;, Vector{Container}})()
-│        @ Mango ~/work/Mango.jl/Mango.jl/src/express/api.jl:184
-│      [3] activate(runnable_simulation_code::Mango.var&quot;#155#156&quot;{Main.var&quot;#5#6&quot;, Vector{Container}}, container_list::Vector{Container})
-│        @ Mango ~/work/Mango.jl/Mango.jl/src/express/api.jl:132
-│      [4] run_in_real_time(runnable::Main.var&quot;#5#6&quot;, n_container::Int64, container_list_creator::Mango.var&quot;#158#160&quot;{String, Int64, Tuple{typeof(encode), typeof(decode)}}, agents::Main.MySecondContainerAgent)
-│        @ Mango ~/work/Mango.jl/Mango.jl/src/express/api.jl:183
-│      [5] run_with_tcp(runnable::Function, n_container::Int64, agents::Main.MySecondContainerAgent; host::String, start_port::Int64, codec::Tuple{typeof(encode), typeof(decode)})
-│        @ Mango ~/work/Mango.jl/Mango.jl/src/express/api.jl:208
-│      [6] run_with_tcp(runnable::Function, n_container::Int64, agents::Main.MySecondContainerAgent)
-│        @ Mango ~/work/Mango.jl/Mango.jl/src/express/api.jl:202
-│      [7] top-level scope
-│        @ agent.md:91
-│      [8] eval
-│        @ ./boot.jl:370 [inlined]
-│      [9] #17
-│        @ ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:629 [inlined]
-│     [10] cd(f::Documenter.Expanders.var&quot;#17#19&quot;{Module, Expr}, dir::String)
-│        @ Base.Filesystem ./file.jl:112
-│     [11] (::Documenter.Expanders.var&quot;#16#18&quot;{Documenter.Documents.Page, Module, Expr})()
-│        @ Documenter.Expanders ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:628
-│     [12] (::IOCapture.var&quot;#5#9&quot;{DataType, Documenter.Expanders.var&quot;#16#18&quot;{Documenter.Documents.Page, Module, Expr}, IOContext{Base.PipeEndpoint}, IOContext{Base.PipeEndpoint}, Base.PipeEndpoint, Base.PipeEndpoint})()
-│        @ IOCapture ~/.julia/packages/IOCapture/Y5rEA/src/IOCapture.jl:170
-│     [13] with_logstate(f::Function, logstate::Any)
-│        @ Base.CoreLogging ./logging.jl:514
-│     [14] with_logger
-│        @ ./logging.jl:626 [inlined]
-│     [15] capture(f::Documenter.Expanders.var&quot;#16#18&quot;{Documenter.Documents.Page, Module, Expr}; rethrow::Type, color::Bool, passthrough::Bool, capture_buffer::IOBuffer, io_context::Vector{Any})
-│        @ IOCapture ~/.julia/packages/IOCapture/Y5rEA/src/IOCapture.jl:167
-│     [16] runner(#unused#::Type{Documenter.Expanders.ExampleBlocks}, x::Markdown.Code, page::Documenter.Documents.Page, doc::Documenter.Documents.Document)
-│        @ Documenter.Expanders ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:627
-│     [17] dispatch(::Type{Documenter.Expanders.ExpanderPipeline}, ::Markdown.Code, ::Vararg{Any})
-│        @ Documenter.Utilities.Selectors ~/.julia/packages/Documenter/bYYzK/src/Utilities/Selectors.jl:170
-│     [18] expand(doc::Documenter.Documents.Document)
-│        @ Documenter.Expanders ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:42
-│     [19] runner(#unused#::Type{Documenter.Builder.ExpandTemplates}, doc::Documenter.Documents.Document)
-│        @ Documenter.Builder ~/.julia/packages/Documenter/bYYzK/src/Builder.jl:226
-│     [20] dispatch(#unused#::Type{Documenter.Builder.DocumentPipeline}, x::Documenter.Documents.Document)
-│        @ Documenter.Utilities.Selectors ~/.julia/packages/Documenter/bYYzK/src/Utilities/Selectors.jl:170
-│     [21] #2
-│        @ ~/.julia/packages/Documenter/bYYzK/src/Documenter.jl:273 [inlined]
-│     [22] cd(f::Documenter.var&quot;#2#3&quot;{Documenter.Documents.Document}, dir::String)
-│        @ Base.Filesystem ./file.jl:112
-│     [23] makedocs(; debug::Bool, format::Documenter.Writers.HTMLWriter.HTML, kwargs::Base.Pairs{Symbol, Any, NTuple{5, Symbol}, NamedTuple{(:modules, :authors, :sitename, :pages, :repo), Tuple{Vector{Module}, String, String, Vector{Any}, String}}})
-│        @ Documenter ~/.julia/packages/Documenter/bYYzK/src/Documenter.jl:272
-│     [24] makedocs
-│        @ ~/.julia/packages/Documenter/bYYzK/src/Documenter.jl:266 [inlined]
-│     [25] (::var&quot;#3#4&quot;)()
-│        @ Main ~/work/Mango.jl/Mango.jl/docs/make.jl:7
-│     [26] with_logstate(f::Function, logstate::Any)
-│        @ Base.CoreLogging ./logging.jl:514
-│     [27] with_logger(f::Function, logger::TestLogger)
-│        @ Base.CoreLogging ./logging.jl:626
-│     [28] top-level scope
-│        @ ~/work/Mango.jl/Mango.jl/docs/make.jl:6
-│     [29] include(mod::Module, _path::String)
-│        @ Base ./Base.jl:457
-│     [30] exec_options(opts::Base.JLOptions)
-│        @ Base ./client.jl:307
-│     [31] _start()
-│        @ Base ./client.jl:522
-└ @ Mango ~/work/Mango.jl/Mango.jl/src/express/api.jl:134</code></pre><p>Besides the ability to handle messages, there also must be a possibility to send messages. This is implemented using the <a href="../api/#Mango.send_message-Tuple{Mango.AgentInterface, Any, Address}"><code>send_message</code></a> function, defined on roles and agents.</p><pre><code class="language-julia hljs">using Mango
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Received message @role: Message
+Received message @agent: Message</code></pre><p>Besides the ability to handle messages, there also must be a possibility to send messages. This is implemented using the <a href="../api/#Mango.send_message-Tuple{Mango.AgentInterface, Any, Address}"><code>send_message</code></a> function, defined on roles and agents.</p><pre><code class="language-julia hljs">using Mango
 
 # Define your agent struct using @agent macro
 @agent struct MySendingAgent
@@ -144,78 +74,10 @@ run_with_tcp(1, agent_composed_of(role, base_agent=agent), PrintingAgent()) do c
     wait(send_message(agent, &quot;Message&quot;, address(cl[1][2])))
     wait(send_message(role, &quot;Message&quot;, address(cl[1][2])))
     sleep(0.1)
-end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">┌ Error: A nested error ocurred while running a mango simulation
-│   exception =
-│    MethodError: no method matching getindex(::Container, ::Int64)
-│
-│    Closest candidates are:
-│      getindex(::Container, !Matched::String)
-│       @ Mango ~/work/Mango.jl/Mango.jl/src/container/core.jl:241
-│
-│    Stacktrace:
-│      [1] (::Main.var&quot;#5#6&quot;)(cl::Vector{Container})
-│        @ Main ./agent.md:114
-│      [2] (::Mango.var&quot;#155#156&quot;{Main.var&quot;#5#6&quot;, Vector{Container}})()
-│        @ Mango ~/work/Mango.jl/Mango.jl/src/express/api.jl:184
-│      [3] activate(runnable_simulation_code::Mango.var&quot;#155#156&quot;{Main.var&quot;#5#6&quot;, Vector{Container}}, container_list::Vector{Container})
-│        @ Mango ~/work/Mango.jl/Mango.jl/src/express/api.jl:132
-│      [4] run_in_real_time(::Main.var&quot;#5#6&quot;, ::Int64, ::Mango.var&quot;#158#160&quot;{String, Int64, Tuple{typeof(encode), typeof(decode)}}, ::Main.MySendingAgent, ::Vararg{Union{Tuple, Agent}})
-│        @ Mango ~/work/Mango.jl/Mango.jl/src/express/api.jl:183
-│      [5] run_with_tcp(::Function, ::Int64, ::Main.MySendingAgent, ::Vararg{Union{Tuple, Agent}}; host::String, start_port::Int64, codec::Tuple{typeof(encode), typeof(decode)})
-│        @ Mango ~/work/Mango.jl/Mango.jl/src/express/api.jl:208
-│      [6] run_with_tcp(::Function, ::Int64, ::Main.MySendingAgent, ::Vararg{Union{Tuple, Agent}})
-│        @ Mango ~/work/Mango.jl/Mango.jl/src/express/api.jl:202
-│      [7] top-level scope
-│        @ agent.md:113
-│      [8] eval
-│        @ ./boot.jl:370 [inlined]
-│      [9] #17
-│        @ ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:629 [inlined]
-│     [10] cd(f::Documenter.Expanders.var&quot;#17#19&quot;{Module, Expr}, dir::String)
-│        @ Base.Filesystem ./file.jl:112
-│     [11] (::Documenter.Expanders.var&quot;#16#18&quot;{Documenter.Documents.Page, Module, Expr})()
-│        @ Documenter.Expanders ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:628
-│     [12] (::IOCapture.var&quot;#5#9&quot;{DataType, Documenter.Expanders.var&quot;#16#18&quot;{Documenter.Documents.Page, Module, Expr}, IOContext{Base.PipeEndpoint}, IOContext{Base.PipeEndpoint}, Base.PipeEndpoint, Base.PipeEndpoint})()
-│        @ IOCapture ~/.julia/packages/IOCapture/Y5rEA/src/IOCapture.jl:170
-│     [13] with_logstate(f::Function, logstate::Any)
-│        @ Base.CoreLogging ./logging.jl:514
-│     [14] with_logger
-│        @ ./logging.jl:626 [inlined]
-│     [15] capture(f::Documenter.Expanders.var&quot;#16#18&quot;{Documenter.Documents.Page, Module, Expr}; rethrow::Type, color::Bool, passthrough::Bool, capture_buffer::IOBuffer, io_context::Vector{Any})
-│        @ IOCapture ~/.julia/packages/IOCapture/Y5rEA/src/IOCapture.jl:167
-│     [16] runner(#unused#::Type{Documenter.Expanders.ExampleBlocks}, x::Markdown.Code, page::Documenter.Documents.Page, doc::Documenter.Documents.Document)
-│        @ Documenter.Expanders ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:627
-│     [17] dispatch(::Type{Documenter.Expanders.ExpanderPipeline}, ::Markdown.Code, ::Vararg{Any})
-│        @ Documenter.Utilities.Selectors ~/.julia/packages/Documenter/bYYzK/src/Utilities/Selectors.jl:170
-│     [18] expand(doc::Documenter.Documents.Document)
-│        @ Documenter.Expanders ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:42
-│     [19] runner(#unused#::Type{Documenter.Builder.ExpandTemplates}, doc::Documenter.Documents.Document)
-│        @ Documenter.Builder ~/.julia/packages/Documenter/bYYzK/src/Builder.jl:226
-│     [20] dispatch(#unused#::Type{Documenter.Builder.DocumentPipeline}, x::Documenter.Documents.Document)
-│        @ Documenter.Utilities.Selectors ~/.julia/packages/Documenter/bYYzK/src/Utilities/Selectors.jl:170
-│     [21] #2
-│        @ ~/.julia/packages/Documenter/bYYzK/src/Documenter.jl:273 [inlined]
-│     [22] cd(f::Documenter.var&quot;#2#3&quot;{Documenter.Documents.Document}, dir::String)
-│        @ Base.Filesystem ./file.jl:112
-│     [23] makedocs(; debug::Bool, format::Documenter.Writers.HTMLWriter.HTML, kwargs::Base.Pairs{Symbol, Any, NTuple{5, Symbol}, NamedTuple{(:modules, :authors, :sitename, :pages, :repo), Tuple{Vector{Module}, String, String, Vector{Any}, String}}})
-│        @ Documenter ~/.julia/packages/Documenter/bYYzK/src/Documenter.jl:272
-│     [24] makedocs
-│        @ ~/.julia/packages/Documenter/bYYzK/src/Documenter.jl:266 [inlined]
-│     [25] (::var&quot;#3#4&quot;)()
-│        @ Main ~/work/Mango.jl/Mango.jl/docs/make.jl:7
-│     [26] with_logstate(f::Function, logstate::Any)
-│        @ Base.CoreLogging ./logging.jl:514
-│     [27] with_logger(f::Function, logger::TestLogger)
-│        @ Base.CoreLogging ./logging.jl:626
-│     [28] top-level scope
-│        @ ~/work/Mango.jl/Mango.jl/docs/make.jl:6
-│     [29] include(mod::Module, _path::String)
-│        @ Base ./Base.jl:457
-│     [30] exec_options(opts::Base.JLOptions)
-│        @ Base ./client.jl:307
-│     [31] _start()
-│        @ Base ./client.jl:522
-└ @ Mango ~/work/Mango.jl/Mango.jl/src/express/api.jl:134</code></pre><p>Further, there are several specialized methods for sending messages, (1) <a href="../api/#Mango.send_tracked_message-Tuple{Mango.AgentInterface, Any, Address}"><code>send_tracked_message</code></a>, (2) <a href="../api/#Mango.send_and_handle_answer-Tuple{Function, Mango.AgentInterface, Any, Address}"><code>send_and_handle_answer</code></a>, (3) <a href="../api/#Mango.reply_to-Tuple{Mango.AgentInterface, Any, AbstractDict}"><code>reply_to</code></a>, (4) <a href="../api/#Mango.forward_to-Tuple{Mango.AgentInterface, Any, Address, AbstractDict}"><code>forward_to</code></a>.</p><p>(1) This function can be used to send a message with an automatically generated tracking id (uuid1) and it also accepts a response handler, which will     automatically be called when a response arrives to the tracked message (care to include the tracking id when responding or just use <a href="../api/#Mango.reply_to-Tuple{Mango.AgentInterface, Any, AbstractDict}"><code>reply_to</code></a>). (2) Variant of (1) which requires a response handler and enables the usage of the <code>do</code> syntax (see following code snippet). (3) Convenience function to respond to a received message without the need to create the AgentAddress by yourself. (4) Convenience function to forward messages to another agent. This function will set the approriate fields in the meta container to identify that a message has been forwarded and from which address it has been forwarded.</p><pre><code class="language-julia hljs">using Mango
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">┌ Info: Got
+└   (message, meta) = (&quot;Message&quot;, OrderedCollections.OrderedDict{String, Any}(&quot;receiver_id&quot; =&gt; &quot;agent1&quot;, &quot;sender_id&quot; =&gt; &quot;agent0&quot;, &quot;tracking_id&quot; =&gt; nothing, &quot;sender_addr&quot; =&gt; Sockets.InetAddr{Sockets.IPv4}(ip&quot;127.0.0.1&quot;, 5555)))
+┌ Info: Got
+└   (message, meta) = (&quot;Message&quot;, OrderedCollections.OrderedDict{String, Any}(&quot;receiver_id&quot; =&gt; &quot;agent1&quot;, &quot;sender_id&quot; =&gt; &quot;agent0&quot;, &quot;tracking_id&quot; =&gt; nothing, &quot;sender_addr&quot; =&gt; Sockets.InetAddr{Sockets.IPv4}(ip&quot;127.0.0.1&quot;, 5555)))</code></pre><p>Further, there are several specialized methods for sending messages, (1) <a href="../api/#Mango.send_tracked_message-Tuple{Mango.AgentInterface, Any, Address}"><code>send_tracked_message</code></a>, (2) <a href="../api/#Mango.send_and_handle_answer-Tuple{Function, Mango.AgentInterface, Any, Address}"><code>send_and_handle_answer</code></a>, (3) <a href="../api/#Mango.reply_to-Tuple{Mango.AgentInterface, Any, AbstractDict}"><code>reply_to</code></a>, (4) <a href="../api/#Mango.forward_to-Tuple{Mango.AgentInterface, Any, Address, AbstractDict}"><code>forward_to</code></a>.</p><p>(1) This function can be used to send a message with an automatically generated tracking id (uuid1) and it also accepts a response handler, which will     automatically be called when a response arrives to the tracked message (care to include the tracking id when responding or just use <a href="../api/#Mango.reply_to-Tuple{Mango.AgentInterface, Any, AbstractDict}"><code>reply_to</code></a>). (2) Variant of (1) which requires a response handler and enables the usage of the <code>do</code> syntax (see following code snippet). (3) Convenience function to respond to a received message without the need to create the AgentAddress by yourself. (4) Convenience function to forward messages to another agent. This function will set the approriate fields in the meta container to identify that a message has been forwarded and from which address it has been forwarded.</p><pre><code class="language-julia hljs">using Mango
 
 @agent struct MyMessageAgent end
 @agent struct ReplyAgent end
@@ -263,4 +125,4 @@ end
 my_agent = MyTaskAgent(&quot;MyValue&quot;)
 
 # Schedule a task for the agent
-wait(schedule(my_task_function, my_agent, InstantTaskData()))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">[ Info: Task completed</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../getting_started/">« Getting Started</a><a class="docs-footer-nextpage" href="../container/">Container »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Tuesday 3 September 2024 15:09">Tuesday 3 September 2024</span>. Using Julia version 1.9.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+wait(schedule(my_task_function, my_agent, InstantTaskData()))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">[ Info: Task completed</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../getting_started/">« Getting Started</a><a class="docs-footer-nextpage" href="../container/">Container »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Tuesday 3 September 2024 21:41">Tuesday 3 September 2024</span>. Using Julia version 1.9.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
