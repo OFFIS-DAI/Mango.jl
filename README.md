@@ -68,70 +68,98 @@ To add it to your Julia installation or project you can use the Julia REPL by ca
 The following simple showcase demonstrates how you can define agents in Mango. Jl, assign them to containers and send messages via a TCP connection. For more information on the specifics and other features (e.g. MQTT, modular agent using roles, simulation, tasks), please have a look at our [Documentation](https://offis-dai.github.io/Mango.jl/stable)!
 
 <details open>
-    <summary>With Express API</summary>
-    
-    ```julia
-    asd
-    ```
+  <summary>With Container Creation</summary>    
+  
+  ```julia
+using Mango
+
+# Create the container instances with TCP protocol
+container = create_tcp_container("127.0.0.1", 5555)
+container2 = create_tcp_container("127.0.0.1", 5556)
+
+# An agent in `Mango.jl` is a struct defined with the `@agent` macro.
+# We define a `TCPPingPongAgent` that has an internal counter for incoming messages.
+@agent struct TCPPingPongAgent
+    counter::Int
+end
+
+# Create instances of ping pong agents
+ping_agent = TCPPingPongAgent(0)
+pong_agent = TCPPingPongAgent(0)
+
+# register each agent to a container and give them a name
+register(container, ping_agent, "Agent_1")
+register(container2, pong_agent, "Agent_2")
+
+# When an incoming message is addressed at an agent, its container will call the `handle_message` function for it. 
+# Using Julias multiple dispatch, we can define a new `handle_message` method for our agent.
+function Mango.handle_message(agent::TCPPingPongAgent, message::Any, meta::Any)
+    agent.counter += 1
+
+    println(
+        "$(agent.aid) got a message: $message." *
+        "This is message number: $(agent.counter) for me!"
+    )
+
+    # doing very important work
+    sleep(0.5)
+
+    if message == "Ping"
+        reply_to(agent, "Pong", meta)
+    elseif message == "Pong"
+        reply_to(agent, "Ping", meta)
+    end
+end
+
+# With all this in place, we can send a message to the first agent to start the repeated message exchange.
+# To do this, we need to start the containers so they listen to incoming messages and send the initating message.
+# The best way to start the container message loops and ensure they are correctly shut down in the end is the
+# `activate(containers)` function.
+activate([container, container2]) do
+    send_message(ping_agent, "Ping", address(pong_agent))
+
+    # wait for 5 messages to have been sent
+    while ping_agent.counter < 5
+        sleep(1)
+    end
+end
+  ```
 </details>
 
-<details>
-    <summary>With Container Creation</summary>
+In newer versions of Mango.jl, the express API is introduced, which rewrites the code above to:
 
-    ```julia
-    using Mango
+<details open>
+  <summary>With Express API</summary>
 
-    # Create the container instances with TCP protocol
-    container = create_tcp_container("127.0.0.1", 5555)
-    container2 = create_tcp_container("127.0.0.1", 5556)
+  ```julia
+using Mango
 
-    # An agent in `Mango.jl` is a struct defined with the `@agent` macro.
-    # We define a `TCPPingPongAgent` that has an internal counter for incoming messages.
-    @agent struct TCPPingPongAgent
-        counter::Int
+@agent struct TCPPingPongAgent
+    counter::Int
+end
+
+function Mango.handle_message(agent::TCPPingPongAgent, message::Any, meta::Any)
+    agent.counter += 1
+
+    println(
+        "$(agent.aid) got a message: $message." *
+        "This is message number: $(agent.counter) for me!"
+    )
+
+    sleep(0.5)
+
+    if message == "Ping"
+        reply_to(agent, "Pong", meta)
+    elseif message == "Pong"
+        reply_to(agent, "Ping", meta)
     end
+end
 
-    # Create instances of ping pong agents
-    ping_agent = TCPPingPongAgent(0)
-    pong_agent = TCPPingPongAgent(0)
-
-    # register each agent to a container and give them a name
-    register(container, ping_agent, "Agent_1")
-    register(container2, pong_agent, "Agent_2")
-
-    # When an incoming message is addressed at an agent, its container will call the `handle_message` function for it. 
-    # Using Julias multiple dispatch, we can define a new `handle_message` method for our agent.
-    function Mango.handle_message(agent::TCPPingPongAgent, message::Any, meta::Any)
-        agent.counter += 1
-
-        println(
-            "$(agent.aid) got a message: $message." *
-            "This is message number: $(agent.counter) for me!"
-        )
-
-        # doing very important work
-        sleep(0.5)
-
-        if message == "Ping"
-            reply_to(agent, "Pong", meta)
-        elseif message == "Pong"
-            reply_to(agent, "Ping", meta)
-        end
-    end
-
-    # With all this in place, we can send a message to the first agent to start the repeated message exchange.
-    # To do this, we need to start the containers so they listen to incoming messages and send the initating message.
-    # The best way to start the container message loops and ensure they are correctly shut down in the end is the
-    # `activate(containers)` function.
-    activate([container, container2]) do
-        send_message(ping_agent, "Ping", address(pong_agent))
-
-        # wait for 5 messages to have been sent
-        while ping_agent.counter < 5
-            sleep(1)
-        end
-    end
-    ```
+run_with_tcp(2, (TCPPingPongAgent(0), :aid => "Agent_1"), (TCPPingPongAgent(0), :aid => "Agent_2")) do
+    send_message(ping_agent, "Ping", address(pong_agent))
+    sleep_until(ping_agent.counter < 5)
+end
+  ```
 </details>
 
 ## License
