@@ -69,12 +69,15 @@ The following simple showcase demonstrates how you can define agents in Mango. J
 
 <details open>
     <summary>With Express API</summary>
+    
     ```julia
+    asd
     ```
 </details>
 
 <details>
     <summary>With Container Creation</summary>
+
     ```julia
     using Mango
 
