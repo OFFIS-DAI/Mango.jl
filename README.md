@@ -155,9 +155,11 @@ function Mango.handle_message(agent::TCPPingPongAgent, message::Any, meta::Any)
     end
 end
 
-run_with_tcp(2, (TCPPingPongAgent(0), :aid => "Agent_1"), (TCPPingPongAgent(0), :aid => "Agent_2")) do
+ping_agent = TCPPingPongAgent(0)
+pong_agent = TCPPingPongAgent(0)
+run_with_tcp(2, (ping_agent, :aid => "Agent_1"), (pong_agent, :aid => "Agent_2")) do cl
     send_message(ping_agent, "Ping", address(pong_agent))
-    sleep_until(ping_agent.counter < 5)
+    sleep_until(() -> ping_agent.counter >= 5)
 end
   ```
 </details>
