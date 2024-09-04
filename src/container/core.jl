@@ -241,3 +241,7 @@ Return the agent indexed by `index` (aid).
 function Base.getindex(container::Container, index::String)
     return container.agents[index]
 end
+
+function Base.getindex(container::Container, index::Int)
+    return agents(container)[index]
+end

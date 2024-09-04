@@ -19,8 +19,8 @@ end
         send_message(container, "Yo", address(agent))
     end
 
-    @test topology_neighbors(agent) == [address(agents(container)[1]),
-        address(agents(container)[2])]
+    @test topology_neighbors(agent) == [address(container[1]),
+        address(container[2])]
 end
 
 @testset "TestCreateTopology" begin
