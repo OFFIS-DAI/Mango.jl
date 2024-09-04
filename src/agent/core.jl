@@ -514,3 +514,12 @@ Add a service to the agent. Every service can exists exactly one time (stored by
 function add_service!(agent::Agent, service::Any)
     agent.services[typeof(service)] = service
 end
+
+"""
+    Base.getindex(agent::T, index::Int) where {T<:Agent}
+
+Return the `index`'th role of the agent.
+"""
+function Base.getindex(agent::T, index::Int) where {T<:Agent}
+    return roles(agent)[index]
+end

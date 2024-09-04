@@ -196,3 +196,12 @@ end
     # we only care that this does not throw an exception
     @test true
 end
+
+@testset "ContainerGetIndex" begin
+    c1_addr = InetAddr(ip"127.0.0.1", 5555)
+    c1 = Container()
+    a = MyAgent(0)
+    register(c1, a)
+
+    @test c1[aid(a)] == a
+end

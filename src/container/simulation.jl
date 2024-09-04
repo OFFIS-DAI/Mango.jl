@@ -284,7 +284,7 @@ function step_simulation(container::SimulationContainer, step_size_s::Real=DISCR
             step_agent(agent, container.world, container.clock, time_step_s)
         end
     end
-    @debug "The simulation iteration needed $elapsed seconds"
+    @debug "The simulation step needed $elapsed seconds"
 
     container.clock.simulation_time = add_seconds(container.clock.simulation_time, time_step_s)
 
@@ -331,7 +331,7 @@ function process_message(container::SimulationContainer, msg::Any, meta::Abstrac
     receiver_id = meta[RECEIVER_ID]
 
     if !haskey(container.agents, meta[RECEIVER_ID])
-        @warn "Container $(keys(container.agents)) has no agent with id: $receiver_id"
+        @warn "Container $(keys(container.agents)) has no agent with id: $receiver_id" msg meta
     else
         agent = container.agents[receiver_id]
         return dispatch_message(agent, msg, meta)
@@ -362,5 +362,16 @@ function send_message(
     meta[TRACKING_ID] = tracking_id
     meta[SENDER_ADDR] = nothing
 
+    @debug "Send a message to ($receiver_id), from $sender_id" typeof(content)
+
     return forward_message(container, content, meta)
+end
+
+"""
+    Base.getindex(container::SimulationContainer, index::String)
+
+Return the agent indexed by `index` (aid).
+"""
+function Base.getindex(container::SimulationContainer, index::String)
+    return container.agents[index]
 end
