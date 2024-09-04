@@ -12,7 +12,8 @@ export TaskData,
     Clock,
     Scheduler,
     SimulationScheduler,
-    AbstractScheduler
+    AbstractScheduler,
+    sleep_until
 
 using Dates
 using ConcurrentCollections
@@ -234,10 +235,11 @@ function stop_task(scheduler::AbstractScheduler, t::Task)
 
     if is_stopable(data)
         stop_single_task(data)
+        return
     end
 
     @warn "Attempted to stop a non-stopable task."
-    return nothing
+    return
 end
 
 """
@@ -284,3 +286,13 @@ function stop_and_wait_for_all_tasks(scheduler::AbstractScheduler)
     wait_for_all_tasks(scheduler)
 end
 
+"""
+    sleep_until(condition::Function)
+
+Sleep until the condition (no args -> bool) is met.
+"""
+function sleep_until(condition::Function; interval_s::Real=0.01)
+    while !condition()
+        sleep(interval_s)
+    end
+end

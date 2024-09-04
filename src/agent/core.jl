@@ -55,30 +55,14 @@ All baseline fields added by the @agent macro are listed in this vector.
 They are added in the same order defined here.
 """
 AGENT_BASELINE_FIELDS::Vector = [
-    :(lock::ReentrantLock),
-    :(context::Union{Nothing,AgentContext}),
-    :(role_handler::Union{AgentRoleHandler}),
-    :(scheduler::AbstractScheduler),
-    :(aid::Union{Nothing,String}),
-    :(transaction_handler::Dict{String,Tuple}),
-    :(forwarding_rules::Vector{ForwardingRule}),
-    :(services::Dict{DataType,Any})
-]
-
-"""
-Default values for the baseline fields. These have to be defined using
-an anonymous functions. Always need to have the same length as 
-AGENT_BASELINE_FIELDS.
-"""
-AGENT_BASELINE_DEFAULTS::Vector = [
-    () -> ReentrantLock(),
-    () -> nothing,
-    () -> AgentRoleHandler(Vector(), Vector(), Vector(), Dict(), Dict()),
-    () -> Scheduler(),
-    () -> nothing,
-    () -> Dict{String,Tuple}(),
-    () -> Vector{ForwardingRule}(),
-    () -> Dict{DataType,Any}()
+    :(lock::ReentrantLock = ReentrantLock()),
+    :(context::Union{Nothing,AgentContext} = nothing),
+    :(role_handler::Union{AgentRoleHandler} = AgentRoleHandler(Vector(), Vector(), Vector(), Dict(), Dict())),
+    :(scheduler::AbstractScheduler = Scheduler()),
+    :(aid::Union{Nothing,String} = nothing),
+    :(transaction_handler::Dict{String,Tuple} = Dict{String,Tuple}()),
+    :(forwarding_rules::Vector{ForwardingRule} = Vector{ForwardingRule}()),
+    :(services::Dict{DataType,Any} = Dict{DataType,Any}())
 ]
 
 """
@@ -89,9 +73,8 @@ The macro does 3 things:
 1. It adds all baseline fields, defined in `AGENT_BASELINE_FIELDS`
    (the agent context `context`, the role handler `role_handler`, and the `aid`)
 2. It adds the supertype `Agent` to the given struct.
-3. It defines a default constructor, which assigns all baseline fields
-   to predefined default values. As a result you can (and should) create 
-   an agent using only the exclusive fields.
+3. It applies [`@with_def`](@ref) for default construction, the baseline fields are assigned
+   to default values
 
 # Example
 For example the usage could like this.
@@ -102,15 +85,15 @@ end
 
 # results in
 
-mutable struct MyAgent <: Agent
+@with_def mutable struct MyAgent <: Agent
 	# baseline fields...
 	my_own_field::String
+    my_own_field_with_default::String = "Default"
 end
-MyAgent(my_own_field) = MyAgent(baseline fields defaults..., my_own_field)
 
 # so you would construct your agent like this
 
-my_agent = MyAgent("own value")
+my_agent = MyAgent("own value", my_own_field_with_default="OtherValue")
 ```
 """
 macro agent(struct_def)
@@ -127,35 +110,14 @@ macro agent(struct_def)
     end
 
     # Create the new struct definition
-    new_struct_def = Expr(
+    new_struct_def = Expr(:macrocall, Symbol("@with_def"), LineNumberNode(0, Symbol("none")), Expr(
         :struct,
         true,
         Expr(:(<:), struct_head, :(Agent)),
         Expr(:block, struct_fields...),
-    )
+    ))
 
-    # Create a constructor, which will assign 'nothing' to all baseline fields, therefore requires you just to call it with the your fields
-    # f.e. @agent MyMagent own_field::String end, can be constructed using MyAgent("MyOwnValueFor own_field").
-    new_fields = [
-        field.args[1] for field in struct_fields[2+length(AGENT_BASELINE_FIELDS):end] if
-        typeof(field) != LineNumberNode
-    ]
-    default_constructor_def = Expr(
-        :(=),
-        Expr(:call, struct_name, new_fields...),
-        Expr(
-            :block,
-            :(),
-            Expr(
-                :call,
-                struct_name,
-                [Expr(:call, default) for default in AGENT_BASELINE_DEFAULTS]...,
-                new_fields...,
-            ),
-        ),
-    )
-
-    esc(Expr(:block, new_struct_def, default_constructor_def))
+    esc(Expr(:block, new_struct_def))
 end
 
 
@@ -551,4 +513,13 @@ Add a service to the agent. Every service can exists exactly one time (stored by
 """
 function add_service!(agent::Agent, service::Any)
     agent.services[typeof(service)] = service
+end
+
+"""
+    Base.getindex(agent::T, index::Int) where {T<:Agent}
+
+Return the `index`'th role of the agent.
+"""
+function Base.getindex(agent::T, index::Int) where {T<:Agent}
+    return roles(agent)[index]
 end

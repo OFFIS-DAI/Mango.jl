@@ -6,7 +6,9 @@ Roles are used to provide a mechanism for reusability and modularization of func
 
 A role can be defined using the [`@role`](@ref) macro. This macro adds some baselinefields to the following struct definition. The struct can be defined like any other Julia struct.
 
-```julia
+```@example
+using Mango
+
 # Define your role struct using @role macro
 @role struct MyRole
     my_own_field::String
@@ -31,13 +33,17 @@ Besides the message subscriptions there are functionalities to communicate/work 
 The data sharing can be used using ordinary Julia structs with default constructors. There are two ways to share the data, first you can create the model you want share with
 [`get_model`](@ref)
 
-```julia
+```@example model_example
+using Mango
+
+@role struct SharedModelTestRole end
 struct TestModel
     c::Int64
 end
 TestModel() = TestModel(42)
-role = MyRole("Role1")
-shared_model = get_model(role, TestModel)
+
+agent = agent_composed_of(SharedModelTestRole())
+shared_model = get_model(agent[1], TestModel)
 ```
 
 Mango.jl will create a TestModel instance and manage this instance such that every role can access it. 
@@ -45,11 +51,14 @@ Mango.jl will create a TestModel instance and manage this instance such that eve
 Although this is a straightforward method it can be very clumsy to use. For this reason there is the macro [`@shared`](@ref), which can be used within a role definition
 to mark a field as shared model. Then, Mango.jl will ensure that a shared instance of the declared type will be created and assigned to the struct field.
 
-```julia
+```@example model_example
 @role struct SharedFieldTestRole
     @shared 
     test_model::TestModel
 end
+
+agent_including_test_role = agent_composed_of(SharedFieldTestRole())
+agent_including_test_role[1].test_model
 ```
 
 
@@ -58,30 +67,28 @@ end
 
 Roles can emit events using [`emit_event`](@ref). If `event_type` is nothing, the type of `event` will be used as `event_type`. To handle these events roles can subscribe using [`subscribe_event`](@ref) or add a method to [`handle_event`](@ref).
 
-```julia
+```@example
+using Mango
 
-struct TestEvent
-end
+struct TestEvent end
 
-function handle_event(role::Role, src::Role, event::TestEvent; event_type::Any)
-    @info "Event is arriving!"
+function Mango.handle_event(role::Role, src::Role, event::TestEvent; event_type::Any)
+    @info "Event is arriving!" role.name
 end
 function custom_handler(role::Role, src::Role, event::Any, event_type::Any)
     @info "Event is also arriving!"
 end
 
-@agent struct RoleTestAgent
-    counter::Integer
+@agent struct RoleTestAgent end
+@role struct MyEventRole 
+    name::String
 end
 
-agent = RoleTestAgent(0)
+role_emitter = MyEventRole("emitter")
+role_handler = MyEventRole("handler")
+agent = agent_composed_of(role_emitter, role_handler; base_agent=RoleTestAgent())
 
-role_emitter = MyRole("Role1")
-role_handler = MyRole("Role1")
-
-add(agent, role_emitter)
-add(agent, role_handler)    
-subscribe_event(role1, TestEvent, custom_handler, (src, event) -> true) # condition is optional
+subscribe_event(role_handler, TestEvent, custom_handler, (src, event) -> true) # condition is optional
 
 emit_event(role_emitter, TestEvent())
 ```

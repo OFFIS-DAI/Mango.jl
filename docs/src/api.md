@@ -70,3 +70,12 @@ Modules = [Mango]
 Private = false
 Pages = ["util/encode_decode.jl"]
 ```
+
+# Misc
+
+
+```@autodocs
+Modules = [Mango]
+Private = false
+Pages = ["util/datastructures_util.jl"]
+```

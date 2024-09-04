@@ -148,17 +148,20 @@ Return true if successfull.
 function send(protocol::TCPProtocol, destination::InetAddr, message::Vector{UInt8})
     @debug "Attempt to connect to $(destination.host):$(destination.port)"
     connection = acquire_tcp_connection(protocol.pool, destination)
+
     if isnothing(connection)
         return false
     end
 
-    length_bytes = reinterpret(UInt8, [length(message)])
+    try
+        length_bytes = reinterpret(UInt8, [length(message)])
 
-    write(connection, [length_bytes; message])
-    flush(connection)
-
-    @debug "Release $(destination.host):$(destination.port)"
-    release_tcp_connection(protocol.pool, destination, connection)
+        write(connection, [length_bytes; message])
+        flush(connection)
+    finally
+        @debug "Release $(destination.host):$(destination.port)"
+        release_tcp_connection(protocol.pool, destination, connection)
+    end
 
     return true
 end

@@ -3,7 +3,8 @@ export MQTTProtocol,
     disconnect,
     subscribe
 
-using Mosquitto
+import Mosquitto
+using Mosquitto: Client, get_messages_channel, get_connect_channel, publish, disconnect
 using Sockets: InetAddr
 
 

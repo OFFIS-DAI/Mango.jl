@@ -34,13 +34,9 @@ end
 List of all baseline fields of every role, which will be inserted
 by the macro @role.
 """
-ROLE_BASELINE_FIELDS::Vector = [:(context::Union{RoleContext,Nothing}),
-    :(shared_vars::Vector{Any})]
+ROLE_BASELINE_FIELDS::Vector = [:(context::Union{RoleContext,Nothing} = nothing),
+    :(shared_vars::Vector{Any} = Vector())]
 
-ROLE_BASELINE_DEFAULTS::Vector = [
-    () -> nothing,
-    () -> Vector(),
-]
 
 """
 Macro for defining a role struct. Expects a struct definition
@@ -50,9 +46,8 @@ The macro does 3 things:
 1. It adds all baseline fields, defined in `ROLE_BASELINE_FIELDS`
    (the role context)
 2. It adds the supertype `Role` to the given struct.
-3. It defines a default constructor, which assigns all baseline fields
-   to predefined default values. As a result you can (and should) create 
-   a role using only the exclusive fields.
+3. It applies [`@with_def`](@ref) for default construction, the baseline fields are assigned
+   to default values
 
 For example the usage could like this.
 ```julia
@@ -62,15 +57,15 @@ end
 
 # results in
 
-mutable struct MyRole <: Agent
+@with_def mutable struct MyRole <: Role
 	# baseline fields...
 	my_own_field::String
+    my_own_field_with_default::String = "Default"
 end
-MyRole(my_own_field) = MyRole(baseline fields defaults..., my_own_field)
 
 # so youl would construct your role like this
 
-my_roel = MyRole("own value")
+my_roel = MyRole("own value", my_own_field_with_default="OtherValue")
 ```
 """
 macro role(struct_def)
@@ -99,7 +94,8 @@ macro role(struct_def)
             struct_field = struct_fields[i+1]
             field_name = struct_field.args[1]
             field_type = struct_field.args[2]
-            new_expr_decl = Expr(:(::), field_name, field_type)
+            # evaluates to field_name::field_type = field_type()
+            new_expr_decl = Expr(:(=), Expr(:(::), field_name, field_type), Expr(:call, Symbol(field_type)))
             push!(new_struct_fields, new_expr_decl)
             push!(shared_names, Expr(:tuple, String(field_name), field_type))
             deleteat!(modified_struct_fields, i + 1)
@@ -109,35 +105,14 @@ macro role(struct_def)
     struct_fields = modified_struct_fields
 
     # Create the new struct definition
-    new_struct_def = Expr(
+    new_struct_def = Expr(:macrocall, Symbol("@with_def"), LineNumberNode(0, Symbol("none")), Expr(
         :struct,
         true,
         Expr(:(<:), struct_head, :(Role)),
         Expr(:block, cat(struct_fields, new_struct_fields, dims=(1, 1))...),
-    )
+    ))
 
-    # Creates a constructor, which will assign nothing to all baseline fields, therefore requires you just to call it with the your fields
-    # f.e. @role MyRole own_field::String end, can be constructed using MyRole("MyOwnValueFor own_field").
-    new_fields = [
-        field.args[1] for field in struct_fields[1+length(ROLE_BASELINE_FIELDS):end] if
-        typeof(field) != LineNumberNode
-    ]
-    new_values = [i == 2 ? Expr(:vect, shared_names...) : Expr(:call, default) for (i, default) in enumerate(ROLE_BASELINE_DEFAULTS)]
-    new_struct_values = [Expr(:call, field.args[2]) for field in new_struct_fields]
-    new_values = cat(new_values, new_struct_values, dims=(1, 1))
-
-    default_constructor_def = Expr(
-        :(=),
-        Expr(:call, struct_name, new_fields...),
-        Expr(
-            :call,
-            struct_name,
-            new_values...,
-            new_fields...,
-        ),
-    )
-
-    esc(Expr(:block, new_struct_def, default_constructor_def))
+    esc(Expr(:block, new_struct_def))
 end
 
 """

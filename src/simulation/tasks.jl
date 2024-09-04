@@ -188,7 +188,6 @@ function create_agent_scheduler(task_sim::SimpleTaskSimulation)
 end
 
 function transfer_wait_queue(scheduler::SimulationScheduler)
-    @debug "Transfer"
     while true
         next_task = maybepopfirst!(scheduler.wait_queue)
         if isnothing(next_task)
@@ -217,7 +216,6 @@ function step_iteration(task_sim::SimpleTaskSimulation, step_size_s::Real, first
                 while true
                     next_task = maybepopfirst!(scheduler.queue)
                     if isnothing(next_task)
-                        @debug "Done with the scheduler"
                         break
                     end
 
