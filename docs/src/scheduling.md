@@ -62,6 +62,7 @@ for i in 1:10
     end
 end
 
+sleep(0.2)
 stop_all_tasks(agent)
 wait_for_all_tasks(agent)
 ```
