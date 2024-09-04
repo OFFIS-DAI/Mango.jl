@@ -21,6 +21,9 @@ topology = graph_topology(complete_digraph(3)) # based on arbitrary Graphs.jl Ab
 per_node(topology) do node
     add!(node, MyAgent())
 end
+
+# resulting topology graph
+topology.graph
 ```
 
 However, often this approach is not feasible, because you create a specific agent system with agents which need to be linked in a very specific way, such that it is not possible to assign the same agent type to every node. For this reason you can define the topology manually:
