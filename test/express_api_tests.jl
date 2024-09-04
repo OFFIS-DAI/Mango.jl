@@ -102,6 +102,24 @@ end
     @test aid(express_two) == "agent0"
 end
 
+@testset "TestRunTcpContainerExpressAPICustomAIDS" begin
+    # Create agents based on roles
+    express_one = agent_composed_of(ExpressRole(0), ExpressRole(0))
+    express_two = agent_composed_of(ExpressRole(0), ExpressRole(0))
+
+    run_with_tcp(2, (express_one, :aid => "Ex1"), (express_two, :aid => "Ex2")) do cl
+        wait(send_message(express_one, "TestMessage", address(express_two)))
+        wait(Threads.@spawn begin
+            while express_two[1].counter != 1
+                sleep(0.01)
+            end
+        end)
+    end
+
+    @test aid(express_one) == "Ex1"
+    @test aid(express_two) == "Ex2"
+end
+
 @testset "TestRunTcpContainerExpressAPITooMuchContainer" begin
     # Create agents based on roles
     express_one = agent_composed_of(ExpressRole(0), ExpressRole(0))

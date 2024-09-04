@@ -149,11 +149,11 @@ end
     run_in_real_time(runnable::Function,
     n_container::Int,
     container_list_creator::Function,
-    agents::Union{Tuple,Agent}...)
+    agent_tuple::Tuple...)
 
 Let the agents run in containers (real time).
 
-Distributes the given `agents` to `n_container` (real time container) and execute the `runnable` 
+Distributes the given agents contained in the `agent_tuple` to `n_container` (real time container) and execute the `runnable` 
 (takes the container list as argument) while the container are active to run. It is possible to 
 add supplementary information per agent as Tuple. For example `(Agent, :aid => "my_aid")`.
 The type of the containers are determined by the `container_list_creator` (n_container as argument, has
@@ -162,38 +162,84 @@ to return a list of container with n_container entries).
 function run_in_real_time(runnable::Function,
     n_container::Int,
     container_list_creator::Function,
-    agents::Union{Tuple,Agent}...)
+    agent_tuples::Tuple...)
 
     actual_number_container = n_container
-    if n_container > length(agents)
-        actual_number_container = length(agents)
+    if n_container > length(agent_tuples)
+        actual_number_container = length(agent_tuples)
     end
     container_list = container_list_creator(actual_number_container)
-    for (i, agent) in enumerate(agents)
+    for (i, agent_tuple) in enumerate(agent_tuples)
         container_id = ((i - 1) % actual_number_container) + 1
-        if isa(agent, Tuple)
-            actual_agent = agent[1]
-            agent_params::Dict = Dict(agent[2])
-            register(container_list[container_id], actual_agent, get(agent_params, :aid, nothing),
-                topics=get(agent_params, :topics, []))
-        else
-            register(container_list[container_id], agent)
-        end
+        actual_agent = agent_tuple[1]
+        agent_params::Dict = Dict(agent_tuple[2])
+        register(container_list[container_id], actual_agent, get(agent_params, :aid, nothing),
+            topics=get(agent_params, :topics, []))
     end
     activate(container_list) do
         runnable(container_list)
     end
 end
--
+
+function _agents_to_agent_tuples(agents::Agent...)
+    return [(a, Dict()) for a in agents]
+end
+
+"""
+    run_in_real_time(runnable::Function,
+    n_container::Int,
+    container_list_creator::Function,
+    agents::Agent...)
+
+Let the agents run in containers (real time).
+
+Distributes the given `agents` contained in the agent_tuple to `n_container` (real time container) and execute the `runnable` 
+(takes the container list as argument) while the container are active to run. 
+"""
+function run_in_real_time(runnable::Function,
+    n_container::Int,
+    container_list_creator::Function,
+    agents::Agent...)
+    return run_in_real_time(runnable, n_container, container_list_creator, _agents_to_agent_tuples(agents...)...)
+end
+
+function _create_tcp_container_list_creator(host::String, start_port::Int, codec::Union{Nothing,Tuple{Function,Function}})
+    return n -> [create_tcp_container(host, start_port + (i - 1), codec=codec) for i in 1:n]
+end
+
 """
     run_with_tcp(runnable::Function,
     n_container::Int,
-    agents::Union{Tuple,Agent}...;
+    agent_tuples::Union{Tuple,Agent}...;
     host::String="127.0.0.1",
     start_port::Int=5555,
     codec::Union{Nothing,Tuple{Function,Function}}=(encode, decode))
 
 Let the agents run in tcp containers (real time).
+
+Distributes the given `agent_tuples` to `n_container` (real time container) and execute the `runnable` 
+(takes the container list as argument) while the container are active to run. It is possible to 
+add supplementary information per agent as Tuple. For example `(Agent, :aid => "my_aid")`.
+Here, TCP container are created on `host` starting with the port `start_port`.
+"""
+function run_with_tcp(runnable::Function,
+    n_container::Int,
+    agent_tuples::Tuple...;
+    host::String="127.0.0.1",
+    start_port::Int=5555,
+    codec::Union{Nothing,Tuple{Function,Function}}=(encode, decode))
+    run_in_real_time(runnable, n_container, _create_tcp_container_list_creator(host, start_port, codec), agent_tuples...)
+end
+
+"""
+    run_with_tcp(runnable::Function,
+    n_container::Int,
+    agents::Agent...;
+    host::String="127.0.0.1",
+    start_port::Int=5555,
+    codec::Union{Nothing,Tuple{Function,Function}}=(encode, decode))
+
+Let the `agents` run in tcp containers (real time).
 
 Distributes the given `agents` to `n_container` (real time container) and execute the `runnable` 
 (takes the container list as argument) while the container are active to run.
@@ -201,17 +247,21 @@ Here, TCP container are created on `host` starting with the port `start_port`.
 """
 function run_with_tcp(runnable::Function,
     n_container::Int,
-    agents::Union{Tuple,Agent}...;
+    agents::Agent...;
     host::String="127.0.0.1",
     start_port::Int=5555,
     codec::Union{Nothing,Tuple{Function,Function}}=(encode, decode))
-    run_in_real_time(runnable, n_container, n -> [create_tcp_container(host, start_port + (i - 1), codec=codec) for i in 1:n], agents...)
+    run_in_real_time(runnable, n_container, _create_tcp_container_list_creator(host, start_port, codec), agents...)
+end
+
+function _create_mqtt_container_list_creator(host::String, port::Int, codec::Union{Nothing,Tuple{Function,Function}})
+    return n -> [create_mqtt_container(host, port, "client" * string(i), codec=codec) for i in 1:n]
 end
 
 """
     run_with_mqtt(runnable::Function,
     n_container::Int,
-    agents::Union{Tuple,Agent}...;
+    agent_tuples::Tuple...;
     broker_host::String="127.0.0.1",
     broker_port::Int=1883,
     codec::Union{Nothing,Tuple{Function,Function}}=(encode, decode))
@@ -219,17 +269,42 @@ end
 Let the agents run in mqtt containers (real time).
 
 Distributes the given `agents` to `n_container` (real time container) and execute the `runnable` 
-(takes the container list as argument) while the container are active to run.
+(takes the container list as argument) while the container are active to run.  It is possible to 
+add supplementary information per agent as Tuple. For example `(Agent, :aid => "my_aid", :topics => ["topic"])`.
 Here, MQTT container are created with the broker on `broker_host` and at the port `broker_port`.
 The containers are assignede client ids (client1 client2 ...)  
 """
 function run_with_mqtt(runnable::Function,
     n_container::Int,
-    agents::Union{Tuple,Agent}...;
+    agent_tuples::Tuple...;
     broker_host::String="127.0.0.1",
     broker_port::Int=1883,
     codec::Union{Nothing,Tuple{Function,Function}}=(encode, decode))
-    run_in_real_time(runnable, n_container, n -> [create_mqtt_container(broker_host, broker_port, "client" * string(i), codec=codec) for i in 1:n], agents...)
+    run_in_real_time(runnable, n_container, _create_mqtt_container_list_creator(broker_host, broker_port, codec), agent_tuples...)
+end
+
+"""
+    run_with_mqtt(runnable::Function,
+    n_container::Int,
+    agents::Agent...;
+    broker_host::String="127.0.0.1",
+    broker_port::Int=1883,
+    codec::Union{Nothing,Tuple{Function,Function}}=(encode, decode))
+ 
+Let the agents run in mqtt containers (real time).
+
+Distributes the given `agents` to `n_container` (real time container) and execute the `runnable` 
+(takes the container list as argument) while the container are active to run. 
+Here, MQTT container are created with the broker on `broker_host` and at the port `broker_port`.
+The containers are assignede client ids (client1 client2 ...)  
+"""
+function run_with_mqtt(runnable::Function,
+    n_container::Int,
+    agents::Agent...;
+    broker_host::String="127.0.0.1",
+    broker_port::Int=1883,
+    codec::Union{Nothing,Tuple{Function,Function}}=(encode, decode))
+    run_in_real_time(runnable, n_container, _create_mqtt_container_list_creator(broker_host, broker_port, codec), agents...)
 end
 
 """
