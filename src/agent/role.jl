@@ -9,7 +9,8 @@ export Role,
     emit_event,
     get_model,
     subscribe_event,
-    setup
+    setup,
+    on_global_event
 
 
 """
@@ -334,4 +335,13 @@ function forward_to(role::Role,
     received_meta::AbstractDict;
     kwargs...)
     return forward_to(role.context.agent, content, forward_to_address, received_meta; kwargs...)
+end
+
+"""
+    on_global_event(role::Role, event::Any)
+
+Handle global event. See [`emit_global_event`](@ref).
+"""
+function on_global_event(role::Role, event::Any)
+    # to be overridden
 end

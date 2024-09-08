@@ -2,6 +2,11 @@ export World, Space, Position, Position2D, Area2D, location, move, initialize, i
 
 abstract type Position end
 abstract type Space{P<:Position} end
+abstract type WorldObserver end
+
+function dispatch_global_event(observer::WorldObserver, event::Any)
+    # default no reaction
+end
 
 struct Position2D <: Position
     x::Real
@@ -16,6 +21,7 @@ end
 
 @kwdef struct World{S<:Space}
     space::S = Area2D(width=10, height=10)
+    observers::Vector{WorldObserver} = Vector()
     initialized::Bool = false
 end
 
@@ -51,4 +57,22 @@ end
 
 function initialized(world::World)
     return world.initialized
+end
+
+function add_observer(world::World, observer::Any)
+    push!(world.observers, observer)
+end
+
+"""
+    emit_global_event(world::World, event::Any)
+
+Emit a global world event. This types of events can be handled by any agent
+living in the world (resp. living in the container, the world exists in).
+Therefore, any of those agents (and roles) can handle event emitted with
+this function by defining [`on_global_event`](@ref).
+"""
+function emit_global_event(world::World, event::Any)
+    for observer in world.observers
+        dispatch_global_event(observer, event)
+    end
 end

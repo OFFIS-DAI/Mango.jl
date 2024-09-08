@@ -1,4 +1,4 @@
-export SimulationContainer, register, send_message, shutdown, protocol_addr, create_simulation_container, step_simulation, SimulationResult, CommunicationSimulationResult, TaskSimulationResult, on_step
+export SimulationContainer, register, send_message, shutdown, protocol_addr, create_simulation_container, step_simulation, SimulationResult, CommunicationSimulationResult, TaskSimulationResult, on_step, discrete_event_simulation
 
 using Base.Threads
 using Dates
@@ -27,7 +27,7 @@ Per default the [`SimpleCommunicationSimulation`](@ref) is used for communicatio
 [`SimpleTaskSimulation`](@ref) for simulating the tasks of agents. To replace these, `communication_sim`
 and respectively `task_sim` can be set.
 """
-function create_simulation_container(start_time::DateTime; communication_sim::Union{Nothing,CommunicationSimulation}=nothing, task_sim::Union{Nothing,TaskSimulation}=nothing)
+function create_simulation_container(start_time::DateTime; communication_sim::Union{Nothing,CommunicationSimulation}=nothing, task_sim::Union{Nothing,TaskSimulation}=nothing, space::Space=nothing)
     container = SimulationContainer()
     container.clock.simulation_time = start_time
     if !isnothing(communication_sim)
@@ -36,6 +36,10 @@ function create_simulation_container(start_time::DateTime; communication_sim::Un
     if !isnothing(task_sim)
         container.task_sim = task_sim
     end
+    if !isnothing(space)
+        container.world = World(space=space)
+    end
+    add_observer(container.world, container.world_observer)
     return container
 end
 
@@ -46,6 +50,16 @@ struct MessageData
     content::Any
     meta::AbstractDict
     arriving_time::DateTime
+end
+
+struct DispatchToAgentWorldObserver <: WorldObserver
+    agents_ref::Dict
+end
+
+function dispatch_global_event(observer::DispatchToAgentWorldObserver, event::Any)
+    for agent in values(observer.agents_ref)
+        dispatch_global_event(agent, event)
+    end
 end
 
 """
@@ -61,6 +75,7 @@ using [`create_simulation_container`](@ref).
     shutdown::Bool = false
     communication_sim::CommunicationSimulation = SimpleCommunicationSimulation()
     message_queue::ConcurrentQueue{MessageData} = ConcurrentQueue{MessageData}()
+    world_observer::WorldObserver = DispatchToAgentWorldObserver(agents)
 end
 
 function agents(container::SimulationContainer)::Vector{Agent}
@@ -81,6 +96,10 @@ function on_step(agent::Agent, world::World, clock::Clock, step_size_s::Real)
 end
 
 function on_step(role::Role, world::World, clock::Clock, step_size_s::Real)
+    # default nothing
+end
+
+function on_step(space::Space, world::World, clock::Clock, step_size_s::Real)
     # default nothing
 end
 
@@ -279,6 +298,8 @@ function step_simulation(container::SimulationContainer, step_size_s::Real=DISCR
             @debug "Finish simulation iteration" state_changed
         end
 
+        on_step(container.world.space, container.world, container.clock, time_step_s)
+
         # agents act on the stepping hook
         for agent in values(container.agents)
             step_agent(agent, container.world, container.clock, time_step_s)
@@ -291,6 +312,30 @@ function step_simulation(container::SimulationContainer, step_size_s::Real=DISCR
     @debug "new time", container.clock.simulation_time
 
     return SimulationResult(elapsed, messaging_sim_result, task_sim_result, time_step_s)
+end
+
+"""
+    discrete_event_simulation(container::SimulationContainer, max_advance_time_s::Real)
+
+Execute a discrete event simulation using the `container` with the maximal allowed advanced time
+of the simulation of `max_advance_time_s`. 
+
+This function will step the container until the clock has advanced to the initial_time + `max_advance_time_s`
+or if the time of the container does not advance anymore (which would mean no events are scheduled).
+"""
+function discrete_event_simulation(container::SimulationContainer, max_advance_time_s::Real)
+    initial_time = container.clock.simulation_time
+    prev_time = nothing
+    results = []
+
+    while isnothing(prev_time) || (prev_time < container.clock.simulation_time
+                                   &&
+                                   initial_time + Second(max_advance_time_s) <= container.clock.simulation_time)
+
+        prev_time = container.clock.simulation_time
+        push!(results, step_simulation(container))
+    end
+    return results
 end
 
 function protocol_addr(container::SimulationContainer)

@@ -15,7 +15,8 @@ export @agent,
     ForwardingRule,
     service_of_type,
     add_service!,
-    services
+    services,
+    on_global_event
 
 using UUIDs
 
@@ -522,4 +523,29 @@ Return the `index`'th role of the agent.
 """
 function Base.getindex(agent::T, index::Int) where {T<:Agent}
     return roles(agent)[index]
+end
+
+function Base.getindex(agent::T, index::DataType) where {T<:Agent}
+    for role in roles(agent)
+        if typeof(role) == index
+            return role
+        end
+    end
+    throw(ArgumentError("The agent has no role of the type index=$index."))
+end
+
+"""
+    on_global_event(agent::Agent, event::Any)
+
+Handle global event. See [`emit_global_event`](@ref).
+"""
+function on_global_event(agent::Agent, event::Any)
+    # to be overridden
+end
+
+function dispatch_global_event(agent::Agent, event::Any)
+    on_global_event(agent, event)
+    for role in roles(agent)
+        on_global_event(role, event)
+    end
 end
