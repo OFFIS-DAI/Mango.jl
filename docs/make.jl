@@ -34,5 +34,6 @@ end
 
 deploydocs(
     repo="github.com/OFFIS-DAI/Mango.jl.git",
-    push_preview=true
+    push_preview=true,
+    devbranch="development"
 )
