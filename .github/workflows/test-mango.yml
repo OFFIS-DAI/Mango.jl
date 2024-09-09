@@ -1,6 +1,12 @@
 name: Test Mango.jl
 
-on: [push]
+on: 
+  push:
+    branches:
+      - main
+      - development
+  pull_request:
+    types: [opened, reopened]
 
 
 # needed to allow julia-actions/cache to delete caches

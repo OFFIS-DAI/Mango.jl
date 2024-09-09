@@ -1,4 +1,6 @@
-export SimulationContainer, register, send_message, shutdown, protocol_addr, create_simulation_container, step_simulation, SimulationResult, CommunicationSimulationResult, TaskSimulationResult, on_step, discrete_event_simulation
+export SimulationContainer, register, send_message, shutdown, protocol_addr,
+    create_simulation_container, step_simulation, SimulationResult, CommunicationSimulationResult,
+    TaskSimulationResult, on_step, discrete_event_simulation
 
 using Base.Threads
 using Dates
@@ -39,7 +41,8 @@ function create_simulation_container(start_time::DateTime; communication_sim::Un
     if !isnothing(space)
         container.world = World(space=space)
     end
-    add_observer(container.world, container.world_observer)
+    add_observer!(container.world, container.world_observer)
+    add_simulation_scheduler!(container.task_sim, container.world.scheduler)
     return container
 end
 
@@ -63,8 +66,7 @@ function dispatch_global_event(observer::DispatchToAgentWorldObserver, event::An
 end
 
 """
-The SimulationContainer used as a base struct to enable simulations in Mango.jl. Shall be created
-using [`create_simulation_container`](@ref).
+The SimulationContainer used as a base struct to enable simulations in Mango.jl. Always create using [`create_simulation_container`](@ref).
 """
 @kwdef mutable struct SimulationContainer <: ContainerInterface
     world::World = World()
@@ -96,10 +98,6 @@ function on_step(agent::Agent, world::World, clock::Clock, step_size_s::Real)
 end
 
 function on_step(role::Role, world::World, clock::Clock, step_size_s::Real)
-    # default nothing
-end
-
-function on_step(space::Space, world::World, clock::Clock, step_size_s::Real)
     # default nothing
 end
 

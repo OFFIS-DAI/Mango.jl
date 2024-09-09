@@ -3,10 +3,13 @@ export World, Space, Position, Position2D, Area2D, location, move, initialize, i
 abstract type Position end
 abstract type Space{P<:Position} end
 abstract type WorldObserver end
+abstract type Environment end
 
 function dispatch_global_event(observer::WorldObserver, event::Any)
     # default no reaction
 end
+
+struct NoEnv end
 
 struct Position2D <: Position
     x::Real
@@ -21,8 +24,25 @@ end
 
 @kwdef struct World{S<:Space}
     space::S = Area2D(width=10, height=10)
+    environment::Environment = NoEnv()
+    scheduler::AbstractScheduler = SimulationScheduler()
     observers::Vector{WorldObserver} = Vector()
     initialized::Bool = false
+end
+
+schedule(f::Function, world::World, data::TaskData) = schedule(f, world.scheduler, data)
+
+function on_step(world::World, clock::Clock, step_size_s::Real)
+    # default do nothing
+end
+
+function on_step(environment::Environment, world::World, clock::Clock, step_size_s::Real)
+    # default do nothing
+end
+
+function step(world::World, clock::Clock, step_size_s::Real)
+    on_step(world, clock, step_size_s)
+    on_step(environment, world, clock, step_size_s)
 end
 
 function location(space::Space{P}, agent::Agent)::P where {P<:Position}
@@ -59,8 +79,12 @@ function initialized(world::World)
     return world.initialized
 end
 
-function add_observer(world::World, observer::Any)
+function add_observer!(world::World, observer::Any)
     push!(world.observers, observer)
+end
+
+function environment(world::World)
+    return world.environment
 end
 
 """

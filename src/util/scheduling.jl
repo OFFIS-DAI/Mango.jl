@@ -296,3 +296,113 @@ function sleep_until(condition::Function; interval_s::Real=0.01)
         sleep(interval_s)
     end
 end
+
+### Simulation Scheduler
+
+
+"""
+Specific scheduler, defined to be injected to the agents and intercept scheduling 
+calls and especially the sleep calls while scheduling. This struct manages all necessary times and
+events, which shall fulfill the purpose to step the tasks only for a given step_size.
+"""
+@kwdef struct SimulationScheduler <: AbstractScheduler
+    clock::Clock
+    events::ConcurrentDict{Task,Tuple{Base.Event,DateTime}} = ConcurrentDict{Task,Tuple{Base.Event,DateTime}}()
+    tasks::ConcurrentDict{Task,Tuple{TaskData,Base.Event}} = ConcurrentDict{Task,Tuple{TaskData,Base.Event}}()
+    queue::ConcurrentQueue{Union{Tuple{Function,TaskData,Base.Event},Task}} = ConcurrentQueue{Union{Tuple{Function,TaskData,Base.Event},Task}}()
+    wait_queue::ConcurrentQueue{Task} = ConcurrentQueue{Task}()
+end
+
+"""
+Internal struct, signaling the state of the tasks which has been waited on.
+"""
+struct WaitResult
+    cont::Bool
+    result::Any
+end
+
+function determine_next_event_time_with(scheduler::SimulationScheduler, simulation_time::DateTime)
+    lowest = nothing
+
+    # normal queue
+    next = scheduler.queue.head.next
+    while !isnothing(next)
+        if isa(next.value, Tuple)
+            return 0
+        else
+            throw("This should not happen! Did you schedule a task with zero sleep time?")
+        end
+        next = next.next
+    end
+
+    # wait queue
+    next = scheduler.wait_queue.head.next
+    while !isnothing(next)
+        t = scheduler.events[next.value][2]
+        if isnothing(lowest) || t < lowest
+            lowest = t
+        end
+        next = next.next
+    end
+    if isnothing(lowest)
+        return nothing
+    end
+    return (lowest - simulation_time).value / 1000
+end
+
+function wait_for_finish_or_sleeping(scheduler::SimulationScheduler, task::Task, step_size_s::Real, timeout_s::Real=10, check_delay_s=0.001)::WaitResult
+    remaining = timeout_s
+    while remaining > 0
+        sleep(check_delay_s)
+        remaining -= check_delay_s
+        if !istaskdone(task)
+            if haskey(scheduler.events, task)
+                event_time = scheduler.events[task]
+                @debug "not done, found event" event_time[2] add_seconds(scheduler.clock.simulation_time, step_size_s)
+                if event_time[2] <= add_seconds(scheduler.clock.simulation_time, step_size_s)
+                    return WaitResult(true, nothing)
+                else
+                    return WaitResult(false, nothing)
+                end
+            end
+        else
+            return WaitResult(false, Some(task.result))
+        end
+    end
+    throw("Simulation encountered a task timeout!")
+end
+
+function now(scheduler::SimulationScheduler)
+    return scheduler.clock.simulation_time
+end
+
+function sleep(scheduler::SimulationScheduler, time_s::Real)
+    event = Base.Event()
+    ctime = scheduler.clock.simulation_time
+    if haskey(scheduler.events, current_task())
+        ctime = scheduler.events[current_task()][2]
+    end
+    scheduler.events[current_task()] = (event, add_seconds(ctime, time_s))
+    @debug "Sleep task with" current_task() event add_seconds(ctime, time_s)
+    wait(event)
+end
+
+function wait(scheduler::SimulationScheduler, timer::Timer, delay_s::Real)
+    sleep(scheduler, delay_s)
+end
+
+function tasks(scheduler::SimulationScheduler)
+    return scheduler.tasks
+end
+
+function schedule(f::Function, scheduler::SimulationScheduler, data::TaskData)
+    event = Base.Event()
+    push!(scheduler.queue, (f, data, event))
+    return event
+end
+
+function do_schedule(f::Function, scheduler::SimulationScheduler, data::TaskData, event::Base.Event)
+    task = Threads.@spawn execute_task(f, scheduler, data)
+    tasks(scheduler)[task] = (data, event)
+    return task
+end
