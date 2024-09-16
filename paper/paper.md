@@ -50,10 +50,10 @@ This is useful for simulations, where simulated time should run much faster than
 
 
 # Statement of need
-Multi-agent systems are a large field with applications in distributed optimization [@yang:2019], reinforcement learning [@gronauer:2022], robotics [@chen:2019] and more.
+Applications of multi-agent systems can be found in various fields, such as in distributed optimization [@yang:2019], reinforcement learning [@gronauer:2022], robotics [@chen:2019] and more.
 Many of these systems are highly complex and feature heterogeneous and interacting actors.
 This makes them inherently difficult to model and develop.
-Thus, a structured development framework to aid this process is a valuable asset.
+Therefore, a structured development framework to support this process is a valuable asset.
 
 While `Mango.jl` is a general purpose multi-agent framework, we will focus on energy systems in the following as this is the domain the authors are most familiar with.
 
@@ -62,7 +62,7 @@ The main reason for this julia-based version is to allow better focus on simulat
 This is especially relevant in the energy domain, where an increasing amount of energy resources (e.g. batteries and PV-generators) have distributed ownership, competing goals and contribute to the same power grid.
 Large scale multi-agent simulations allow researchers to study the behavior of these participants in energy markets and grid simulations.
 
-The Python version of `mango` has already been succesfully applied to various research areas in the energy domain, including coalition formation in multi-energy networks [@schrage:2023], distributed market participation of battery storage units [@tiemann:2022], distributed black start [@stark:2021], and investigating the impact of communication topologies on distributed optimization heuristics [@holly:2021].
+The Python version of `mango` has already been successfully applied to various research areas in the energy domain, including coalition formation in multi-energy networks [@schrage:2023], distributed market participation of battery storage units [@tiemann:2022], distributed black start [@stark:2021], and investigating the impact of communication topologies on distributed optimization heuristics [@holly:2021].
 New Julia-based projects using `Mango.jl` are in active development.
 
 # Related Frameworks
@@ -129,7 +129,7 @@ register(container2, pong_agent, "Agent_2")
 ```
 
 When an incoming message is addressed at an agent, its container will call the `handle_message` function for it. 
-Using Julias multiple dispatch, we can define a new `handle_message` method for our agent.
+Using Julia's multiple dispatch, we can define a new `handle_message` method for our agent.
 
 ```julia
 # Override the default handle_message function for ping pong agents
@@ -153,7 +153,7 @@ end
 ```
 
 With all this in place, we can send a message to the first agent to start the repeated message exchange.
-To do this, we need to start the containers so they listen to incoming messages and send the initating message.
+To do this, we need to start the containers so that they listen for incoming messages and send the initiating message.
 The best way to start the container message loops and ensure they are correctly shut down in the end is the
 `activate(containers)` function.
 
