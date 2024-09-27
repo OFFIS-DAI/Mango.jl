@@ -95,6 +95,9 @@ Overall, it is easier to get high performance from `Mango.jl`.
 
 
 # Basic Example
+> **_NOTE:_**  All code examples were tested with Mango.jl v0.4.0
+> The version also has the tag `joss_paper` on the repository.
+
 In this example, we define two agents in two containers (i.e. at different addresses) that pass messages to each other directly via TCP.
 Containers can be set up and equipped with the necessary TCP protocol.
 
