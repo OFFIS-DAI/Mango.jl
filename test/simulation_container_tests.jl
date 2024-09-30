@@ -51,7 +51,7 @@ end
 
     send_message(container, "Hello Friends, this is RSd!", AgentAddress(aid="abc"))
 
-    @test_logs (:warn, "Container $(keys(container.agents)) has no agent with id: abc") min_level=Logging.Warn begin
+    @test_logs (:warn, "Container $(keys(container.agents)) has no agent with id: abc") min_level = Logging.Warn begin
         stepping_result = step_simulation(container, 1)
     end
 
@@ -95,7 +95,7 @@ end
 
     @test agent1.counter == 0
     @test agent2.counter == 0
-    
+
     stepping_result = step_simulation(container, 1)
 
     @test agent1.counter == 10
@@ -120,7 +120,7 @@ end
 
     send_message(container, "Hello Friends, this is RSc!", AgentAddress(aid=agent1.aid))
     send_message(container, "Hello Friends, this is RSd!", AgentAddress(aid=agent2.aid))
-    
+
     stepping_result = step_simulation(container, 1)
 
     @test agent1.counter == 10
@@ -140,8 +140,8 @@ end
     agent2 = SimAgent(0)
     register(container, agent1)
     register(container, agent2)
-    com_sim.delay_s_directed_edge_vector[(nothing, aid(agent1))] = 1
-    com_sim.delay_s_directed_edge_vector[(nothing, aid(agent2))] = 2
+    com_sim.delay_s_directed_edge_dict[(nothing, aid(agent1))] = 1
+    com_sim.delay_s_directed_edge_dict[(nothing, aid(agent2))] = 2
 
     send_message(container, "Hello Friends, this is RSc!", AgentAddress(aid=agent1.aid))
     send_message(container, "Hello Friends, this is RSd!", AgentAddress(aid=agent2.aid))
@@ -152,10 +152,10 @@ end
     @test agent2.counter == 0
 
     stepping_result = step_simulation(container, 1)
-    
+
     @test agent1.counter == 10
     @test agent2.counter == 10
-    
+
 end
 
 @agent struct SimSchedulingAgent
@@ -175,8 +175,8 @@ end
     agent2 = SimSchedulingAgent(0, 0)
     register(container, agent1)
     register(container, agent2)
-    com_sim.delay_s_directed_edge_vector[(nothing, aid(agent1))] = 1
-    com_sim.delay_s_directed_edge_vector[(nothing, aid(agent2))] = 2
+    com_sim.delay_s_directed_edge_dict[(nothing, aid(agent1))] = 1
+    com_sim.delay_s_directed_edge_dict[(nothing, aid(agent2))] = 2
 
     schedule(agent1, PeriodicTaskData(0.1)) do
         agent1.scheduled_counter += 1
@@ -194,7 +194,7 @@ end
     @test agent2.counter == 0
 
     stepping_result = step_simulation(container, 1)
-    
+
     @test agent1.counter == 1
     @test agent1.scheduled_counter == 121
     @test agent2.counter == 1
@@ -220,8 +220,8 @@ end
     agent2 = ComplexSimSchedulingAgent(0, 0)
     register(container, agent1)
     register(container, agent2)
-    com_sim.delay_s_directed_edge_vector[(nothing, aid(agent1))] = 1
-    com_sim.delay_s_directed_edge_vector[(nothing, aid(agent2))] = 2
+    com_sim.delay_s_directed_edge_dict[(nothing, aid(agent1))] = 1
+    com_sim.delay_s_directed_edge_dict[(nothing, aid(agent2))] = 2
 
     schedule(agent1, PeriodicTaskData(0.1)) do
         agent1.scheduled_counter += 1
@@ -237,7 +237,7 @@ end
     @test agent2.scheduled_counter == 0
 
     stepping_result = step_simulation(container, 1)
-    
+
     @test agent1.counter == 1
     @test agent1.scheduled_counter == 121
     @test agent2.counter == 1
@@ -267,8 +267,8 @@ end
     agent2 = MoreComplexSimSchedulingAgent(0, 0)
     register(container, agent1)
     register(container, agent2)
-    com_sim.delay_s_directed_edge_vector[(nothing, aid(agent1))] = 1
-    com_sim.delay_s_directed_edge_vector[(nothing, aid(agent2))] = 2
+    com_sim.delay_s_directed_edge_dict[(nothing, aid(agent1))] = 1
+    com_sim.delay_s_directed_edge_dict[(nothing, aid(agent2))] = 2
 
     schedule(agent1, PeriodicTaskData(0.1)) do
         agent1.scheduled_counter += 1
@@ -284,7 +284,7 @@ end
     @test agent2.scheduled_counter == 100
 
     stepping_result = step_simulation(container, 1)
-    
+
     @test agent1.counter == 1
     @test agent1.scheduled_counter == 121
     @test agent2.counter == 2
@@ -299,8 +299,8 @@ end
     agent2 = MoreComplexSimSchedulingAgent(0, 0)
     register(container, agent1)
     register(container, agent2)
-    com_sim.delay_s_directed_edge_vector[(aid(agent2), aid(agent1))] = 1
-    com_sim.delay_s_directed_edge_vector[(nothing, aid(agent2))] = 2
+    com_sim.delay_s_directed_edge_dict[(aid(agent2), aid(agent1))] = 1
+    com_sim.delay_s_directed_edge_dict[(nothing, aid(agent2))] = 2
 
     schedule(agent1, InstantTaskData()) do
         agent1.scheduled_counter += 1
@@ -320,7 +320,7 @@ end
     @test agent2.scheduled_counter == 0
 
     stepping_result = step_simulation(container)
-    
+
     @test stepping_result.simulation_step_size_s == 1
     @test agent1.counter == 1
     @test agent1.scheduled_counter == 102
@@ -338,7 +338,7 @@ end
     stepping_result = step_simulation(container)
 
     @test isnothing(stepping_result)
-    
+
     schedule(agent1, PeriodicTaskData(0.1)) do
         agent1.scheduled_counter += 1
     end
@@ -377,4 +377,19 @@ end
 
 @testset "SimulationSchedulerDetermineNoImplent" begin
     @test_throws "Please implement determine_next_event_time(...)" Mango.determine_next_event_time(TestTaskSim())
+end
+
+@testset "SimulationContainerAgentsAreOrdered" begin
+    container = create_simulation_container(DateTime(0))
+    a1 = register(container, SimAgent(0))
+    a2 = register(container, SimAgent(1))
+    a3 = register(container, SimAgent(2))
+    a4 = register(container, SimAgent(3))
+
+    @test agents(container)[1] == a1
+    @test agents(container)[2] == a2
+    @test agents(container)[3] == a3
+    @test agents(container)[4] == a4
+    @test container[aid(a1)] == a1
+    @test container[1] == a1
 end

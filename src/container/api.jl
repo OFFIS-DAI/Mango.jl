@@ -1,11 +1,17 @@
 
-export ContainerInterface, send_message, protocol_addr, Address, AgentAddress, MQTTAddress, SENDER_ADDR, SENDER_ID, TRACKING_ID
+export ContainerInterface, send_message, register, start, shutdown, protocol_addr, agents, Address, AgentAddress, MQTTAddress, SENDER_ADDR, SENDER_ID, TRACKING_ID
 
-# id key for the sender address
+"""
+Key for the sender address in the meta dict
+"""
 SENDER_ADDR::String = "sender_addr"
-# id key for the sender 
+"""
+Key for the sender in the meta dict
+"""
 SENDER_ID::String = "sender_id"
-# id key for the tracking number used for dialogs
+""" 
+Key for the tracking number used for dialogs in the meta dict
+"""
 TRACKING_ID::String = "tracking_id"
 
 """
@@ -13,11 +19,6 @@ Supertype of every container implementation. This acts as an interface to be use
 in their contexts.
 """
 abstract type ContainerInterface end
-
-"""
-Supertype of all address types
-"""
-abstract type Address end
 
 """
 Default AgentAddress base type, where the agent identifier is based on the container created agent id (aid).
@@ -39,24 +40,87 @@ Used with the MQTT protocol.
 end
 
 """
-Send a message `message using the given container `container`
+    send_message(
+    container::ContainerInterface,
+    content::Any,
+    address::Address,
+    sender_id::Union{Nothing,String}=nothing;
+    kwargs...,
+)
+
+Send a message `message` using the given container `container`
 to the given address. Additionally, further keyword
 arguments can be defines to fill the internal meta data of the message.
-
-This only defines the function API, the actual implementation is done in the core container
-module.
 """
 function send_message(
     container::ContainerInterface,
     content::Any,
     address::Address,
     sender_id::Union{Nothing,String}=nothing;
-    kwargs...
+    kwargs...,
 )
     @warn "The API send_message definition has been called, this should never happen. There is most likely an import error."
 end
 
 """
-Used by the agent to get the protocol addr part
+    protocol_addr(container)
+
+Return technical address of the container.
 """
 function protocol_addr(container::ContainerInterface) end
+
+"""
+    start(container)
+
+Start the container. It is recommended to use [`activate`](@ref) instead of starting manually.
+
+What exactly happend highly depends on the protocol and the container implmentation.
+For example, for TCP the container binds on IP and port, and the listening loop started.
+"""
+function start(container::ContainerInterface) end
+
+"""
+    shutdown(container)
+
+Shutdown the container. Here all loops are closed, resources freed. It is recommended to use [`activate`](@ref) 
+instead of shutting down manually.
+"""
+function shutdown(container::ContainerInterface) end
+
+"""
+    register(
+    container,
+    agent,
+    suggested_aid::Union{String,Nothing}=nothing;
+    kwargs...,
+)
+
+Register the agent to the container. Retun the agent itself for convenience.
+
+Normally the aid is generated, however it is possible to suggest an aid, which will be used
+if it has not been used yet and if it is not conflicting with the default naming pattern (agent0, agent1, ...)
+"""
+function register(
+    container::ContainerInterface,
+    agent::AgentInterface,
+    suggested_aid::Union{String,Nothing}=nothing;
+    kwargs...,
+) end
+
+"""
+    agents(container)
+
+Return the agents of the container. The agents have a fixed order.
+"""
+function agents(container::ContainerInterface) end
+
+"""
+    notify_ready(container::Container)
+
+Mark the agent system as ready.
+"""
+function notify_ready(container::ContainerInterface)
+    for agent in values(agents(container))
+        notify_ready(agent)
+    end
+end

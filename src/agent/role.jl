@@ -1,5 +1,15 @@
 export Role,
-    handle_message, handle_event, RoleContext, @role, @shared, subscribe_message, subscribe_send, bind_context, emit_event, get_model, subscribe_event, address, setup, on_ready, on_start
+    RoleContext,
+    handle_event,
+    @role,
+    @shared,
+    subscribe_message,
+    subscribe_send,
+    bind_context,
+    emit_event,
+    get_model,
+    subscribe_event,
+    setup
 
 
 """
@@ -24,51 +34,50 @@ end
 List of all baseline fields of every role, which will be inserted
 by the macro @role.
 """
-ROLE_BASELINE_FIELDS::Vector = [:(context::Union{RoleContext,Nothing}),
-                                :(shared_vars::Vector{Any})]
+ROLE_BASELINE_FIELDS::Vector = [:(context::Union{RoleContext,Nothing} = nothing),
+    :(shared_vars::Vector{Any} = Vector())]
 
-ROLE_BASELINE_DEFAULTS::Vector = [
-    () -> nothing,
-    () -> Vector()
-]
 
 """
 Macro for defining a role struct. Expects a struct definition
 as argument.
-    
+	
 The macro does 3 things:
-1. It adds all baseline fields, defined in ROLE_BASELINE_FIELDS
+1. It adds all baseline fields, defined in `ROLE_BASELINE_FIELDS`
    (the role context)
 2. It adds the supertype `Role` to the given struct.
-3. It defines a default constructor, which assigns all baseline fields
-   to predefined default values. As a result you can (and should) create 
-   a role using only the exclusive fields.
+3. It applies [`@with_def`](@ref) for default construction, the baseline fields are assigned
+   to default values
 
 For example the usage could like this.
 ```julia
 @role struct MyRole
-    my_own_field::String
+	my_own_field::String
 end
 
 # results in
 
-mutable struct MyRole <: Agent
-    # baseline fields...
-    my_own_field::String
+@with_def mutable struct MyRole <: Role
+	# baseline fields...
+	my_own_field::String
+    my_own_field_with_default::String = "Default"
 end
-MyRole(my_own_field) = MyRole(baseline fields defaults..., my_own_field)
 
 # so youl would construct your role like this
 
-my_roel = MyRole("own value")
+my_roel = MyRole("own value", my_own_field_with_default="OtherValue")
 ```
 """
 macro role(struct_def)
     Base.remove_linenums!(struct_def)
-    
-    struct_name = struct_def.args[2]
+
+    struct_head = struct_def.args[2]
+    struct_name = struct_head
+    if typeof(struct_name) != Symbol
+        struct_name = struct_head.args[1]
+    end
     struct_fields = struct_def.args[3].args
-    
+
     # Add the roles baseline fields
     for field in reverse(ROLE_BASELINE_FIELDS)
         pushfirst!(struct_fields, field)
@@ -85,55 +94,51 @@ macro role(struct_def)
             struct_field = struct_fields[i+1]
             field_name = struct_field.args[1]
             field_type = struct_field.args[2]
-            new_expr_decl = Expr(:(::), field_name, field_type)
+            # evaluates to field_name::field_type = field_type()
+            new_expr_decl = Expr(:(=), Expr(:(::), field_name, field_type), Expr(:call, Symbol(field_type)))
             push!(new_struct_fields, new_expr_decl)
             push!(shared_names, Expr(:tuple, String(field_name), field_type))
-            deleteat!(modified_struct_fields, i+1)
+            deleteat!(modified_struct_fields, i + 1)
             deleteat!(modified_struct_fields, i)
         end
     end
     struct_fields = modified_struct_fields
-    
+
     # Create the new struct definition
-    new_struct_def = Expr(
+    new_struct_def = Expr(:macrocall, Symbol("@with_def"), LineNumberNode(0, Symbol("none")), Expr(
         :struct,
         true,
-        Expr(:(<:), struct_name, :(Role)),
-        Expr(:block, cat(struct_fields, new_struct_fields, dims=(1,1))...),
-    )
+        Expr(:(<:), struct_head, :(Role)),
+        Expr(:block, cat(struct_fields, new_struct_fields, dims=(1, 1))...),
+    ))
 
-    # Creates a constructor, which will assign nothing to all baseline fields, therefore requires you just to call it with the your fields
-    # f.e. @role MyRole own_field::String end, can be constructed using MyRole("MyOwnValueFor own_field").
-    new_fields = [
-        field for field in struct_fields[1+length(ROLE_BASELINE_FIELDS):end] if
-        typeof(field) != LineNumberNode
-    ]
-    new_values = [i == 2 ? Expr(:vect, shared_names...) : Expr(:call, default) for (i, default) in enumerate(ROLE_BASELINE_DEFAULTS)]
-    new_struct_values = [Expr(:call, field.args[2]) for field in new_struct_fields]
-    new_values = cat(new_values, new_struct_values, dims=(1,1))
-
-    default_constructor_def = Expr(
-        :(=),
-        Expr(:call, struct_name, new_fields...),
-        Expr(
-            :call,
-            struct_name,
-            new_values...,
-            new_fields...,
-        ),
-    )
-
-    esc(Expr(:block, new_struct_def, default_constructor_def))
+    esc(Expr(:block, new_struct_def))
 end
 
 """
-Mark the field as shared across roles, this will implicitly 
+Mark the field as shared across roles. 
+
+This only works on structs with empty default constructor. Internally the marked field will be initialized
+with a model created by [`get_model`](@ref). The model will be set when the Role is added to an agent.
+
+# Example
+```julia
+@kwdef struct Model
+    field::Int = 0
+end
+@role struct MyRole
+    @shared
+    my_model::Model # per agent the exact same in every agent.
+end
+```
 """
 macro shared(field_declaration)
     return esc(field_declaration)
 end
 
 """
+    setup(role::Role)
+
 Hook-in function to setup the role, after it has been
 added to its agent.
 """
@@ -150,6 +155,8 @@ function handle_message(role::Role, message::Any, meta::Any)
 end
 
 """
+    handle_event(role::Role, src::Role, event::Any; event_type::Any)
+
 Default function for arriving events, which get dispatched to the role.
 """
 function handle_event(role::Role, src::Role, event::Any; event_type::Any)
@@ -169,42 +176,32 @@ function bind_context(role::Role, context::RoleContext)
 end
 
 """
+    context(role::Role)
+
 Return the context of role
 """
 function context(role::Role)
     return role.context
 end
 
-"""
-Hook-in function, which will be called on shutdown of the roles
-agent.
-"""
 function shutdown(role::Role)
     # default nothing
 end
 
-
-"""
-Lifecycle Hook-in function called when the container of the agent has been started,
-depending on the container type it may not be called (if there is no start at all, 
-f.e. the simulation container)
-"""
 function on_start(role::Role)
     # do nothing by default
 end
 
-"""
-Lifecycle Hook-in function called when the agent system as a whole is ready, the 
-hook-in has to be manually activated using notify_ready(container::Container)
-"""
 function on_ready(role::Role)
     # do nothing by default
 end
 
 """
+    subscribe_message(role::Role, handler::Function, condition::Function)
+
 Subscribe a message handler function (it need to have the signature (role, message, meta))
 to the message dispatching. This handler function will be called everytime the given
-condition function (message, meta -> boolean) evaluates to true when a message arrives
+condition function ((message, meta) -> boolean) evaluates to true when a message arrives
 at the roles agent.
 """
 function subscribe_message(role::Role, handler::Function, condition::Function)
@@ -212,7 +209,9 @@ function subscribe_message(role::Role, handler::Function, condition::Function)
 end
 
 """
-Subscribe a send_message hook in function (signature, (role, content, receiver_id, receiver_addr; kwargs...)) to the
+    subscribe_send(role::Role, handler::Function)
+
+Subscribe a `send_message` hook in function (signature, (role, content, receiver_id, receiver_addr; kwargs...)) to the
 message sending. The hook in function will be called every time a message is sent by the agent.
 """
 function subscribe_send(role::Role, handler::Function)
@@ -220,60 +219,77 @@ function subscribe_send(role::Role, handler::Function)
 end
 
 """
-Subscribe to specific types of events.
-"""
-function subscribe_event(role::Role, event_type::Any, event_handler::Any)
-    subscribe_event_handle(role.context.agent, role, event_type, event_handler; condition=(a,b)->true)
-end
+    subscribe_event(role::Role, event_type::Any, event_handler::Any, condition::Function)
 
+Subscribe to specific types of events. 
+
+The types of events are determined by the `condition` function (accepting `src` and `event`) and 
+by the `event_type`.
+
+# Example
+```julia
+struct MyEvent end
+function custom_handler(role::Role, src::Role, event::Any, event_type::Any)
+    # do your thing
+end
+subscribe_event(my_role, MyEvent, custom_handler, (src, event) -> aid(src) == "agent0")
+```
 """
-Subscribe to specific types of events.
-"""
-function subscribe_event(role::Role, event_type::Any, event_handler::Any, condition::Function)
+function subscribe_event(role::Role, event_type::Any, event_handler::Any, condition::Function=(a, b) -> true)
     subscribe_event_handle(role.context.agent, role, event_type, event_handler; condition=condition)
 end
 
 """
-Emit an event to their subscriber
+    emit_event(role::Role, event::Any; event_type::Any=nothing)
+
+Emit an event to their subscriber.
 """
 function emit_event(role::Role, event::Any; event_type::Any=nothing)
     emit_event_handle(role.context.agent, role, event, event_type=event_type)
 end
 
 """
+    get_model(role::Role, type::DataType)
+
 Get a shared model from the pool. If the model does not exist yet, it will be created.
 Only types with default constructor are allowed!
+
+# Example
+```julia
+@kwdef struct ExampleModel
+    my_field::Int = 0
+end
+role = ExampleRole()
+model::ExampleModel = get_model(role, ExampleModel)
+model.my_field = 1
+model2::ExampleModel = get_model(role, ExampleModel)
+# model == model2, it will also be the same for every role!
+```
 """
 function get_model(role::Role, type::DataType)
     get_model_handle(role.context.agent, type)
 end
 
-"""
-Delegates to the scheduler `Scheduler`
-"""
 function schedule(f::Function, role::Role, data::TaskData)
     schedule(f, role.context.agent, data)
 end
 
-"""
-Get AID of the parent agent
-"""
 function aid(role::Role)
     return address(role.context.agent).aid
 end
 
-"""
-Get AgentAddress of the parent agent
-"""
 function address(role::Role)
     return address(role.context.agent)
 end
 
-"""
-Send a message using the context to the agent with the receiver id `receiver_id` at the address `receiver_addr`. 
-This method will always set a sender_id. Additionally, further keyword arguments can be defines to fill the 
-internal meta data of the message.
-"""
+function add_forwarding_rule(role::Role, from_addr::AgentAddress, to_address::AgentAddress, forward_replies::Bool)
+    add_forwarding_rule(role.context.agent, from_addr, to_address, forward_replies)
+end
+
+function delete_forwarding_rule(role::Role, from_addr::AgentAddress, to_address::Union{Nothing,AgentAddress})
+    delete_forwarding_rule(role.context.agent, from_addr, to_address)
+end
+
 function send_message(
     role::Role,
     content::Any,
@@ -288,16 +304,34 @@ function send_tracked_message(
     role::Role,
     content::Any,
     agent_adress::AgentAddress;
-    response_handler::Function=(role,message,meta)->nothing,
+    response_handler::Function=(role, message, meta) -> nothing,
     kwargs...,
 )
     return send_tracked_message(role.context.agent, content, agent_adress; response_handler=response_handler, calling_object=role, kwargs...)
 end
 
+function send_and_handle_answer(
+    response_handler::Function,
+    role::Role,
+    content::Any,
+    agent_address::AgentAddress;
+    kwargs...)
+    return send_and_handle_answer(response_handler, role.context.agent, content, agent_address;
+        calling_object=role, kwargs...)
+end
+
 function reply_to(role::Role,
     content::Any,
     received_meta::AbstractDict;
-    response_handler::Function=(agent,message,meta)->nothing,
+    response_handler::Function=(agent, message, meta) -> nothing,
     kwargs...)
     return reply_to(role.context.agent, content, received_meta; response_handler=response_handler, calling_object=role, kwargs...)
+end
+
+function forward_to(role::Role,
+    content::Any,
+    forward_to_address::AgentAddress,
+    received_meta::AbstractDict;
+    kwargs...)
+    return forward_to(role.context.agent, content, forward_to_address, received_meta; kwargs...)
 end

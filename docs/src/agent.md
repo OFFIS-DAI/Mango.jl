@@ -3,12 +3,12 @@
 Agents are autonomous entities that can perceive their environment, make decisions, and interact with other agents and the system they inhabit. They are the building blocks of Mango.jl, representing the individual entities or actors within a larger system.
 
 
-## 1. Agent Definition with @agent Macro
+## Agent Definition with @agent Macro
 
-To define an agent the `@agent` macro can be used. It simplifies the process of defining an agent struct and automatically adds necessary baseline fields. Here's how you can define an agent:
+To define an agent the [`@agent`](@ref) macro can be used. It simplifies the process of defining an agent struct and automatically adds necessary baseline fields. Here's how you can define an agent:
 
-```julia
-using Mango
+```@example
+using Mango 
 
 # Define your agent struct using @agent macro
 @agent struct MyAgent
@@ -19,22 +19,13 @@ end
 my_agent = MyAgent("MyValue")
 ```
 
-The `@agent` macro adds the baseline fields listed in the table below. You can initialize the agent with exclusive fields like `my_own_field` in the example.
+The [`@agent`](@ref) macro adds some internal baseline fields to the struct. You can initialize the agent with exclusive fields like `my_own_field` in the example.
 
-| Field        | Description                                                    | Usable?                                                                           |
-|--------------|----------------------------------------------------------------|-----------------------------------------------------------------------------------|
-| aid          | The id of the agent                                            | Yes with aid(agent)!                                                               |
-| context      | Holds the reference to the container to send messages.         | Generally not recommended, use the convenience methods defined on the Agent type. |
-| scheduler    | The scheduler of the agent                                     | Generally not recommended, use the convenience methods defined on the Agent type. |
-| lock         | The agent lock to ensure only one message is handled per time. | Internal use only!                                                                |
-| role_handler | Contains the roles and handles their interactions              | Internal use only!                                                                |
+## Role Management
 
+Agents can have multiple roles associated with them. Roles can be added using the [`add`](@ref) function, allowing the agent to interact with its environment based on different roles. Here's how you can add roles to an agent:
 
-## 2. Role Management
-
-Agents can have multiple roles associated with them. Roles can be added using the `add` function, allowing the agent to interact with its environment based on different roles. Here's how you can add roles to an agent:
-
-```julia
+```@example
 using Mango
 
 # Define your role struct using @role macro
@@ -47,107 +38,145 @@ role1 = MyRole("Role1")
 role2 = MyRole("Role2")
 
 # Define your agent struct using @agent macro
-@agent struct MyAgent
-    my_own_field::String
-end
+@agent struct MyContainerAgent end
 
 # Create an instance of the agent
-my_agent = MyAgent("MyValue")
+my_agent = MyContainerAgent()
 
 # Add roles to the agent
 add(my_agent, role1)
 add(my_agent, role2)
 
-# Now you can interact with the roles as needed
+# Now you can interact with the roles as neededs
+```
+
+As this can be clunky at some time, there is the possibility to create an agent using only roles and add it to the container using [`add_agent_composed_of`](@ref) or without a container [`agent_composed_of`](@ref).
+
+```@example
+using Mango
+
+c = create_tcp_container()
+
+@role struct RoleA end
+@role struct RoleB end
+@role struct RoleC end
+
+# internally an empty agent definition is used, the roles are added and the agent
+# is added to the given container
+created_agent = add_agent_composed_of(c, RoleA(), RoleB(), RoleC())
 ```
 
 For more information on roles, take a look at [Role definition](@ref)
 
-## 3. Message Handling
+## Message Handling
 
-Agents and Roles can handle incoming messages through the `handle_message` function. By default, it does nothing, but you can override it to define message-specific behavior. You can also add custom message handlers for specific roles using the `subscribe_message` function. Here's how to handle messages:
+Agents and Roles can handle incoming messages through the [`handle_message`](@ref) function. By default, it does nothing, but you can override it to define message-specific behavior. You can also add custom message handlers for specific roles using the [`subscribe_message`](@ref) function. Here's how to handle messages:
 
-```julia
+```@example
 using Mango
 
-# Define your agent struct using @agent macro
-@agent struct MyAgent
-    my_own_field::String
-end
-@role struct MyRole
-    my_own_field::String
-end
+@agent struct MySecondContainerAgent end
+@role struct MyHandlingRole end
 
 # Override the default handle_message function for custom behavior
-function handle_message(agent::MyAgent, message::Any, meta::Any)
+function Mango.handle_message(agent::MySecondContainerAgent, message::Any, meta::Any)
     println("Received message @agent: ", message)
 end
 # Override the default handle_message function for custom behavior
-function handle_message(role::MyRole, message::Any, meta::Any)
+function Mango.handle_message(role::MyHandlingRole, message::Any, meta::Any)
     println("Received message @role: ", message)
 end
+
+# Use the express API to show the effect
+run_with_tcp(1, agent_composed_of(MyHandlingRole(), base_agent=MySecondContainerAgent())) do cl
+    wait(send_message(cl[1], "Message", address(cl[1][1])))
+    sleep(0.1)
+end
 ```
 
-Besides the ability to handle messages, there also must be a possibility to send messages. This is implemented using the `send_message` function, defined on roles and agents.
+Besides the ability to handle messages, there also must be a possibility to send messages. This is implemented using the [`send_message`](@ref) function, defined on roles and agents.
 
-
-```julia
+```@example
 using Mango
 
 # Define your agent struct using @agent macro
-@agent struct MyAgent
+@agent struct MySendingAgent
     my_own_field::String
 end
-@role struct MyRole
+@role struct MySendingRole
     my_own_field::String
 end
 
-agent = MyAgent("")
-role = MyAgent("")
+agent = MySendingAgent("")
+role = MySendingRole("")
 
-send_message(agent, "Message", AgentAddress("receiver_id", "receiver_addr", "optional tracking id"))
-send_message(role, "Message", AgentAddress("receiver_id", "receiver_addr", "optional tracking id"))
+run_with_tcp(1, agent_composed_of(role, base_agent=agent), PrintingAgent()) do cl
+    wait(send_message(agent, "Message", address(cl[1][2])))
+    wait(send_message(role, "Message", address(cl[1][2])))
+    sleep(0.1)
+end
 ```
 
-Further, there are two specialized methods for sending messages, (1) `send_tracked_message` and (2) `reply_to`.
+Further, there are several specialized methods for sending messages, (1) [`send_tracked_message`](@ref), (2) [`send_and_handle_answer`](@ref), (3) [`reply_to`](@ref), (4) [`forward_to`](@ref).
 
 (1) This function can be used to send a message with an automatically generated tracking id (uuid1) and it also accepts a response handler, which will
-    automatically be called when a response arrives to the tracked message (care to include the tracking id when responding or just use `reply_to`).
-(2) Convenience function to respond to a received message without the need to create the AgentAddress by yourself.
+    automatically be called when a response arrives to the tracked message (care to include the tracking id when responding or just use [`reply_to`](@ref)).
+(2) Variant of (1) which requires a response handler and enables the usage of the `do` syntax (see following code snippet).
+(3) Convenience function to respond to a received message without the need to create the AgentAddress by yourself.
+(4) Convenience function to forward messages to another agent. This function will set the approriate fields in the meta container to identify that a message has been forwarded and from which address it has been forwarded.
 
-```julia
-agent1 = MyAgent("")
-agent2 = MyAgent("")
+```@example
+using Mango 
 
-function handle_message(agent::MyAgent, message::Any, meta::Any)
-    # agent 2
-    reply_to(agent, "Hello Agent, this is a response", meta) # (2)
+@agent struct MyMessageAgent end
+@agent struct ReplyAgent end
+
+agent1 = MyMessageAgent()
+agent2 = PrintingAgent() # defined in Mango
+agent3 = ReplyAgent()
+
+function Mango.handle_message(agent::ReplyAgent, message::Any, meta::Any)
+    # agent 3
+    reply_to(agent, "Hello Agent, this is a response", meta) # (3)
+
+    @info "Reply"
 end
-function handle_response(agent::MyAgent, message::Any, meta::Any)
+function handle_response(agent::MyMessageAgent, message::Any, meta::Any)
     # agent 1
+    forward_to(agent, "Forwarded message", address(agent2), meta) # (4)
+
+    @info "Handled response and forwarded the message" message
 end
 
-send_tracked_message(agent1, "Hello Agent, this is a tracked message", AgentAddress(aid=agent2.aid); response_handler=handle_response) # (1)
+run_with_tcp(1, agent1, agent2, agent3) do cl
+    wait(send_tracked_message(agent1, "Hello Agent, this is a tracked message", address(agent3); response_handler=handle_response)) # (1)
+    wait(send_and_handle_answer(agent2, "Hello Agent, this is a different tracked message", address(agent3)) do agent, message, meta # (2)
+        @info "Got an answer!"
+    end)
+    sleep(0.1)
+end
 ```
 
-## 4. Task Scheduling
+There is also a possibility to enable automatic forwarding with adding so-called forwarding rules. For this you can use the function [`add_forwarding_rule`](@ref). To delete these rules the function [`delete_forwarding_rule`](@ref) exists.
 
-Agents can schedule tasks using the `schedule` function, which delegates to the `Mango.schedule` function. You can wait for all scheduled tasks to be completed using `wait_for_all_tasks`. Here's how to schedule tasks:
+## Task Scheduling
 
-```julia
+Agents can schedule tasks using the [`schedule`](@ref) function, which delegates to the [`Mango.schedule`](@ref) function. You can wait for all scheduled tasks to be completed using [`wait_for_all_tasks`](@ref). Here's how to schedule tasks:
+
+```@example
 using Mango
 
 # Define your agent struct using @agent macro
-@agent struct MyAgent
+@agent struct MyTaskAgent
     my_own_field::String
+end
+function my_task_function()
+    @info "Task completed"
 end
 
 # Create an instance of the agent
-my_agent = MyAgent("MyValue")
+my_agent = MyTaskAgent("MyValue")
 
 # Schedule a task for the agent
-schedule(my_task_function, my_agent, PeriodicTaskData(5.0)) # Schedule a task to run every 5 seconds
-
-# Wait for all scheduled tasks to complete
-wait_for_all_tasks(my_agent)
+wait(schedule(my_task_function, my_agent, InstantTaskData()))
 ```

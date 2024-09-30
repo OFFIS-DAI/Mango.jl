@@ -1,6 +1,9 @@
 [deps]
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 Mango = "5e49fdec-d473-4d14-b295-7bff2fcf1925"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
+Graphs = "86223c79-3864-5bf0-83f7-82e725a168b6"
 
 [compat]
 Documenter = "~0.27"

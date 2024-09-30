@@ -8,7 +8,9 @@ To create a simulation container, it is advised to use `create_simulation_contai
 
 In the following example a simple simulation is executed.
 
-```julia
+```@example
+using Mango, Dates
+
 # Arbitrary agent definition
 @agent struct SimAgent
 end
@@ -16,13 +18,11 @@ end
 # Create a communication simulator, the simple communication simulator works with static delays between specific agents and a global default, here 0
 comm_sim = SimpleCommunicationSimulation(default_delay_s=0)
 # Set the simulation time to an initial value
-container = create_simulation_container(DateTime(Millisecond(1000)), communication_sim=comm_sim)
+container = create_simulation_container(DateTime(Millisecond(10)), communication_sim=comm_sim)
 
 # Creating agents and registering, no difference here to the real time container
-agent1 = SimAgent(0)
-agent2 = SimAgent(0)
-register(container, agent1)
-register(container, agent2)
+agent1 = register(container, SimAgent())
+agent2 = register(container, SimAgent())
 
 # Send a message from agent2 to agent1, the message will be written to a queue instead of processed by some protocol
 send_message(agent2, "Hello Friends, this is RSc!", AgentAddress(aid=agent1.aid))
@@ -30,6 +30,9 @@ send_message(agent2, "Hello Friends, this is RSc!", AgentAddress(aid=agent1.aid)
 # in this stepping call the message will be delivered and handled to/by the agent1  
 # step_size=1, if no size is specified the simulation will work as discrete event simulation, executing all tasks occurring on the next event time.
 stepping_result = step_simulation(container, 1)
+
+@info stepping_result.time_elapsed
+@info container.clock
 ```
 
 ## Discrete event vs continous stepping
@@ -37,10 +40,27 @@ stepping_result = step_simulation(container, 1)
 Mango.jl support discrete event and continous stepping. Discrete event stepping means that no advance time is provided instead the simulation jumps to the next event time and executes every tasks, delivers every message scheduled at this next event time. For example, you set up a simultion in which three tasks are in the queue at the event times 1,1,3; then the next step would execute the first two, and the following would execute the last task (given no new tasks are created). With continous stepping the user has to provide a step_size (in seconds), which will be used to execute every task until `simulation_time + step_size` ordered by the time of the individual tasks. It is also possible to mix both styles.
 
 ```julia
+# function call examples for
 # continous
-stepping_result = step_simulation(container, 1)
+stepping_result = step_simulation(container, 1.23)
+# and
 # discrete event
 stepping_result = step_simulation(container)
+```
+
+If you do not require to mix both styles and you do not want to create very specific simulations containers, you might prefer to use the express way:
+
+```@example
+using Mango, Dates
+
+# Arbitrary agent definition
+@agent struct SteppingAgent
+end
+
+# number of steps, agents..., start_time=Start time of simulation
+results = run_in_simulation(1, SteppingAgent(), PrintingAgent(), start_time=DateTime(2000)) do container
+    send_message(container, "MyMessageForTheSimulation", address(container[2]))
+end
 ```
 
 ## Communication simulation

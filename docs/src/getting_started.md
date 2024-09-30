@@ -1,118 +1,131 @@
 # Getting Started with Mango.jl
 
-In this getting started guide, we will explore the essential features of Mango.jl by creating a simple simulation of two ping pong agents that exchange messages in a container. We will set up a container with the TCP protocol, define ping pong agents, and enable them to exchange messages.
+In this getting started guide, we will explore the essential features of Mango.jl, starting with a simple example using the express-api, followed by a more in-depth example of two ping pong agents that exchange messages in a container. Here, we will manually set up a container with the TCP protocol, define ping pong agents, and enable them to exchange messages. This way allows better customization but may need more boilerplate code.
+
 You can also find working examples of the following code in [examples.jl](../../test/examples.jl).
 
-## 1. Creating a Container with a TCP Protocol
+## 0. Quickstart
 
-To get started, we need to create a container to manage ping pong agents and facilitate communication using the TCP protocol:
+In Mango.jl, you can define agents using a number of roles using [`@role`](@ref) and [`agent_composed_of`](@ref), or directly using [`@agent`](@ref). To define the behavior of the agents, [`handle_message`](@ref) can be defined, and messages can be send using [`send_message`](@ref). To run the agents with a specific protocol in real time the fastest way is to use [`run_with_tcp`](@ref), which will distribute the agents to tcp-containers and accepts a function in which some agent intializiation and/or trigger-code could be put. The following example illustrates the basic usage of the functions.
 
-```julia
+```jldoctest
 using Mango
 
-# Create the container instances with TCP protocol
-container = Container()
-container.protocol = TCPProtocol(address=InetAddr(ip"127.0.0.1", 5555))
+@role struct PrintingRole
+    out::Any = ""
+end
 
-container2 = Container()
-container2.protocol = TCPProtocol(address=InetAddr(ip"127.0.0.1", 5556))
+function Mango.handle_message(role::PrintingRole, msg::Any, meta::AbstractDict)
+    role.out = msg
+end
 
-# Start the container
-wait(Threads.@spawn start(container))
-wait(Threads.@spawn start(container2))
+express_one = agent_composed_of(PrintingRole())
+express_two = agent_composed_of(PrintingRole(), PrintingRole())
+
+run_with_tcp(2, express_one, express_two) do container_list
+    wait(send_message(express_one, "Ping", address(express_two)))
+    sleep_until(() -> express_two[1].out == "Ping")
+end
+
+# evaluating
+express_two[1].out
+# output
+"Ping"
 ```
 
-## 2. Defining Ping Pong Agents
+## Step-by-step (manual container creation)
+
+Alternatively you can create the container yourself. This is the more flexible approach, but also wordier.
+
+### 1. Creating a Container with a TCP Protocol
+
+we need to create a container to manage ping pong agents and facilitate communication using the TCP protocol:
+
+```@example tcp_gs
+using Mango, Sockets
+
+# Create the container instances with TCP protocol
+container = create_tcp_container("127.0.0.1", 5555)
+container2 = create_tcp_container("127.0.0.1", 5556)
+```
+
+### 2. Defining Ping Pong Agents
 
 Let's define agent structs to represent the ping pong agents. Every new agent struct should be defined using the @agent macro to ensure compatibility with the mango container:
 
-```julia
-using Mango
-
+```@example tcp_gs
 # Define the ping pong agent
 @agent struct TCPPingPongAgent
     counter::Int
 end
 ```
 
-## 3. Sending and Handling Messages
+### 3. Sending and Handling Messages
 
-Ping pong agents can exchange messages and they can keep track of the number of messages received. Let's implement message handling for the agents. To achieve this a new method `handle_message` from `Mango` has to be added:
+Ping pong agents can exchange messages and they can keep track of the number of messages received. Let's implement message handling for the agents. To achieve this a new method [`handle_message`](@ref) from `Mango` has to be added:
 
-```julia
-import Mango.handle_message
-
+```@example tcp_gs
 # Override the default handle_message function for ping pong agents
-function handle_message(agent::TCPPingPongAgent, message::Any, meta::Any)
+function Mango.handle_message(agent::TCPPingPongAgent, message::Any, meta::Any)
+    agent.counter += 1
+
+    println(
+        "$(agent.aid) got a message: $message." *
+        "This is message number: $(agent.counter) for me!"
+    )
+
+    # doing very important work
+    sleep(0.5)
+
     if message == "Ping"
-        agent.counter += 1
-        t = AgentAddress(meta["sender_id"], meta["sender_addr"], nothing)
-        send_message(agent, "Pong", t)
+        reply_to(agent, "Pong", meta)
     elseif message == "Pong"
-        agent.counter += 1
-        t = AgentAddress(meta["sender_id"], meta["sender_addr"], nothing)
-        send_message(agent, "Ping", t)
+        reply_to(agent, "Ping", meta)
     end
 end
 ```
 
-## 4. Sending Messages
+### 4. Sending Messages
 
 Now let's simulate the ping pong exchange by sending messages between the ping pong agents. 
-Addresses are provided to the `send_message` function via the `AgentAddress` struct.
+Addresses are provided to the [`send_message`](@ref) function via the [`AgentAddress`](@ref) struct.
+The struct consists of an `aid` and the more technical `address` field. Further an AgentAddress 
+can contain a `tracking_id`, which can identify the dialog agents are having.
 
-```julia
-@kwdef struct AgentAddress <: Address
-    aid::Union{String,Nothing}
-    address::Any = nothing
-    tracking_id::Union{String,Nothing} = nothing
-end
-```
+The [`send_message`](@ref) method here will automatically insert the agent as sender:
 
-The `send_message` method here will automatically insert the agent as sender:
-
-```julia
+```@example tcp_gs
 # Define the ping pong agent
 # Create instances of ping pong agents
-ping_agent = TCPPingPongAgent(0)
-pong_agent = TCPPingPongAgent(0)
+ping_agent = register(container, TCPPingPongAgent(0))
+pong_agent = register(container2, TCPPingPongAgent(0))
 
-# register each agent to a container
-register(container, ping_agent)
-register(container2, pong_agent)
+activate([container, container2]) do
+    # Send the first message to start the exchange
+    send_message(ping_agent, "Ping", address(pong_agent))
 
-# Send the first message to start the exchange
-target = AgentAddress(pong_agent.aid, InetAddr(ip"127.0.0.1", 5556), nothing)
-send_message(ping_agent, "Ping", target)
-
-# Wait for a moment to see the result
-# In general you want to use a Condition() instead to
-# Define a clear stopping signal for the agents
-wait(Threads.@spawn begin
-    while ping_agent.counter < 5 
-        sleep(1)
-    end
-end)
-
-@sync begin
-    Threads.@spawn shutdown(container)
-    Threads.@spawn shutdown(container2)
+    # wait for 5 messages to have been sent
+    sleep_until(() -> ping_agent.counter >= 5)
 end
 ```
 
 In this example, the ping pong agents take turns sending "Ping" and "Pong" messages to each other, incrementing their counters. After a short moment, we can see the result of the ping pong process.
 
-## 5. Using the MQTT Protocol
-To use an MQTT messsage broker instead of a direkt TCP connection, you can use the `MQTTProtocol`.
+### 5. Using the MQTT Protocol
+To use an MQTT messsage broker instead of a direkt TCP connection, you can use the MQTT protocol. This protocol requires a running MQTT broker. For this you can, for example, use Mosquitto as broker. On most linux-based systems mosquitto exists as package in the public repostories. For example for debian systems:
+
+```bash
+sudo apt install mosquitto
+sudo service mosquitto start
+```
+
+After, you can create MQTT container.
 
 ```julia
-broker_addr = InetAddr(ip"127.0.0.1", 1883)
+using Mango
 
-c1 = Container()
-c1.protocol = MQTTProtocol("PingContainer", broker_addr)
-
-c2 = Container()
-c2.protocol = MQTTProtocol("PongContainer", broker_addr)
+c1 = create_mqtt_container("127.0.0.1", 1883, "PingContainer")
+c2 = create_mqtt_container("127.0.0.1", 1883, "PongContainer")
 ```
 
 The topics each agent subscribes to on the broker are provided during registration to the container.
@@ -126,33 +139,19 @@ end
 
 # Define the ping pong agent
 # Create instances of ping pong agents
-ping_agent = MQTTPingPongAgent(0)
-pong_agent = MQTTPingPongAgent(0)
-
 # register each agent to a container
 # For the MQTT protocol, topics for each agent have to be passed here.
-register(c1, ping_agent; topics=["pongs"])
-register(c2, pong_agent; topics=["pings"])
+ping_agent = register(c1, MQTTPingPongAgent(0); topics=["pongs"])
+pong_agent = register(c2, MQTTPingPongAgent(0); topics=["pings"])
 ```
 
 Just like the TCPProtocol, the MQTTProtocol has an associated struct for providing address information:
+* the broker address
+* the topic
 
-```julia
-@kwdef struct MQTTAddress <: Address
-    broker::Any = nothing
-    topic::String
-end
-```
+Thus, sending of the first message and the handle_message definition becomes:
 
-Thus, sending of the first message becomes:
-
-```julia
-# Send the first message to start the exchange
-wait(send_message(ping_agent, "Ping", MQTTAddress(broker_addr, "pings")))
-```
-
-
-Lastly, `handle_message` has to be altered to send the corresponding answers correctly:
+Lastly, [`handle_message`](@ref) has to be altered to send the corresponding answers correctly:
 
 ```julia
 # Override the default handle_message function for ping pong agents
@@ -166,5 +165,11 @@ function handle_message(agent::MQTTPingPongAgent, message::Any, meta::Any)
         agent.counter += 1
         send_message(agent, "Ping", MQTTAddress(broker_addr, "pings"))
     end
+end
+
+activate([c1, c2]) do
+    # Send the first message to start the exchange
+    send_message(ping_agent, "Ping", MQTTAddress(broker_addr, "pings"))
+    sleep_until(() -> ping_agent.counter >= 5)
 end
 ```
