@@ -58,7 +58,7 @@ Therefore, a structured development framework to support this process is a valua
 While `Mango.jl` is a general purpose multi-agent framework, we will focus on energy systems in the following as this is the domain the authors are most familiar with.
 
 Many of the ideas for `Mango.jl` are based on the existing Python framework `mango` [@schrage:2024]. 
-The main reason for this julia-based version is to allow better focus on simulation performance, enabling larger scales of multi-agent simulations.
+The main reason for this Julia-based version is to allow better focus on simulation performance, enabling larger scales of multi-agent simulations.
 This is especially relevant in the energy domain, where an increasing amount of energy resources (e.g. batteries and PV-generators) have distributed ownership, competing goals and contribute to the same power grid.
 Large scale multi-agent simulations allow researchers to study the behavior of these participants in energy markets and grid simulations.
 
@@ -82,11 +82,11 @@ Lastly, the original Python version of mango [@schrage:2024] is of course most s
 
 The performance of the Python and Julia versions of mango were benchmarked against each other. The results are shown in \autoref{fig:benchmark} and the relevant code is available at [mango_benchmark](https://github.com/OFFIS-DAI/mango_benchmark).
 
-The aim of these scenarios is to measure the performance of the frameworks core features.
+The aim of these scenarios is to measure the performance of the frameworks' core features.
 This mainly means it measures how efficiently tasks are scheduled and messages are sent and handled.
 To achieve this, benchmark scenarios have agents set up in a small world topology communicating a fixed number of messages between each other while performing simulated workloads.
-All workloads in the agents is entirely simulated by static delays.
-Thus, the benchmarks assumes that workloads in Python and Julia are identical.
+All workloads in the agents are entirely simulated by static delays.
+Thus, the benchmarks assume that workloads in Python and Julia are identical.
 
 The main advantage of `Mango.jl` is in the ease of parallelization.
 Python can in some cases reach similar performance using subprocesses for parallel execution to circumvent the limitations of the Python global interpreter lock.
@@ -95,8 +95,6 @@ Overall, it is easier to get high performance from `Mango.jl`.
 
 
 # Basic Example
-> **_NOTE:_**  All code examples were tested with Mango.jl v0.4.0
-> The version also has the tag `joss_paper` on the repository.
 
 In this example, we define two agents in two containers (i.e. at different addresses) that pass messages to each other directly via TCP.
 Containers can be set up and equipped with the necessary TCP protocol.
