@@ -12,6 +12,7 @@
 <!-- Tidyverse lifecycle badges, see https://www.tidyverse.org/lifecycle/ Uncomment or delete as needed. -->
 ![lifecycle](https://img.shields.io/badge/lifecycle-maturing-blue.svg)
 [![MIT License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/OFFIS-DAI/Mango.jl/blob/development/LICENSE)
+[![DOI](https://joss.theoj.org/papers/10.21105/joss.07098/status.svg)](https://doi.org/10.21105/joss.07098)
 [![Test Mango.jl](https://github.com/OFFIS-DAI/Mango.jl/actions/workflows/test-mango.yml/badge.svg)](https://github.com/OFFIS-DAI/Mango.jl/actions/workflows/test-mango.yml)
 [![codecov](https://codecov.io/gh/OFFIS-DAI/Mango.jl/graph/badge.svg?token=JRZB5T2T2M)](https://codecov.io/gh/OFFIS-DAI/Mango.jl)
 
