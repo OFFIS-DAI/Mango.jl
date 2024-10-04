@@ -207,3 +207,19 @@ end
 
     @test length(topology_neighbors(container["agent0"])) == 2
 end
+
+@testset "TestTopologyGraphAPI" begin
+    n_nodes = 5
+    topology = complete_topology(n_nodes)
+    @test length(collect(edges(topology))) == (n_nodes^2 - n_nodes) / 2
+    @test collect(edges(topology))[1] ∈ collect(edges(topology))
+    @test edgetype(topology) == Graphs.SimpleGraphs.SimpleEdge{Int64}
+    @test has_edge(topology, 1, 2)
+    @test has_vertex(topology, 1)
+    @test inneighbors(topology, 2) == [1, 3, 4, 5]
+    @test outneighbors(topology, 2) == [1, 3, 4, 5]
+    @test !is_directed(topology)
+    @test ne(topology) == (n_nodes^2 - n_nodes) / 2
+    @test nv(topology) == 5
+    @test collect(vertices(topology)) == [1, 2, 3, 4, 5]
+end
