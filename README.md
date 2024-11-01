@@ -68,7 +68,10 @@ To add it to your Julia installation or project you can use the Julia REPL by ca
 
 The following simple showcase demonstrates how you can define agents in Mango. Jl, assign them to containers and send messages via a TCP connection. For more information on the specifics and other features (e.g. MQTT, modular agent using roles, simulation, tasks), please have a look at our [Documentation](https://offis-dai.github.io/Mango.jl/stable)!
 
-```julia
+<details open>
+  <summary>With Container Creation</summary>    
+  
+  ```julia
 using Mango
 
 # Create the container instances with TCP protocol
@@ -121,7 +124,46 @@ activate([container, container2]) do
         sleep(1)
     end
 end
-```
+  ```
+</details>
+
+In newer versions of Mango.jl, the express API is introduced, which rewrites the code above to:
+
+<details open>
+  <summary>With Express API</summary>
+
+  ```julia
+using Mango
+
+@agent struct TCPPingPongAgent
+    counter::Int
+end
+
+function Mango.handle_message(agent::TCPPingPongAgent, message::Any, meta::Any)
+    agent.counter += 1
+
+    println(
+        "$(agent.aid) got a message: $message." *
+        "This is message number: $(agent.counter) for me!"
+    )
+
+    sleep(0.5)
+
+    if message == "Ping"
+        reply_to(agent, "Pong", meta)
+    elseif message == "Pong"
+        reply_to(agent, "Ping", meta)
+    end
+end
+
+ping_agent = TCPPingPongAgent(0)
+pong_agent = TCPPingPongAgent(0)
+run_with_tcp(2, (ping_agent, :aid => "Agent_1"), (pong_agent, :aid => "Agent_2")) do cl
+    send_message(ping_agent, "Ping", address(pong_agent))
+    sleep_until(() -> ping_agent.counter >= 5)
+end
+  ```
+</details>
 
 ## License
 Mango.jl is developed and published under the MIT license.
