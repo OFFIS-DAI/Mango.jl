@@ -1,4 +1,6 @@
-export World, Space, Position, Position2D, Area2D, location, move, initialize, initialized
+export World, Space, Position, Position2D, Area2D, location,
+    move, initialize, initialized, Environment, schedule, WorldObserver,
+    emit_global_event, env
 
 abstract type Position end
 abstract type Space{P<:Position} end
@@ -9,7 +11,7 @@ function dispatch_global_event(observer::WorldObserver, event::Any)
     # default no reaction
 end
 
-struct NoEnv end
+struct NoEnv <: Environment end
 
 struct Position2D <: Position
     x::Real
@@ -22,29 +24,52 @@ end
     to_position::Dict{String,Position2D} = Dict()
 end
 
-@kwdef struct World{S<:Space}
+"""
+Struct World. The world is meant to provide a description of everything which exists outside of the agents.
+
+The world is a separate entity, which describes some type of world, this can be anything which exists in
+any type of space, this can be some model/evironment, which is observed by the agents. The agents can interact
+with the environment and exist in the defined space.  
+"""
+@kwdef mutable struct World{S<:Space}
+    scheduler::SimulationScheduler
     space::S = Area2D(width=10, height=10)
     environment::Environment = NoEnv()
-    scheduler::AbstractScheduler = SimulationScheduler()
-    observers::Vector{WorldObserver} = Vector()
+    observers::Vector{WorldObserver} = Vector{WorldObserver}()
+    data_selectors::Vector{Function} = Vector{Function}()
     initialized::Bool = false
 end
 
 schedule(f::Function, world::World, data::TaskData) = schedule(f, world.scheduler, data)
 
+"""
+    on_step(world::World, clock::Clock, step_size_s::Real)
+
+Called on stepping the container.
+"""
 function on_step(world::World, clock::Clock, step_size_s::Real)
     # default do nothing
 end
 
+"""
+    on_step(environment::Environment, world::World, clock::Clock, step_size_s::Real)
+
+Called on stepping the container.
+"""
 function on_step(environment::Environment, world::World, clock::Clock, step_size_s::Real)
     # default do nothing
 end
 
 function step(world::World, clock::Clock, step_size_s::Real)
     on_step(world, clock, step_size_s)
-    on_step(environment, world, clock, step_size_s)
+    on_step(env(world), world, clock, step_size_s)
 end
 
+"""
+    location(space::Area2D, agent::Agent)::Position2D
+
+Return the location of the `agent`.
+"""
 function location(space::Space{P}, agent::Agent)::P where {P<:Position}
     throw("Position on the space $space not defined!")
 end
@@ -53,6 +78,11 @@ function location(space::Area2D, agent::Agent)::Position2D
     return space.to_position[aid(agent)]
 end
 
+"""
+    move(space::Space{P}, agent::Agent, position::P) where {P<:Position}
+
+Move the `agent` to `position` in `space`. 
+"""
 function move(space::Space{P}, agent::Agent, position::P) where {P<:Position}
     throw("Move on the space $space not defined!")
 end
@@ -75,15 +105,31 @@ function initialize(world::World{S}, agents::Vector{A}) where {S<:Space} where {
     initialize(world.space, agents)
 end
 
+"""
+    initialized(world::World)
+
+Return whether the world is intialized.
+"""
 function initialized(world::World)
     return world.initialized
 end
 
-function add_observer!(world::World, observer::Any)
+"""
+    add_observer!(world::World, observer::WorldObserver)
+
+Add an observer to the world, which is able to handle 
+global event emitted by the world.
+"""
+function add_observer!(world::World, observer::WorldObserver)
     push!(world.observers, observer)
 end
 
-function environment(world::World)
+"""
+    env(world::World)
+
+Return the environment of the world.
+"""
+function env(world::World)
     return world.environment
 end
 
@@ -99,4 +145,14 @@ function emit_global_event(world::World, event::Any)
     for observer in world.observers
         dispatch_global_event(observer, event)
     end
+end
+
+"""
+    select(world::World, selector::Function)
+
+Select an output attribute, which will be recorded while
+the simulation is running (every step!).
+"""
+function select!(world::World, selector::Function)
+    push!(world.data_selectors, selector)
 end

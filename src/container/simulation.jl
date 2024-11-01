@@ -1,6 +1,6 @@
 export SimulationContainer, register, send_message, shutdown, protocol_addr,
     create_simulation_container, step_simulation, SimulationResult, CommunicationSimulationResult,
-    TaskSimulationResult, on_step, discrete_event_simulation
+    TaskSimulationResult, on_step, discrete_step_until, env, space, world, time, clock
 
 using Base.Threads
 using Dates
@@ -29,7 +29,12 @@ Per default the [`SimpleCommunicationSimulation`](@ref) is used for communicatio
 [`SimpleTaskSimulation`](@ref) for simulating the tasks of agents. To replace these, `communication_sim`
 and respectively `task_sim` can be set.
 """
-function create_simulation_container(start_time::DateTime; communication_sim::Union{Nothing,CommunicationSimulation}=nothing, task_sim::Union{Nothing,TaskSimulation}=nothing, space::Space=nothing)
+function create_simulation_container(start_time::DateTime;
+    communication_sim::Union{Nothing,CommunicationSimulation}=nothing,
+    task_sim::Union{Nothing,TaskSimulation}=nothing,
+    space::Union{Nothing,Space}=nothing,
+    env::Union{Nothing,Environment}=nothing)
+
     container = SimulationContainer()
     container.clock.simulation_time = start_time
     if !isnothing(communication_sim)
@@ -39,7 +44,10 @@ function create_simulation_container(start_time::DateTime; communication_sim::Un
         container.task_sim = task_sim
     end
     if !isnothing(space)
-        container.world = World(space=space)
+        container.world.space = space
+    end
+    if !isnothing(env)
+        container.world.environment = env
     end
     add_observer!(container.world, container.world_observer)
     add_simulation_scheduler!(container.task_sim, container.world.scheduler)
@@ -56,7 +64,7 @@ struct MessageData
 end
 
 struct DispatchToAgentWorldObserver <: WorldObserver
-    agents_ref::Dict
+    agents_ref::OrderedDict{String,Agent}
 end
 
 function dispatch_global_event(observer::DispatchToAgentWorldObserver, event::Any)
@@ -69,10 +77,10 @@ end
 The SimulationContainer used as a base struct to enable simulations in Mango.jl. Always create using [`create_simulation_container`](@ref).
 """
 @kwdef mutable struct SimulationContainer <: ContainerInterface
-    world::World = World()
     clock::Clock = Clock(DateTime(0))
+    world::World = World(scheduler=SimulationScheduler(clock=clock))
     task_sim::TaskSimulation = SimpleTaskSimulation(clock=clock)
-    agents::OrderedDict{String,Agent} = OrderedDict()
+    agents::OrderedDict{String,Agent} = OrderedDict{String,Agent}()
     agent_counter::Integer = 0
     shutdown::Bool = false
     communication_sim::CommunicationSimulation = SimpleCommunicationSimulation()
@@ -193,13 +201,13 @@ function cs_step_iteration(container::SimulationContainer,
     communication_result = pre_communication_result
     if isnothing(communication_result)
         communication_result = calculate_communication(container.communication_sim,
-            container.clock,
+            clock(container),
             message_packages)
     end
     state_changed = false
     @sync begin
         for (mp, pr) in sort([z for z in zip(message_packages, communication_result.package_results)], by=t -> add_seconds(t[1].sent_date, t[2].delay_s))
-            if add_seconds(mp.sent_date, pr.delay_s) <= add_seconds(container.clock.simulation_time, step_size_s) && pr.reached
+            if add_seconds(mp.sent_date, pr.delay_s) <= add_seconds(time(container), step_size_s) && pr.reached
                 state_changed = true
                 @spawnlog process_message(container, mp.content[1], mp.content[2])
             else
@@ -216,13 +224,13 @@ Internal
 """
 function determine_time_step(container::SimulationContainer)
     message_packages = to_cs_input(container.message_queue)
-    communication_result = calculate_communication(container.communication_sim, container.clock, message_packages)
+    communication_result = calculate_communication(container.communication_sim, clock(container), message_packages)
 
     # earliest message or -1 if no message arrives
     message_arrival_times = [add_seconds(t[1].sent_date, t[2].delay_s) for t in zip(message_packages, communication_result.package_results)]
     time_to_next_message_s = nothing
     if length(message_arrival_times) > 0
-        time_to_next_message_s = (findmin(message_arrival_times)[1] - container.clock.simulation_time).value / 1000
+        time_to_next_message_s = (findmin(message_arrival_times)[1] - time(container)).value / 1000
     end
     @debug "Next message in $time_to_next_message_s"
 
@@ -260,7 +268,7 @@ function step_simulation(container::SimulationContainer, step_size_s::Real=DISCR
 
     state_changed = true
 
-    @debug "Time" container.clock
+    @debug "Time at the start of the step" time(container)
 
     task_sim_result = TaskSimulationResult()
     messaging_sim_result = MessagingSimulationResult()
@@ -296,18 +304,18 @@ function step_simulation(container::SimulationContainer, step_size_s::Real=DISCR
             @debug "Finish simulation iteration" state_changed
         end
 
-        on_step(container.world.space, container.world, container.clock, time_step_s)
+        step(container.world, clock(container), time_step_s)
 
         # agents act on the stepping hook
         for agent in values(container.agents)
-            step_agent(agent, container.world, container.clock, time_step_s)
+            step_agent(agent, container.world, clock(container), time_step_s)
         end
     end
     @debug "The simulation step needed $elapsed seconds"
 
-    container.clock.simulation_time = add_seconds(container.clock.simulation_time, time_step_s)
+    container.clock.simulation_time = add_seconds(time(container), time_step_s)
 
-    @debug "new time", container.clock.simulation_time
+    @debug "New time" time(container)
 
     return SimulationResult(elapsed, messaging_sim_result, task_sim_result, time_step_s)
 end
@@ -321,16 +329,16 @@ of the simulation of `max_advance_time_s`.
 This function will step the container until the clock has advanced to the initial_time + `max_advance_time_s`
 or if the time of the container does not advance anymore (which would mean no events are scheduled).
 """
-function discrete_event_simulation(container::SimulationContainer, max_advance_time_s::Real)
-    initial_time = container.clock.simulation_time
+function discrete_step_until(container::SimulationContainer, max_advance_time_s::Real)
+    initial_time = time(container)
     prev_time = nothing
     results = []
 
-    while isnothing(prev_time) || (prev_time < container.clock.simulation_time
+    while isnothing(prev_time) || ((prev_time < time(container) || length(results) == 1)
                                    &&
-                                   initial_time + Second(max_advance_time_s) <= container.clock.simulation_time)
+                                   initial_time + Second(max_advance_time_s) > time(container))
 
-        prev_time = container.clock.simulation_time
+        prev_time = time(container)
         push!(results, step_simulation(container))
     end
     return results
@@ -385,7 +393,7 @@ struct NonWaitable end
 function Base.wait(waitable::NonWaitable) end
 
 function forward_message(container::SimulationContainer, msg::Any, meta::AbstractDict)
-    push!(container.message_queue, MessageData(msg, meta, container.clock.simulation_time))
+    push!(container.message_queue, MessageData(msg, meta, time(container)))
     return NonWaitable()
 end
 
@@ -424,4 +432,24 @@ function Base.getindex(container::SimulationContainer, index::String)
 end
 function Base.getindex(container::SimulationContainer, index::Int)
     return agents(container)[index]
+end
+
+function env(container::SimulationContainer)
+    return env(container.world)
+end
+
+function space(container::SimulationContainer)
+    return space(container.world)
+end
+
+function world(container::SimulationContainer)
+    return container.world
+end
+
+function clock(container::SimulationContainer)
+    return container.clock
+end
+
+function time(container::SimulationContainer)
+    return clock(container).simulation_time
 end

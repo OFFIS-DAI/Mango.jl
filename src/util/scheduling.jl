@@ -195,7 +195,7 @@ function execute_task(f::Function, scheduler::AbstractScheduler, data::InstantTa
 end
 
 function execute_task(f::Function, scheduler::AbstractScheduler, data::DateTimeTaskData)
-    sleep(scheduler, (data.date - Dates.now()).value / 1000)
+    sleep(scheduler, (data.date - now(scheduler)).value / 1000)
     f()
 end
 
@@ -383,7 +383,7 @@ function sleep(scheduler::SimulationScheduler, time_s::Real)
         ctime = scheduler.events[current_task()][2]
     end
     scheduler.events[current_task()] = (event, add_seconds(ctime, time_s))
-    @debug "Sleep task with" current_task() event add_seconds(ctime, time_s)
+    @debug "Sleep task with" current_task() event ctime time_s
     wait(event)
 end
 
