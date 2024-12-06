@@ -1,6 +1,6 @@
-export SimulationContainer, register, send_message, shutdown, protocol_addr,
-    create_simulation_container, step_simulation, SimulationResult, CommunicationSimulationResult,
-    TaskSimulationResult, on_step, discrete_step_until, env, space, world, time, clock
+export World, register, send_message, shutdown, protocol_addr,
+    create_world, step_simulation, SimulationResult, CommunicationSimulationResult,
+    TaskSimulationResult, on_step, discrete_step_until, env, space, time, clock
 
 using Base.Threads
 using Dates
@@ -21,37 +21,37 @@ DISCRETE EVENT STEP SIZE
 DISCRETE_EVENT::Real = -1
 
 """
-    create_simulation_container(start_time::DateTime; communication_sim::Union{Nothing,CommunicationSimulation}=nothing, task_sim::Union{Nothing,TaskSimulation}=nothing)
+    create_world(start_time::DateTime; communication_sim::Union{Nothing,CommunicationSimulation}=nothing, task_sim::Union{Nothing,TaskSimulation}=nothing)
 
-Create a simulation container. The container is intitialized with `start_time`. 
+Create a simulation world. The world is intitialized with `start_time`. 
 
 Per default the [`SimpleCommunicationSimulation`](@ref) is used for communication simulation, and
 [`SimpleTaskSimulation`](@ref) for simulating the tasks of agents. To replace these, `communication_sim`
 and respectively `task_sim` can be set.
 """
-function create_simulation_container(start_time::DateTime;
+function create_world(start_time::DateTime;
     communication_sim::Union{Nothing,CommunicationSimulation}=nothing,
     task_sim::Union{Nothing,TaskSimulation}=nothing,
     space::Union{Nothing,Space}=nothing,
-    env::Union{Nothing,Environment}=nothing)
+    behavior::Union{Nothing,Behavior}=nothing)
 
-    container = SimulationContainer()
-    container.clock.simulation_time = start_time
+    world = World()
+    world.clock.simulation_time = start_time
     if !isnothing(communication_sim)
-        container.communication_sim = communication_sim
+        world.communication_sim = communication_sim
     end
     if !isnothing(task_sim)
-        container.task_sim = task_sim
+        world.task_sim = task_sim
     end
     if !isnothing(space)
-        container.world.space = space
+        world.env.space = space
     end
-    if !isnothing(env)
-        container.world.environment = env
+    if !isnothing(behavior)
+        world.env.behavior = behavior
     end
-    add_observer!(container.world, container.world_observer)
-    add_simulation_scheduler!(container.task_sim, container.world.scheduler)
-    return container
+    add_observer!(world.env, world.world_observer)
+    add_simulation_scheduler!(world.task_sim, world.env.scheduler)
+    return world
 end
 
 """
@@ -74,11 +74,11 @@ function dispatch_global_event(observer::DispatchToAgentWorldObserver, event::An
 end
 
 """
-The SimulationContainer used as a base struct to enable simulations in Mango.jl. Always create using [`create_simulation_container`](@ref).
+The World used as a base struct to enable simulations in Mango.jl. Always create using [`create_world`](@ref).
 """
-@kwdef mutable struct SimulationContainer <: ContainerInterface
+@kwdef mutable struct World <: ContainerInterface
     clock::Clock = Clock(DateTime(0))
-    world::World = World(scheduler=SimulationScheduler(clock=clock))
+    env::Environment = Environment(scheduler=SimulationScheduler(clock=clock))
     task_sim::TaskSimulation = SimpleTaskSimulation(clock=clock)
     agents::OrderedDict{String,Agent} = OrderedDict{String,Agent}()
     agent_counter::Integer = 0
@@ -88,40 +88,40 @@ The SimulationContainer used as a base struct to enable simulations in Mango.jl.
     world_observer::WorldObserver = DispatchToAgentWorldObserver(agents)
 end
 
-function agents(container::SimulationContainer)::Vector{Agent}
-    return [t[2] for t in collect(container.agents)]
+function agents(world::World)::Vector{Agent}
+    return [t[2] for t in collect(world.agents)]
 end
 
 """
-    on_step(agent::Agent, world::World, clock::Clock, step_size_s::Real)
+    on_step(agent::Agent, env::Environment, clock::Clock, step_size_s::Real)
 
-Hook-in, called on every step of the simulation container for every `agent`.
+Hook-in, called on every step of the simulation world for every `agent`.
 
 Further, the `world` is passed, which represents a common view on the environment
 in which agents can interact with eachother. Besides, the `clock` and the `step_size_s`
 can be used to read the current simulation time and the time which passes in the current step.
 """
-function on_step(agent::Agent, world::World, clock::Clock, step_size_s::Real)
+function on_step(agent::Agent, env::Environment, clock::Clock, step_size_s::Real)
     # default nothing
 end
 
-function on_step(role::Role, world::World, clock::Clock, step_size_s::Real)
+function on_step(role::Role, env::Environment, clock::Clock, step_size_s::Real)
     # default nothing
 end
 
 """
 Internal, call on_step on all agents.
 """
-function step_agent(agent::Agent, world::World, clock::Clock, step_size_s::Real)
-    on_step(agent, world, clock, step_size_s)
+function step_agent(agent::Agent, env::Environment, clock::Clock, step_size_s::Real)
+    on_step(agent, env, clock, step_size_s)
     for role in roles(agent)
-        on_step(role, world, clock, step_size_s)
+        on_step(role, env, clock, step_size_s)
     end
 end
 
 """
 Contains the result of the communication simulation and whether the state of
-the container has changed
+the world has changed
 """
 struct MessagingIterationResult
     communication_result::CommunicationSimulationResult
@@ -194,25 +194,25 @@ end
 """
 Internal
 """
-function cs_step_iteration(container::SimulationContainer,
+function cs_step_iteration(world::World,
     step_size_s::Real,
     pre_communication_result::Union{Nothing,CommunicationSimulationResult})::MessagingIterationResult
-    message_packages = to_cs_input!(container.message_queue)
+    message_packages = to_cs_input!(world.message_queue)
     communication_result = pre_communication_result
     if isnothing(communication_result)
-        communication_result = calculate_communication(container.communication_sim,
-            clock(container),
+        communication_result = calculate_communication(world.communication_sim,
+            clock(world),
             message_packages)
     end
     state_changed = false
     @sync begin
         for (mp, pr) in sort([z for z in zip(message_packages, communication_result.package_results)], by=t -> add_seconds(t[1].sent_date, t[2].delay_s))
-            if add_seconds(mp.sent_date, pr.delay_s) <= add_seconds(time(container), step_size_s) && pr.reached
+            if add_seconds(mp.sent_date, pr.delay_s) <= add_seconds(time(world), step_size_s) && pr.reached
                 state_changed = true
-                @spawnlog process_message(container, mp.content[1], mp.content[2])
+                @spawnlog process_message(world, mp.content[1], mp.content[2])
             else
                 # process it later
-                push!(container.message_queue, MessageData(mp.content[1], mp.content[2], mp.sent_date))
+                push!(world.message_queue, MessageData(mp.content[1], mp.content[2], mp.sent_date))
             end
         end
     end
@@ -222,20 +222,20 @@ end
 """
 Internal
 """
-function determine_time_step(container::SimulationContainer)
-    message_packages = to_cs_input(container.message_queue)
-    communication_result = calculate_communication(container.communication_sim, clock(container), message_packages)
+function determine_time_step(world::World)
+    message_packages = to_cs_input(world.message_queue)
+    communication_result = calculate_communication(world.communication_sim, clock(world), message_packages)
 
     # earliest message or -1 if no message arrives
     message_arrival_times = [add_seconds(t[1].sent_date, t[2].delay_s) for t in zip(message_packages, communication_result.package_results)]
     time_to_next_message_s = nothing
     if length(message_arrival_times) > 0
-        time_to_next_message_s = (findmin(message_arrival_times)[1] - time(container)).value / 1000
+        time_to_next_message_s = (findmin(message_arrival_times)[1] - time(world)).value / 1000
     end
     @debug "Next message in $time_to_next_message_s"
 
     # ealiest task or -1 if no task scheduled
-    next_event_s = determine_next_event_time(container.task_sim)
+    next_event_s = determine_next_event_time(world.task_sim)
 
     @debug "Next event in $next_event_s"
 
@@ -253,22 +253,22 @@ function determine_time_step(container::SimulationContainer)
 end
 
 """
-    step_simulation(container::SimulationContainer, step_size_s::Real=DISCRETE_EVENT)::Union{SimulationResult,Nothing}
+    step_simulation(world::World, step_size_s::Real=DISCRETE_EVENT)::Union{SimulationResult,Nothing}
 
 Step the simulation using a continous time-span or until the next event happens. 
 
 For the continous simulation a `step_size_s` can be freely chosen, for the discrete event type 
 DISCRETE_EVENT has to be set for the `step_size_s`.
 """
-function step_simulation(container::SimulationContainer, step_size_s::Real=DISCRETE_EVENT)::Union{SimulationResult,Nothing}
+function step_simulation(world::World, step_size_s::Real=DISCRETE_EVENT)::Union{SimulationResult,Nothing}
     # Init world if uninitialized
-    if !initialized(container.world)
-        initialize(container.world, [v for v in values(container.agents)])
+    if !initialized(world.env)
+        initialize(world.env, [v for v in values(world.agents)])
     end
 
     state_changed = true
 
-    @debug "Time at the start of the step" time(container)
+    @debug "Time at the start of the step" time(world)
 
     task_sim_result = TaskSimulationResult()
     messaging_sim_result = MessagingSimulationResult()
@@ -280,7 +280,7 @@ function step_simulation(container::SimulationContainer, step_size_s::Real=DISCR
     # be used to execute the time-based simulation
     comm_result = nothing
     if time_step_s == DISCRETE_EVENT
-        time_step_s, comm_result = determine_time_step(container)
+        time_step_s, comm_result = determine_time_step(world)
         @debug "Determined the size to be $time_step_s"
         if isnothing(time_step_s)
             return nothing
@@ -294,8 +294,8 @@ function step_simulation(container::SimulationContainer, step_size_s::Real=DISCR
             task_iter_result = nothing
             comm_iter_result = nothing
             @sync begin
-                Threads.@spawn comm_iter_result = cs_step_iteration(container, time_step_s, first_step ? comm_result : nothing)
-                Threads.@spawn task_iter_result = step_iteration(container.task_sim, time_step_s, first_step)
+                Threads.@spawn comm_iter_result = cs_step_iteration(world, time_step_s, first_step ? comm_result : nothing)
+                Threads.@spawn task_iter_result = step_iteration(world.task_sim, time_step_s, first_step)
             end
             first_step = false
             push!(task_sim_result.results, task_iter_result)
@@ -304,87 +304,87 @@ function step_simulation(container::SimulationContainer, step_size_s::Real=DISCR
             @debug "Finish simulation iteration" state_changed
         end
 
-        step(container.world, clock(container), time_step_s)
+        step(world.env, clock(world), time_step_s)
 
         # agents act on the stepping hook
-        for agent in values(container.agents)
-            step_agent(agent, container.world, clock(container), time_step_s)
+        for agent in values(world.agents)
+            step_agent(agent, world.env, clock(world), time_step_s)
         end
     end
     @debug "The simulation step needed $elapsed seconds"
 
-    container.clock.simulation_time = add_seconds(time(container), time_step_s)
+    world.clock.simulation_time = add_seconds(time(world), time_step_s)
 
-    @debug "New time" time(container)
+    @debug "New time" time(world)
 
     return SimulationResult(elapsed, messaging_sim_result, task_sim_result, time_step_s)
 end
 
 """
-    discrete_event_simulation(container::SimulationContainer, max_advance_time_s::Real)
+    discrete_event_simulation(world::World, max_advance_time_s::Real)
 
-Execute a discrete event simulation using the `container` with the maximal allowed advanced time
+Execute a discrete event simulation using the `world` with the maximal allowed advanced time
 of the simulation of `max_advance_time_s`. 
 
-This function will step the container until the clock has advanced to the initial_time + `max_advance_time_s`
-or if the time of the container does not advance anymore (which would mean no events are scheduled).
+This function will step the world until the clock has advanced to the initial_time + `max_advance_time_s`
+or if the time of the world does not advance anymore (which would mean no events are scheduled).
 """
-function discrete_step_until(container::SimulationContainer, max_advance_time_s::Real)
-    initial_time = time(container)
+function discrete_step_until(world::World, max_advance_time_s::Real)
+    initial_time = time(world)
     prev_time = nothing
     results = []
 
-    while isnothing(prev_time) || ((prev_time < time(container) || length(results) == 1)
+    while isnothing(prev_time) || ((prev_time < time(world) || length(results) == 1)
                                    &&
-                                   initial_time + Second(max_advance_time_s) > time(container))
+                                   initial_time + Second(max_advance_time_s) > time(world))
 
-        prev_time = time(container)
-        push!(results, step_simulation(container))
+        prev_time = time(world)
+        push!(results, step_simulation(world))
     end
     return results
 end
 
-function protocol_addr(container::SimulationContainer)
+function protocol_addr(world::World)
     return nothing
 end
 
-function shutdown(container::SimulationContainer)
-    container.shutdown = true
+function shutdown(world::World)
+    world.shutdown = true
 
-    for agent in values(container.agents)
+    for agent in values(world.agents)
         shutdown(agent)
     end
 end
 
 function register(
-    container::SimulationContainer,
+    world::World,
     agent::Agent,
     suggested_aid::Union{String,Nothing}=nothing;
     kwargs...,
 )
-    actual_aid::String = "$AGENT_PREFIX$(container.agent_counter)"
-    if !isnothing(suggested_aid) && !haskey(container.agents, suggested_aid)
+    actual_aid::String = "$AGENT_PREFIX$(world.agent_counter)"
+    if !isnothing(suggested_aid) && !haskey(world.agents, suggested_aid)
         actual_aid = suggested_aid
     end
-    container.agents[actual_aid] = agent
+    world.agents[actual_aid] = agent
     agent.aid = actual_aid
-    agent.context = AgentContext(container)
-    container.agent_counter += 1
+    agent.context = AgentContext(world)
+    world.agent_counter += 1
 
-    if !isnothing(container.task_sim)
-        agent.scheduler = create_agent_scheduler(container.task_sim)
+    if !isnothing(world.task_sim)
+        agent.scheduler = create_agent_scheduler(world.task_sim)
     end
 
     return agent
 end
 
-function process_message(container::SimulationContainer, msg::Any, meta::AbstractDict)
+function process_message(world::World, msg::Any, meta::AbstractDict)
     receiver_id = meta[RECEIVER_ID]
 
-    if !haskey(container.agents, meta[RECEIVER_ID])
-        @warn "Container $(keys(container.agents)) has no agent with id: $receiver_id" msg meta
+    if !haskey(world.agents, meta[RECEIVER_ID])
+        @warn "Container $(keys(world.agents)) has no agent with id: $receiver_id" msg meta
     else
-        agent = container.agents[receiver_id]
+        agent = world.agents[receiver_id]
         return dispatch_message(agent, msg, meta)
     end
 end
@@ -392,13 +392,13 @@ end
 struct NonWaitable end
 function Base.wait(waitable::NonWaitable) end
 
-function forward_message(container::SimulationContainer, msg::Any, meta::AbstractDict)
-    push!(container.message_queue, MessageData(msg, meta, time(container)))
+function forward_message(world::World, msg::Any, meta::AbstractDict)
+    push!(world.message_queue, MessageData(msg, meta, time(world)))
     return NonWaitable()
 end
 
 function send_message(
-    container::SimulationContainer,
+    world::World,
     content::Any,
     agent_adress::AgentAddress,
     sender_id::Union{Nothing,String}=nothing;
@@ -419,37 +419,33 @@ function send_message(
 
     @debug "Send a message to ($receiver_id), from $sender_id" typeof(content)
 
-    return forward_message(container, content, meta)
+    return forward_message(world, content, meta)
 end
 
 """
-    Base.getindex(container::SimulationContainer, index::String)
+    Base.getindex(world::World, index::String)
 
-Return the agent indexed by `index` (aid).
+Return the agent indexed by `index` (aid). 
 """
-function Base.getindex(container::SimulationContainer, index::String)
-    return container.agents[index]
+function Base.getindex(world::World, index::String)
+    return world.agents[index]
 end
-function Base.getindex(container::SimulationContainer, index::Int)
-    return agents(container)[index]
-end
-
-function env(container::SimulationContainer)
-    return env(container.world)
+function Base.getindex(world::World, index::Int)
+    return agents(world)[index]
 end
 
-function space(container::SimulationContainer)
-    return space(container.world)
+function env(world::World)
+    return env(world.env)
 end
 
-function world(container::SimulationContainer)
-    return container.world
+function space(world::World)
+    return space(world.env)
 end
 
-function clock(container::SimulationContainer)
-    return container.clock
+function clock(world::World)
+    return world.clock
 end
 
-function time(container::SimulationContainer)
-    return clock(container).simulation_time
+function time(world::World)
+    return clock(world).simulation_time
 end

@@ -1,8 +1,8 @@
 
 <p align="center">
 
-![logo](docs/src/Logo_mango_ohne_sub.svg#gh-light-mode-only)
-![logo](docs/src/Logo_mango_ohne_sub_white.svg#gh-dark-mode-only)
+![logo](docs/src/assets/logo.svg#gh-light-mode-only)
+![logo](docs/src/assets/logo-dark.svg#gh-dark-mode-only)
 
 </p>
 

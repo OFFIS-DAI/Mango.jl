@@ -175,7 +175,7 @@ end
     @test aid(express_two) == "agent0"
 end
 
-@testset "TestRunSimulationContainerExpress" begin
+@testset "TestRunWorldExpress" begin
     # Create agents based on roles
     express_one = agent_composed_of(ExpressRole(0), ExpressRole(0))
     express_two = agent_composed_of(ExpressRole(0), ExpressRole(0))

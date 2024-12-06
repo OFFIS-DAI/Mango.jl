@@ -1,17 +1,17 @@
-export World, Space, Position, Position2D, Area2D, location,
-    move, initialize, initialized, Environment, schedule, WorldObserver,
+export Environment, Space, Position, Position2D, Area2D, location,
+    move, initialize, initialized, Behavior, schedule, WorldObserver,
     emit_global_event, env
 
 abstract type Position end
 abstract type Space{P<:Position} end
 abstract type WorldObserver end
-abstract type Environment end
+abstract type Behavior end
 
 function dispatch_global_event(observer::WorldObserver, event::Any)
     # default no reaction
 end
 
-struct NoEnv <: Environment end
+struct NoBehavior <: Behavior end
 
 struct Position2D <: Position
     x::Real
@@ -25,44 +25,44 @@ end
 end
 
 """
-Struct World. The world is meant to provide a description of everything which exists outside of the agents.
+Struct Environment. The environment is meant to provide a description of everything which exists outside of the agents.
 
-The world is a separate entity, which describes some type of world, this can be anything which exists in
+The environment is a separate entity, which describes some type of environment, this can be anything which exists in
 any type of space, this can be some model/evironment, which is observed by the agents. The agents can interact
 with the environment and exist in the defined space.  
 """
-@kwdef mutable struct World{S<:Space}
+@kwdef mutable struct Environment{S<:Space}
     scheduler::SimulationScheduler
     space::S = Area2D(width=10, height=10)
-    environment::Environment = NoEnv()
+    behavior::Behavior = NoBehavior()
     observers::Vector{WorldObserver} = Vector{WorldObserver}()
     data_selectors::Vector{Function} = Vector{Function}()
     initialized::Bool = false
 end
 
-schedule(f::Function, world::World, data::TaskData) = schedule(f, world.scheduler, data)
+schedule(f::Function, environment::Environment, data::TaskData) = schedule(f, environment.scheduler, data)
 
 """
-    on_step(world::World, clock::Clock, step_size_s::Real)
+    on_step(environment::Environment, clock::Clock, step_size_s::Real)
 
 Called on stepping the container.
 """
-function on_step(world::World, clock::Clock, step_size_s::Real)
+function on_step(environment::Environment, clock::Clock, step_size_s::Real)
     # default do nothing
 end
 
 """
-    on_step(environment::Environment, world::World, clock::Clock, step_size_s::Real)
+    on_step(behavior::Behavior, environment::Environment, clock::Clock, step_size_s::Real)
 
 Called on stepping the container.
 """
-function on_step(environment::Environment, world::World, clock::Clock, step_size_s::Real)
+function on_step(behavior::Behavior, environment::Environment, clock::Clock, step_size_s::Real)
     # default do nothing
 end
 
-function step(world::World, clock::Clock, step_size_s::Real)
-    on_step(world, clock, step_size_s)
-    on_step(env(world), world, clock, step_size_s)
+function step(env::Environment, clock::Clock, step_size_s::Real)
+    on_step(env, clock, step_size_s)
+    on_step(behavior(env), env, clock, step_size_s)
 end
 
 """
@@ -101,58 +101,58 @@ function initialize(space::Area2D, agents::Vector{A}) where {A<:Agent}
     end
 end
 
-function initialize(world::World{S}, agents::Vector{A}) where {S<:Space} where {A<:Agent}
-    initialize(world.space, agents)
+function initialize(environment::Environment{S}, agents::Vector{A}) where {S<:Space} where {A<:Agent}
+    initialize(environment.space, agents)
 end
 
 """
-    initialized(world::World)
+    initialized(environment::Environment)
 
-Return whether the world is intialized.
+Return whether the environment is intialized.
 """
-function initialized(world::World)
-    return world.initialized
+function initialized(environment::Environment)
+    return environment.initialized
 end
 
 """
-    add_observer!(world::World, observer::WorldObserver)
+    add_observer!(environment::Environment, observer::WorldObserver)
 
-Add an observer to the world, which is able to handle 
-global event emitted by the world.
+Add an observer to the environment, which is able to handle 
+global event emitted by the environment.
 """
-function add_observer!(world::World, observer::WorldObserver)
-    push!(world.observers, observer)
+function add_observer!(environment::Environment, observer::WorldObserver)
+    push!(environment.observers, observer)
 end
 
 """
-    env(world::World)
+    behavior(env::Environment)
 
-Return the environment of the world.
+Return the behavior of the environment.
 """
-function env(world::World)
-    return world.environment
+function behavior(env::Environment)
+    return env.behavior
 end
 
 """
-    emit_global_event(world::World, event::Any)
+    emit_global_event(environment::Environment, event::Any)
 
-Emit a global world event. This types of events can be handled by any agent
-living in the world (resp. living in the container, the world exists in).
+Emit an global event. This types of events can be handled by any agent
+living in the environment (resp. living in the world, the environment exists in).
 Therefore, any of those agents (and roles) can handle event emitted with
 this function by defining [`on_global_event`](@ref).
 """
-function emit_global_event(world::World, event::Any)
-    for observer in world.observers
+function emit_global_event(environment::Environment, event::Any)
+    for observer in environment.observers
         dispatch_global_event(observer, event)
     end
 end
 
 """
-    select(world::World, selector::Function)
+    select(environment::Environment, selector::Function)
 
 Select an output attribute, which will be recorded while
 the simulation is running (every step!).
 """
-function select!(world::World, selector::Function)
-    push!(world.data_selectors, selector)
+function select!(environment::Environment, selector::Function)
+    push!(environment.data_selectors, selector)
 end

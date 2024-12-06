@@ -17,9 +17,9 @@ function handle_message(agent::SimAgent, message::Any, meta::AbstractDict)
     end
 end
 
-@testset "SimulationContainerKwargs" begin
+@testset "WorldKwargs" begin
 
-    container = create_simulation_container(DateTime(Millisecond(23)), communication_sim=SimpleCommunicationSimulation(default_delay_s=0))
+    container = create_world(DateTime(Millisecond(23)), communication_sim=SimpleCommunicationSimulation(default_delay_s=0))
     agent1 = SimAgent(0)
     agent2 = SimAgent(0)
     register(container, agent1)
@@ -34,16 +34,16 @@ end
     @test agent1.counter == 11
 end
 
-@testset "SimulationContainerNoProtocolSpecificAddr" begin
+@testset "WorldNoProtocolSpecificAddr" begin
 
-    container = create_simulation_container(DateTime(Millisecond(23)), communication_sim=SimpleCommunicationSimulation(default_delay_s=0))
+    container = create_world(DateTime(Millisecond(23)), communication_sim=SimpleCommunicationSimulation(default_delay_s=0))
 
     @test isnothing(protocol_addr(container))
 end
 
-@testset "SimulationContainerNoValidTargetCustomAid" begin
+@testset "WorldNoValidTargetCustomAid" begin
 
-    container = create_simulation_container(DateTime(Millisecond(23)), communication_sim=SimpleCommunicationSimulation(default_delay_s=0))
+    container = create_world(DateTime(Millisecond(23)), communication_sim=SimpleCommunicationSimulation(default_delay_s=0))
     agent1 = SimAgent(0)
     agent2 = SimAgent(0)
     register(container, agent1)
@@ -62,7 +62,7 @@ end
 
 @testset "SimpleInternalSimulationWithoutDelayContainerTest" begin
 
-    container = create_simulation_container(DateTime(Millisecond(23)), communication_sim=SimpleCommunicationSimulation(default_delay_s=0))
+    container = create_world(DateTime(Millisecond(23)), communication_sim=SimpleCommunicationSimulation(default_delay_s=0))
     agent1 = SimAgent(0)
     agent2 = SimAgent(0)
     register(container, agent1)
@@ -82,7 +82,7 @@ end
 
 @testset "SimpleInternalSimulationDelayGreaterStepSize" begin
 
-    container = create_simulation_container(DateTime(Millisecond(23)), communication_sim=SimpleCommunicationSimulation(default_delay_s=2))
+    container = create_world(DateTime(Millisecond(23)), communication_sim=SimpleCommunicationSimulation(default_delay_s=2))
     agent1 = SimAgent(0)
     agent2 = SimAgent(0)
     register(container, agent1)
@@ -104,7 +104,7 @@ end
 
 @testset "SimpleInternalSimulationDelayMixedGreaterStepSize" begin
 
-    container = create_simulation_container(DateTime(Millisecond(23)), communication_sim=SimpleCommunicationSimulation(default_delay_s=2))
+    container = create_world(DateTime(Millisecond(23)), communication_sim=SimpleCommunicationSimulation(default_delay_s=2))
     agent1 = SimAgent(0)
     agent2 = SimAgent(0)
     register(container, agent1)
@@ -135,7 +135,7 @@ end
 @testset "SimpleInternalSimulationLinkSpecificDelay" begin
 
     com_sim = SimpleCommunicationSimulation(default_delay_s=0)
-    container = create_simulation_container(DateTime(Millisecond(0)), communication_sim=com_sim)
+    container = create_world(DateTime(Millisecond(0)), communication_sim=com_sim)
     agent1 = SimAgent(0)
     agent2 = SimAgent(0)
     register(container, agent1)
@@ -170,7 +170,7 @@ end
 @testset "SimulationWithSpecificDelaysAndScheduledTasks" begin
 
     com_sim = SimpleCommunicationSimulation(default_delay_s=0)
-    container = create_simulation_container(DateTime(0), communication_sim=com_sim)
+    container = create_world(DateTime(0), communication_sim=com_sim)
     agent1 = SimSchedulingAgent(0, 0)
     agent2 = SimSchedulingAgent(0, 0)
     register(container, agent1)
@@ -215,7 +215,7 @@ end
 @testset "SimulationWithSpecificDelaysAndScheduledTasksOnHandle" begin
 
     com_sim = SimpleCommunicationSimulation(default_delay_s=0)
-    container = create_simulation_container(DateTime(0), communication_sim=com_sim)
+    container = create_world(DateTime(0), communication_sim=com_sim)
     agent1 = ComplexSimSchedulingAgent(0, 0)
     agent2 = ComplexSimSchedulingAgent(0, 0)
     register(container, agent1)
@@ -262,7 +262,7 @@ end
 @testset "SimulationWithSpecificDelaysWithReplyOnHandle" begin
 
     com_sim = SimpleCommunicationSimulation(default_delay_s=0)
-    container = create_simulation_container(DateTime(0), communication_sim=com_sim)
+    container = create_world(DateTime(0), communication_sim=com_sim)
     agent1 = MoreComplexSimSchedulingAgent(0, 0)
     agent2 = MoreComplexSimSchedulingAgent(0, 0)
     register(container, agent1)
@@ -294,7 +294,7 @@ end
 @testset "SimulationWithSpecificDelaysWithReplyOnHandleDiscreteEvent" begin
 
     com_sim = SimpleCommunicationSimulation(default_delay_s=0)
-    container = create_simulation_container(DateTime(0), communication_sim=com_sim)
+    container = create_world(DateTime(0), communication_sim=com_sim)
     agent1 = MoreComplexSimSchedulingAgent(0, 0)
     agent2 = MoreComplexSimSchedulingAgent(0, 0)
     register(container, agent1)
@@ -379,8 +379,8 @@ end
     @test_throws "Please implement determine_next_event_time(...)" Mango.determine_next_event_time(TestTaskSim())
 end
 
-@testset "SimulationContainerAgentsAreOrdered" begin
-    container = create_simulation_container(DateTime(0))
+@testset "WorldAgentsAreOrdered" begin
+    container = create_world(DateTime(0))
     a1 = register(container, SimAgent(0))
     a2 = register(container, SimAgent(1))
     a3 = register(container, SimAgent(2))

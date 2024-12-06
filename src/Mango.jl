@@ -20,9 +20,9 @@ include("container/mqtt.jl")
 
 include("simulation/communication.jl")
 include("simulation/tasks.jl")
-include("container/simulation.jl")
 include("container/core.jl")
 
+include("world/simulation.jl")
 include("world/topology.jl")
 
 include("express/api.jl")

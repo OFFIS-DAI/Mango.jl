@@ -68,7 +68,7 @@ abstract type AbstractScheduler end
 Internal, return the time on which the scheduler is working on
 """
 function now(scheduler::AbstractScheduler)
-    return DateTime.now()
+    return Dates.now()
 end
 
 """
