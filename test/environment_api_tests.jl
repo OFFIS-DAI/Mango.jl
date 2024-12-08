@@ -1,0 +1,29 @@
+using Mango
+using Test
+using Dates
+
+@agent struct WorldEventAgent
+    counter::Real
+end
+
+function Mango.on_global_event(agent::WorldEventAgent, event::String)
+    agent.counter = 7
+end
+
+struct TestBehavior <: Behavior end
+
+function Mango.on_step(behavior::TestBehavior, environment::Environment, clock::Clock, step_size_s::Real)
+    emit_global_event(environment, "Hello Agent, I am the environment")
+end
+
+@testset "TestAgentWorldEvent" begin
+    container = create_world(DateTime(Millisecond(23)),
+        communication_sim=SimpleCommunicationSimulation(default_delay_s=0),
+        behavior=TestBehavior())
+    agent1 = WorldEventAgent(0)
+    register(container, agent1)
+
+    stepping_result = step_simulation(container)
+
+    @test agent1.counter == 7
+end

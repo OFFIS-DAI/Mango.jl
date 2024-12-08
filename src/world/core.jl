@@ -42,14 +42,6 @@ end
 
 schedule(f::Function, environment::Environment, data::TaskData) = schedule(f, environment.scheduler, data)
 
-"""
-    on_step(environment::Environment, clock::Clock, step_size_s::Real)
-
-Called on stepping the container.
-"""
-function on_step(environment::Environment, clock::Clock, step_size_s::Real)
-    # default do nothing
-end
 
 """
     on_step(behavior::Behavior, environment::Environment, clock::Clock, step_size_s::Real)
@@ -61,7 +53,6 @@ function on_step(behavior::Behavior, environment::Environment, clock::Clock, ste
 end
 
 function step(env::Environment, clock::Clock, step_size_s::Real)
-    on_step(env, clock, step_size_s)
     on_step(behavior(env), env, clock, step_size_s)
 end
 

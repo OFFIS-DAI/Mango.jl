@@ -525,7 +525,7 @@ function Base.getindex(agent::T, index::Int) where {T<:Agent}
     return roles(agent)[index]
 end
 
-function Base.getindex(agent::T, index::DataType) where {T<:Agent}
+function Base.getindex(agent::T, index::Type) where {T<:Agent}
     for role in roles(agent)
         if typeof(role) == index
             return role

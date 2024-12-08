@@ -275,6 +275,13 @@ function step_simulation(world::World, step_size_s::Real=DISCRETE_EVENT)::Union{
     first_step = true
     time_step_s = step_size_s
 
+    step(world.env, clock(world), time_step_s)
+
+    # agents act on the stepping hook
+    for agent in values(world.agents)
+        step_agent(agent, world.env, clock(world), time_step_s)
+    end
+
     # We are in discrete event mode, so we need to determine
     # the time until the next event occurs, this time will
     # be used to execute the time-based simulation
@@ -302,13 +309,6 @@ function step_simulation(world::World, step_size_s::Real=DISCRETE_EVENT)::Union{
             push!(messaging_sim_result.results, comm_iter_result)
             state_changed = comm_iter_result.state_changed || task_iter_result.state_changed
             @debug "Finish simulation iteration" state_changed
-        end
-
-        step(world.env, clock(world), time_step_s)
-
-        # agents act on the stepping hook
-        for agent in values(world.agents)
-            step_agent(agent, world.env, clock(world), time_step_s)
         end
     end
     @debug "The simulation step needed $elapsed seconds"
