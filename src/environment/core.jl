@@ -13,6 +13,7 @@ end
 
 struct NoBehavior <: Behavior end
 
+
 struct Position2D <: Position
     x::Real
     y::Real

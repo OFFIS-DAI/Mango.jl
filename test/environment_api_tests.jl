@@ -25,17 +25,17 @@ function Mango.on_step(behavior::TestBehavior, environment::Environment, clock::
 end
 
 @testset "TestAgentWorldEvent" begin
-    container = create_world(DateTime(Millisecond(23)),
+    world = create_world(DateTime(Millisecond(23)),
         communication_sim=SimpleCommunicationSimulation(default_delay_s=0),
         behavior=TestBehavior())
     agent1 = WorldEventAgent(0)
-    register(container, agent1)
-    agent2 = add_agent_composed_of(container, WorldEventRole(1))
+    register(world, agent1)
+    agent2 = add_agent_composed_of(world, WorldEventRole(1))
 
-    stepping_result = step_simulation(container)
+    stepping_result = step_simulation(world)
     @test agent1.counter == 14
     @test agent2[WorldEventRole].counter == 15
-    stepping_result = step_simulation(container)
+    stepping_result = step_simulation(world)
     @test agent1.counter == 28
     @test agent2[WorldEventRole].counter == 29
 end

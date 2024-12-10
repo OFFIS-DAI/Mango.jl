@@ -8,7 +8,7 @@ using Documenter
     include("role_tests.jl")
     include("container_tests.jl")
     include("encode_decode_tests.jl")
-    include("simulation_container_tests.jl")
+    include("world_tests.jl")
     include("examples.jl")
     include("tcp_protocol_tests.jl")
     include("agent_modeling_tests.jl")

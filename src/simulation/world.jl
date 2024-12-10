@@ -54,15 +54,6 @@ function create_world(start_time::DateTime;
     return world
 end
 
-"""
-Represents a message data package including the arriving time of the package.
-"""
-struct MessageData
-    content::Any
-    meta::AbstractDict
-    arriving_time::DateTime
-end
-
 struct DispatchToAgentWorldObserver <: WorldObserver
     agents_ref::OrderedDict{String,Agent}
 end
@@ -78,18 +69,15 @@ The World used as a base struct to enable simulations in Mango.jl. Always create
 """
 @kwdef mutable struct World <: ContainerInterface
     clock::Clock = Clock(DateTime(0))
+    container::SimulationContainer = SimulationContainer(clock=clock)
     env::Environment = Environment(scheduler=SimulationScheduler(clock=clock))
     task_sim::TaskSimulation = SimpleTaskSimulation(clock=clock)
-    agents::OrderedDict{String,Agent} = OrderedDict{String,Agent}()
-    agent_counter::Integer = 0
-    shutdown::Bool = false
     communication_sim::CommunicationSimulation = SimpleCommunicationSimulation()
-    message_queue::ConcurrentQueue{MessageData} = ConcurrentQueue{MessageData}()
-    world_observer::WorldObserver = DispatchToAgentWorldObserver(agents)
+    world_observer::WorldObserver = DispatchToAgentWorldObserver(container.agents)
 end
 
 function agents(world::World)::Vector{Agent}
-    return [t[2] for t in collect(world.agents)]
+    return agents(world.container)
 end
 
 """
@@ -197,7 +185,7 @@ Internal
 function cs_step_iteration(world::World,
     step_size_s::Real,
     pre_communication_result::Union{Nothing,CommunicationSimulationResult})::MessagingIterationResult
-    message_packages = to_cs_input!(world.message_queue)
+    message_packages = to_cs_input!(messages(world.container))
     communication_result = pre_communication_result
     if isnothing(communication_result)
         communication_result = calculate_communication(world.communication_sim,
@@ -209,10 +197,10 @@ function cs_step_iteration(world::World,
         for (mp, pr) in sort([z for z in zip(message_packages, communication_result.package_results)], by=t -> add_seconds(t[1].sent_date, t[2].delay_s))
             if add_seconds(mp.sent_date, pr.delay_s) <= add_seconds(time(world), step_size_s) && pr.reached
                 state_changed = true
-                @spawnlog process_message(world, mp.content[1], mp.content[2])
+                @spawnlog process_message(world.container, mp.content[1], mp.content[2])
             else
                 # process it later
-                push!(world.message_queue, MessageData(mp.content[1], mp.content[2], mp.sent_date))
+                push!(messages(world.container), MessageData(mp.content[1], mp.content[2], mp.sent_date))
             end
         end
     end
@@ -223,7 +211,7 @@ end
 Internal
 """
 function determine_time_step(world::World)
-    message_packages = to_cs_input(world.message_queue)
+    message_packages = to_cs_input(messages(world.container))
     communication_result = calculate_communication(world.communication_sim, clock(world), message_packages)
 
     # earliest message or -1 if no message arrives
@@ -263,7 +251,7 @@ DISCRETE_EVENT has to be set for the `step_size_s`.
 function step_simulation(world::World, step_size_s::Real=DISCRETE_EVENT)::Union{SimulationResult,Nothing}
     # Init world if uninitialized
     if !initialized(world.env)
-        initialize(world.env, [v for v in values(world.agents)])
+        initialize(world.env, [v for v in values(agents(world))])
     end
 
     state_changed = true
@@ -278,7 +266,7 @@ function step_simulation(world::World, step_size_s::Real=DISCRETE_EVENT)::Union{
     step(world.env, clock(world), time_step_s)
 
     # agents act on the stepping hook
-    for agent in values(world.agents)
+    for agent in values(agents(world))
         step_agent(agent, world.env, clock(world), time_step_s)
     end
 
@@ -344,95 +332,8 @@ function discrete_step_until(world::World, max_advance_time_s::Real)
     return results
 end
 
-function protocol_addr(world::World)
-    return nothing
-end
-
-function shutdown(world::World)
-    world.shutdown = true
-
-    for agent in values(world.agents)
-        shutdown(agent)
-    end
-end
-
-function register(
-    world::World,
-    agent::Agent,
-    suggested_aid::Union{String,Nothing}=nothing;
-    kwargs...,
-)
-    actual_aid::String = "$AGENT_PREFIX$(world.agent_counter)"
-    if !isnothing(suggested_aid) && !haskey(world.agents, suggested_aid)
-        actual_aid = suggested_aid
-    end
-    world.agents[actual_aid] = agent
-    agent.aid = actual_aid
-    agent.context = AgentContext(world)
-    world.agent_counter += 1
-
-    if !isnothing(world.task_sim)
-        agent.scheduler = create_agent_scheduler(world.task_sim)
-    end
-
-    return agent
-end
-
-function process_message(world::World, msg::Any, meta::AbstractDict)
-    receiver_id = meta[RECEIVER_ID]
-
-    if !haskey(world.agents, meta[RECEIVER_ID])
-        @warn "Container $(keys(world.agents)) has no agent with id: $receiver_id" msg meta
-    else
-        agent = world.agents[receiver_id]
-        return dispatch_message(agent, msg, meta)
-    end
-end
-
 struct NonWaitable end
 function Base.wait(waitable::NonWaitable) end
-
-function forward_message(world::World, msg::Any, meta::AbstractDict)
-    push!(world.message_queue, MessageData(msg, meta, time(world)))
-    return NonWaitable()
-end
-
-function send_message(
-    world::World,
-    content::Any,
-    agent_adress::AgentAddress,
-    sender_id::Union{Nothing,String}=nothing;
-    kwargs...,
-)
-    receiver_id = agent_adress.aid
-    tracking_id = agent_adress.tracking_id
-
-    meta = OrderedDict{String,Any}()
-    for (key, value) in kwargs
-        meta[string(key)] = value
-    end
-
-    meta[RECEIVER_ID] = receiver_id
-    meta[SENDER_ID] = sender_id
-    meta[TRACKING_ID] = tracking_id
-    meta[SENDER_ADDR] = nothing
-
-    @debug "Send a message to ($receiver_id), from $sender_id" typeof(content)
-
-    return forward_message(world, content, meta)
-end
-
-"""
-    Base.getindex(world::World, index::String)
-
-Return the agent indexed by `index` (aid). 
-"""
-function Base.getindex(world::World, index::String)
-    return world.agents[index]
-end
-function Base.getindex(world::World, index::Int)
-    return agents(world)[index]
-end
 
 function env(world::World)
     return env(world.env)
@@ -448,4 +349,29 @@ end
 
 function time(world::World)
     return clock(world).simulation_time
+end
+
+function register(
+    world::World,
+    agent::Agent,
+    suggested_aid::Union{String,Nothing}=nothing;
+    kwargs...,
+)
+    agent = register(world.container, agent, suggested_aid, kwargs...)
+    if !isnothing(world.task_sim)
+        agent.scheduler = create_agent_scheduler(world.task_sim)
+    end
+    return agent
+end
+
+function Base.getindex(world::World, index::String)
+    return world.container[index]
+end
+
+function Base.getindex(world::World, index::Int)
+    return world.container[index]
+end
+
+function shutdown(world::World)
+    shutdown(world.container)
 end

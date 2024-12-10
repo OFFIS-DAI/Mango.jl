@@ -12,7 +12,6 @@ include("container/api.jl")
 
 include("agent/role.jl")
 include("agent/core.jl")
-include("world/core.jl")
 
 include("container/protocol.jl")
 include("container/tcp.jl")
@@ -22,8 +21,11 @@ include("simulation/communication.jl")
 include("simulation/tasks.jl")
 include("container/core.jl")
 
-include("world/simulation.jl")
-include("world/topology.jl")
+include("simulation/container.jl")
+include("environment/core.jl")
+include("simulation/world.jl")
+include("util/topology.jl")
+include("util/visualization.jl")
 
 include("express/api.jl")
 
