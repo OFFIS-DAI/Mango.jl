@@ -175,6 +175,15 @@ struct AwaitableTaskData <: TaskData
 end
 
 """
+    wait(scheduler::AbstractScheduler, awaitable_task_data::AwaitableTaskData)
+
+Wait for the awaitable data in `awaitable_task_data`.
+"""
+function wait(scheduler::AbstractScheduler, awaitable_task_data::AwaitableTaskData)
+    return wait(awaitable_task_data.awaitable)
+end
+
+"""
 Schedule the function when the `condition` is fulfilled. To check whether it is fulfilled
 the condition function is called every `check_interval_s`.
 """
@@ -200,7 +209,7 @@ function execute_task(f::Function, scheduler::AbstractScheduler, data::DateTimeT
 end
 
 function execute_task(f::Function, scheduler::AbstractScheduler, data::AwaitableTaskData)
-    wait(data.awaitable)
+    wait(scheduler, data)
     f()
 end
 
@@ -389,6 +398,11 @@ end
 
 function wait(scheduler::SimulationScheduler, timer::Timer, delay_s::Real)
     sleep(scheduler, delay_s)
+end
+
+function wait(scheduler::SimulationScheduler, awaitable_task_data::AwaitableTaskData)
+    elapsed = @elapsed wait(awaitable_task_data.awaitable)
+    sleep(scheduler, elapsed)
 end
 
 function tasks(scheduler::SimulationScheduler)
