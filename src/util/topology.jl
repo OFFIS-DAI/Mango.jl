@@ -273,3 +273,44 @@ end
 function topology_neighbors(role::Role, state::State=NORMAL)::Vector{AgentAddress}
     return neighbors(service_of_type(role.context.agent, TopologyService, TopologyService()), state)
 end
+
+# Graphs API calls forwarded to Topology
+function Graphs.edges(topology::Topology)
+    return edges(topology.graph)
+end
+
+function Graphs.edgetype(topology::Topology)
+    return edgetype(topology.graph)
+end
+
+function Graphs.vertices(topology::Topology)
+    return vertices(topology.graph)
+end
+
+function Graphs.has_edge(topology::Topology, s::Any, d::Any)
+    return has_edge(topology.graph, s, d)
+end
+
+function Graphs.has_vertex(topology::Topology, v::Any)
+    return has_vertex(topology.graph, v)
+end
+
+function Graphs.inneighbors(topology::Topology, v::Any)
+    return inneighbors(topology.graph, v)
+end
+
+function Graphs.outneighbors(topology::Topology, v::Any)
+    return outneighbors(topology.graph, v)
+end
+
+function Graphs.is_directed(topology::Topology)
+    return is_directed(topology.graph)
+end
+
+function Graphs.ne(topology::Topology)
+    return ne(topology.graph)
+end
+
+function Graphs.nv(topology::Topology)
+    return nv(topology.graph)
+end

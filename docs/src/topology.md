@@ -49,6 +49,24 @@ end
 topology_neighbors(container[1])
 ```
 
+Functions that are defined on `Graphs.jl`graphs have been extended with methods for topologies so the following calls will resolve normally. 
+Note that this requires `using Graphs` as well as `using Mango` to resolve correctly:
+```julia
+using Graphs, Mango
+topology = complete_topology(5)
+
+edges(topology) # SimpleEdgeIter 10
+edgetype(topology) # Graphs.SimpleGraphs.SimpleEdge{Int64}
+has_edge(topology, 1, 2) # true
+has_vertex(topology, 1) # true
+inneighbors(topology, 2) # [1, 3, 4, 5]
+outneighbors(topology, 2) # [1, 3, 4, 5]
+is_directed(topology) # false
+ne(topology) # 10
+nv(topology) # 5
+vertices(topology) # [1, 2, 3, 4, 5]
+```
+
 # Using the topology
 
 At this point we know how to create topologies and how to populate them. To actually use them, the function [`topology_neighbors`](@ref) exists. The function returns a vector of AgentAddress objects, which represent all other agents in the neighborhood of `agent`.
