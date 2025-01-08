@@ -1,6 +1,6 @@
 export Environment, Space, Position, Position2D, Area2D, location,
     move, initialize, initialized, Behavior, schedule, WorldObserver,
-    emit_global_event, env
+    emit_global_event, behavior
 
 abstract type Position end
 abstract type Space{P<:Position} end
@@ -12,7 +12,6 @@ function dispatch_global_event(observer::WorldObserver, event::Any)
 end
 
 struct NoBehavior <: Behavior end
-
 
 struct Position2D <: Position
     x::Real
