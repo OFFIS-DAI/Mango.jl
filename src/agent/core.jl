@@ -16,7 +16,8 @@ export @agent,
     service_of_type,
     add_service!,
     services,
-    on_global_event
+    on_global_event,
+    sender_address
 
 using UUIDs
 
@@ -169,6 +170,15 @@ function dispatch_message(agent::Agent, message::Any, meta::AbstractDict)
             handle_message(agent, message, meta)
         end
     end
+end
+
+"""
+    sender_address(meta::Any)
+
+Extract the sender address from the meta data of a message and return it as `AgentAddress`.
+"""
+function sender_address(meta::AbstractDict)
+    return AgentAddress(aid=meta[SENDER_ID], address=meta[SENDER_ADDR])
 end
 
 """

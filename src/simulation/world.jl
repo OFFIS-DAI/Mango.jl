@@ -197,7 +197,13 @@ function cs_step_iteration(world::World,
         for (mp, pr) in sort([z for z in zip(message_packages, communication_result.package_results)], by=t -> add_seconds(t[1].sent_date, t[2].delay_s))
             if add_seconds(mp.sent_date, pr.delay_s) <= add_seconds(time(world), step_size_s) && pr.reached
                 state_changed = true
-                @spawnlog process_message(world.container, mp.content[1], mp.content[2])
+                Threads.@spawn try
+                    process_message(world.container, mp.content[1], mp.content[2])
+                catch ex
+                    bt = stacktrace(catch_backtrace())
+                    showerror(stderr, ex, bt)
+                    rethrow(ex)
+                end
             else
                 # process it later
                 push!(messages(world.container), MessageData(mp.content[1], mp.content[2], mp.sent_date))
@@ -289,8 +295,22 @@ function step_simulation(world::World, step_size_s::Real=DISCRETE_EVENT)::Union{
             task_iter_result = nothing
             comm_iter_result = nothing
             @sync begin
-                Threads.@spawn comm_iter_result = cs_step_iteration(world, time_step_s, first_step ? comm_result : nothing)
-                Threads.@spawn task_iter_result = step_iteration(world.task_sim, time_step_s, first_step)
+
+                Threads.@spawn try
+                    comm_iter_result = cs_step_iteration(world, time_step_s, first_step ? comm_result : nothing)
+                catch ex
+                    bt = stacktrace(catch_backtrace())
+                    showerror(stderr, ex, bt)
+                    rethrow(ex)
+                end
+
+                Threads.@spawn try
+                    task_iter_result = step_iteration(world.task_sim, time_step_s, first_step)
+                catch ex
+                    bt = stacktrace(catch_backtrace())
+                    showerror(stderr, ex, bt)
+                    rethrow(ex)
+                end
             end
             first_step = false
             push!(task_sim_result.results, task_iter_result)
@@ -336,7 +356,7 @@ struct NonWaitable end
 function Base.wait(waitable::NonWaitable) end
 
 function env(world::World)
-    return env(world.env)
+    return world.env
 end
 
 function space(world::World)

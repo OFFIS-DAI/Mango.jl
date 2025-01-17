@@ -5,12 +5,14 @@ repo = "https://github.com/OFFIS-DAI/Mango.jl"
 version = "0.4.0"
 
 [deps]
+Colors = "5ae59095-9a9b-59fe-a467-6f913c188581"
 ConcurrentCollections = "5060bff5-0b44-40c5-b522-fcd3ca5cecdd"
 ConcurrentUtilities = "f0e56b4a-5159-44fe-b623-3e5288b988bb"
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 Graphs = "86223c79-3864-5bf0-83f7-82e725a168b6"
 JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+Karnak = "cd156443-31ad-4f6f-850f-a93ee5f75905"
 LightBSON = "a4a7f996-b3a6-4de6-b9db-2fa5f350df41"
 Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
 MetaGraphsNext = "fa8bd995-216d-47f1-8a91-f3b68fbeb377"
@@ -21,20 +23,22 @@ Sockets = "6462fe0b-24de-5631-8697-dd941f90decc"
 UUIDs = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
 
 [compat]
+Colors = "0.12.11"
 ConcurrentCollections = "~0.1"
 ConcurrentUtilities = "~2.2"
+Graphs = "~1.10"
 JSON = "~0.21"
+Karnak = "~1.1"
 LightBSON = "~0.2"
+MetaGraphsNext = "~0.7"
 Mosquitto = "~0.10"
 OrderedCollections = "~1.6"
 Parameters = "~0.12"
-Graphs = "~1.11"
-MetaGraphsNext = "~0.7"
 julia = "^1.9"
 
 [extras]
-Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
 test = ["Test", "Documenter"]

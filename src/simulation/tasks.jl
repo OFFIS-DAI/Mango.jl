@@ -94,6 +94,61 @@ function transfer_wait_queue(scheduler::SimulationScheduler)
     end
 end
 
+function execute_task_for(task_sim::SimpleTaskSimulation,
+    scheduler::SimulationScheduler,
+    result::TaskIterationResult,
+    step_size_s::Real)
+
+    while true
+        next_task = maybepopfirst!(scheduler.queue)
+        if isnothing(next_task)
+            break
+        end
+
+        # Every time a task is running the state can change, so another iteration has to be calced
+        result.state_changed = true
+
+        task = something(next_task)
+        if isa(task, Task)
+            @debug "Continue the old Task!" task
+            notify(scheduler.events[task][1])
+        else
+            @debug "Processing new Task!"
+            func, td, event = task
+            task = do_schedule(func, scheduler, td, event)
+        end
+
+        @debug "Waiting..."
+        out = wait_for_finish_or_sleeping(scheduler, task, step_size_s)
+        @debug "Finished..."
+
+        if !isnothing(out.result)
+            notify(scheduler.tasks[task][2])
+            result.task_to_result[uuid4()] = TaskResult(true, task_sim.clock.simulation_time, out)
+
+            # clean up task data
+            maybepop!(scheduler.tasks, task)
+            if haskey(scheduler.events, task)
+                maybepop!(scheduler.events, task)
+            end
+
+            # rethrow exception if exists
+            if istaskfailed(task)
+                Base.show_backtrace(stderr, task.backtrace)
+                throw(task.exception)
+            end
+
+            @debug "A task has been finished" out.result
+        elseif out.cont
+            push!(scheduler.queue, task)
+            @debug "The task $task needs another iteration!"
+        else
+            push!(scheduler.wait_queue, task)
+            @debug "The task will be proccesed in the next step_iteration"
+        end
+    end
+end
+
 function step_iteration(task_sim::SimpleTaskSimulation, step_size_s::Real, first_step=false)::TaskIterationResult
 
     # Transfer Tasks from the previous iteration which are still running
@@ -109,49 +164,12 @@ function step_iteration(task_sim::SimpleTaskSimulation, step_size_s::Real, first
         for scheduler in task_sim.simulation_schedulers
             # Execute all tasks subsequently until no task can or is allowed to run
             # based on the simulation time
-            Threads.@spawn begin
-                while true
-                    next_task = maybepopfirst!(scheduler.queue)
-                    if isnothing(next_task)
-                        break
-                    end
-
-                    # Every time a task is running the state can change, so another iteration has to be calced
-                    result.state_changed = true
-
-                    task = something(next_task)
-                    if isa(task, Task)
-                        @debug "Continue the old Task!" task
-                        notify(scheduler.events[task][1])
-                    else
-                        @debug "Processing new Task!"
-                        func, td, event = task
-                        task = do_schedule(func, scheduler, td, event)
-                    end
-
-                    @debug "Waiting..."
-                    out = wait_for_finish_or_sleeping(scheduler, task, step_size_s)
-                    @debug "Finished..."
-
-                    if !isnothing(out.result)
-                        notify(scheduler.tasks[task][2])
-                        result.task_to_result[uuid4()] = TaskResult(true, task_sim.clock.simulation_time, out)
-
-                        # clean up task data
-                        maybepop!(scheduler.tasks, task)
-                        if haskey(scheduler.events, task)
-                            maybepop!(scheduler.events, task)
-                        end
-
-                        @debug "A task has been finished" out.result
-                    elseif out.cont
-                        push!(scheduler.queue, task)
-                        @debug "The task $task needs another iteration!"
-                    else
-                        push!(scheduler.wait_queue, task)
-                        @debug "The task will be proccesed in the next step_iteration"
-                    end
-                end
+            Threads.@spawn try
+                execute_task_for(task_sim, scheduler, result, step_size_s)
+            catch ex
+                bt = stacktrace(catch_backtrace())
+                showerror(stderr, ex, bt)
+                rethrow(ex)
             end
         end
     end

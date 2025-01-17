@@ -1,8 +1,14 @@
-export complete_topology, star_topology, cycle_topology, graph_topology, per_node, add!, topology_neighbors, create_topology, add_node!, add_edge!, Topology, modify_topology, choose_agent, assign_agent, NORMAL, BROKEN, INACTIVE, set_edge_state!, remove_edge!, remove_node!
+export complete_topology, star_topology, cycle_topology, graph_topology, per_node, add!,
+    topology_neighbors, create_topology, add_node!, add_edge!, Topology, modify_topology,
+    choose_agent, assign_agent, NORMAL, BROKEN, INACTIVE, set_edge_state!, remove_edge!, remove_node!,
+    plot
 
 using MetaGraphsNext
 using Graphs
 import Graphs.add_edge!
+
+using Karnak
+using Colors
 
 @kwdef struct Node
     id::Int
@@ -313,4 +319,59 @@ end
 
 function Graphs.nv(topology::Topology)
     return nv(topology.graph)
+end
+
+function plot(topology::Topology;
+    annotate_aids::Bool=false,
+    write_to::Union{Nothing,String}=nothing,
+    dimensions::Tuple{Int,Int}=(800, 600))
+
+    g = topology.graph
+    node_id_map = collect(labels(topology.graph))
+
+    nodecolor = "firebrick"
+    textcolor = "white"
+    edgecolor = colorant"lightgray"
+
+    @drawsvg begin
+        background("grey10")
+        sethue(nodecolor)
+        drawgraph(g, layout=stress,
+            margin=50,
+            edgegaps=30,
+            edgestrokeweights=2,
+            vertexshapes=:circle,
+            vertexshapesizes=30,
+            vertexlabels=(v) -> "n$(node_id_map[v]) ($(length(topology.graph[node_id_map[v]].agents)))",
+            vertexfunction=(v, c) -> begin
+                @layer begin
+                    sethue(nodecolor)
+                    circle(c[v], 25, :fill)
+                    sethue(textcolor)
+                    t_p = c[v] + (0, 10)
+                    translate(t_p)
+                    label("n$(node_id_map[v]) ($(length(topology.graph[node_id_map[v]].agents)))")
+                    if annotate_aids
+                        translate(Point(50, 0))
+                        label(string([aid(a) for a in topology.graph[node_id_map[v]].agents]))
+                    end
+                end
+            end,
+            edgestrokecolors=edgecolor,
+            edgelabelcolors=edgecolor,
+            edgelabels=(n, s, d, f, t) -> begin
+                θ = slope(f, t)
+                fontsize(12)
+                translate(midpoint(f, t))
+                rotate(θ)
+                sethue(textcolor)
+                label("state $(g[node_id_map[s],node_id_map[d]])", offset=-15)
+            end)
+    end dimensions[1] dimensions[2]
+
+    svg = svgstring()
+    if !isnothing(write_to)
+        write(write_to, svg)
+    end
+    return svg
 end

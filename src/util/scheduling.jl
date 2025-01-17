@@ -1,6 +1,7 @@
 export TaskData,
     PeriodicTaskData,
     InstantTaskData,
+    DelayTaskData,
     DateTimeTaskData,
     AwaitableTaskData,
     ConditionalTaskData,
@@ -160,6 +161,13 @@ Instant task data. Functions scheduled with this data is scheduled instantly.
 struct InstantTaskData <: TaskData end
 
 """
+Delayed task data. Functions scheduleld with this data are delays by delay_s seconds
+"""
+struct DelayTaskData <: TaskData
+    delay_s::Real
+end
+
+"""
 Schedule the function at a specific time determined by the date::DateTime.
 """
 struct DateTimeTaskData <: TaskData
@@ -203,6 +211,11 @@ function execute_task(f::Function, scheduler::AbstractScheduler, data::InstantTa
     f()
 end
 
+function execute_task(f::Function, scheduler::AbstractScheduler, data::DelayTaskData)
+    sleep(scheduler, data.delay_s)
+    f()
+end
+
 function execute_task(f::Function, scheduler::AbstractScheduler, data::DateTimeTaskData)
     sleep(scheduler, (data.date - now(scheduler)).value / 1000)
     f()
@@ -228,7 +241,7 @@ functino `f` is scheduled using the information in `data`, which specifies the w
 scheduled.
 """
 function schedule(f::Function, scheduler::AbstractScheduler, data::TaskData)
-    task = Threads.@spawn execute_task(f, scheduler, data)
+    task = @spawnlog execute_task(f, scheduler, data)
     tasks(scheduler)[task] = data
     return task
 end
@@ -416,7 +429,7 @@ function schedule(f::Function, scheduler::SimulationScheduler, data::TaskData)
 end
 
 function do_schedule(f::Function, scheduler::SimulationScheduler, data::TaskData, event::Base.Event)
-    task = Threads.@spawn execute_task(f, scheduler, data)
+    task = @spawnlog execute_task(f, scheduler, data)
     tasks(scheduler)[task] = (data, event)
     return task
 end
