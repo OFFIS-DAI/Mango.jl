@@ -39,3 +39,14 @@ end
     @test agent1.counter == 28
     @test agent2[WorldEventRole].counter == 29
 end
+
+struct TestPosition <: Position end
+struct TestSpace <: Space{TestPosition} end
+
+@testset "TestAgentSpaceApiNotImplemented" begin
+    test_space = TestSpace()
+    agent = WorldEventAgent(12)
+    @test_throws "Initialization for TestSpace is not defined!" initialize(test_space, [agent])
+    @test_throws "Move on the space TestSpace not defined!" move(test_space, agent, TestPosition())
+    @test_throws "Position on the space TestSpace not defined!" location(test_space, agent)
+end
