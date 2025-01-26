@@ -223,21 +223,3 @@ end
     @test nv(topology) == 5
     @test collect(vertices(topology)) == [1, 2, 3, 4, 5]
 end
-
-@testset "TestTopologyPlotting" begin
-    topology = create_topology() do topology
-        n1 = add_node!(topology, TopologyAgent())
-        n2 = add_node!(topology, TopologyAgent())
-        n3 = add_node!(topology, TopologyAgent(), id=12)
-        add_edge!(topology, n1, n2)
-        add_edge!(topology, n1, n3)
-    end
-
-    svg_string = plot(topology, write_to="test_topology_plot.svg")
-    svg_string2 = plot(topology, annotate_aids=true)
-
-    @test length(svg_string) > 10000
-    @test length(svg_string2) > 20000
-
-    rm("test_topology_plot.svg")
-end

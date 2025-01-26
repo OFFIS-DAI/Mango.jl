@@ -25,6 +25,8 @@ include("simulation/container.jl")
 include("environment/core.jl")
 include("simulation/world.jl")
 include("util/topology.jl")
+include("visualization/communication.jl")
+include("visualization/observation.jl")
 
 include("express/api.jl")
 

@@ -36,7 +36,6 @@ with the environment and exist in the defined space.
     space::S = Area2D(width=10, height=10)
     behavior::Behavior = NoBehavior()
     observers::Vector{WorldObserver} = Vector{WorldObserver}()
-    data_selectors::Vector{Function} = Vector{Function}()
     initialized::Bool = false
 end
 
@@ -92,8 +91,14 @@ function initialize(space::Area2D, agents::Vector{A}) where {A<:Agent}
     end
 end
 
+function initialize(behavior::Behavior)
+    # default no initialization
+end
+
 function initialize(environment::Environment{S}, agents::Vector{A}) where {S<:Space} where {A<:Agent}
     initialize(environment.space, agents)
+    initialize(behavior(environment))
+    environment.initialized = true
 end
 
 """
@@ -136,14 +141,4 @@ function emit_global_event(environment::Environment, event::Any)
     for observer in environment.observers
         dispatch_global_event(observer, event)
     end
-end
-
-"""
-    select(environment::Environment, selector::Function)
-
-Select an output attribute, which will be recorded while
-the simulation is running (every step!).
-"""
-function select!(environment::Environment, selector::Function)
-    push!(environment.data_selectors, selector)
 end

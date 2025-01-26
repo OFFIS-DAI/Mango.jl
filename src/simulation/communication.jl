@@ -12,7 +12,7 @@ Package result
 """
 struct PackageResult
     reached::Bool
-    delay_s::UInt64
+    delay_s::Real
 end
 
 """

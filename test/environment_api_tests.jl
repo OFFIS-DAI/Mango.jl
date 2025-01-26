@@ -33,8 +33,8 @@ end
     agent2 = add_agent_composed_of(world, WorldEventRole(1))
 
     stepping_result = step_simulation(world)
-    @test agent1.counter == 14
-    @test agent2[WorldEventRole].counter == 15
+    @test agent1.counter == 7
+    @test agent2[WorldEventRole].counter == 8
     stepping_result = step_simulation(world)
     @test agent1.counter == 28
     @test agent2[WorldEventRole].counter == 29

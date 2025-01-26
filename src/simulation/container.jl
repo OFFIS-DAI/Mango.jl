@@ -11,6 +11,7 @@ end
 
 @kwdef mutable struct SimulationContainer <: ContainerInterface
     clock::Clock
+    current_step_size_s::Real = 0
     agents::OrderedDict{String,Agent} = OrderedDict{String,Agent}()
     agent_counter::Integer = 0
     shutdown::Bool = false
@@ -44,7 +45,12 @@ function register(
 end
 
 function forward_message(container::SimulationContainer, msg::Any, meta::AbstractDict)
-    push!(container.message_queue, MessageData(msg, meta, time(container)))
+    push!(container.message_queue,
+        MessageData(msg,
+            meta,
+            add_seconds(time(container), container.current_step_size_s)
+        )
+    )
     return NonWaitable()
 end
 
