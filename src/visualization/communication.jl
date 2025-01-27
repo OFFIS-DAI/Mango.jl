@@ -1,67 +1,9 @@
 export plot, show_communication_data
 
-using Karnak
-using Colors
-using GLMakie
 using GraphMakie.NetworkLayout
 using GraphMakie
 using Graphs
 using Dates
-
-function plot(topology::Topology;
-    annotate_aids::Bool=false,
-    write_to::Union{Nothing,String}=nothing,
-    dimensions::Tuple{Int,Int}=(800, 600))
-
-    g = topology.graph
-    node_id_map = collect(labels(topology.graph))
-
-    nodecolor = "firebrick"
-    textcolor = "white"
-    edgecolor = colorant"lightgray"
-
-    @drawsvg begin
-        background("grey10")
-        sethue(nodecolor)
-        drawgraph(g, layout=shell,
-            margin=50,
-            edgegaps=30,
-            edgestrokeweights=2,
-            vertexshapes=:circle,
-            vertexshapesizes=30,
-            vertexlabels=(v) -> "n$(node_id_map[v]) ($(length(topology.graph[node_id_map[v]].agents)))",
-            vertexfunction=(v, c) -> begin
-                @layer begin
-                    sethue(nodecolor)
-                    circle(c[v], 25, :fill)
-                    sethue(textcolor)
-                    t_p = c[v] + (0, 10)
-                    translate(t_p)
-                    label("n$(node_id_map[v]) ($(length(topology.graph[node_id_map[v]].agents)))")
-                    if annotate_aids
-                        translate(Karnak.Point(50, 0))
-                        label(string([aid(a) for a in topology.graph[node_id_map[v]].agents]))
-                    end
-                end
-            end,
-            edgestrokecolors=edgecolor,
-            edgelabelcolors=edgecolor,
-            edgelabels=(n, s, d, f, t) -> begin
-                θ = slope(f, t)
-                fontsize(12)
-                translate(midpoint(f, t))
-                rotate(θ)
-                sethue(textcolor)
-                label("state $(g[node_id_map[s],node_id_map[d]])", offset=-15)
-            end)
-    end dimensions[1] dimensions[2]
-
-    svg = svgstring()
-    if !isnothing(write_to)
-        write(write_to, svg)
-    end
-    return svg
-end
 
 function _to_seconds(date::DateTime, init::DateTime)
     return (date - init).value / 1000
@@ -83,8 +25,6 @@ function show_communication_data(topology::Topology,
     initial_time::DateTime=DateTime(0);
     resolution_s::Real=0.1,
     display::Bool=true)
-
-    GLMakie.activate!()
 
     fig = Figure()
     ax = Axis(fig[1, 1])

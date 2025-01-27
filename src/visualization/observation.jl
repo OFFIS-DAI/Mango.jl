@@ -1,10 +1,9 @@
 export plot_world, plot_agents, plot_recordings
 
 using CairoMakie
-using GLMakie
+CairoMakie.activate!()
 
 function plot_world(world::World, recording::String; write_to::Union{Nothing,String}="world_observation.svg", fig=Figure())
-    CairoMakie.activate!()
 
     data = data_collection(world, recording)
     ax = Axis(fig,
@@ -19,7 +18,6 @@ function plot_world(world::World, recording::String; write_to::Union{Nothing,Str
 end
 
 function plot_agents(world::World, recording::String; write_to::Union{Nothing,String}="agent_observation.svg", fig=Figure())
-    CairoMakie.activate!()
 
     data = data_agent_collection(world, recording)
     ax = Axis(fig,
@@ -46,7 +44,6 @@ function _create_label(layout, label)
 end
 
 function plot_recordings(world::World; write_to::Union{Nothing,String}="observation.svg", size=(600, 600))
-    CairoMakie.activate!()
 
     dc = world.data_collections
     dac = world.data_agent_collections
