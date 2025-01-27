@@ -2,6 +2,7 @@ using Mango
 using Test
 using Graphs
 using Dates
+using CairoMakie
 
 @agent struct TopologyPlotAgent
 end
@@ -67,5 +68,19 @@ end
         results = discrete_step_until(world, 1000)
     end
 
-    show_communication_data(topology, world, display=false)
+    show_communication_data(topology, world, show=false)
+end
+
+@testset "TestVisuAgentsTopo" begin
+    world = create_world(DateTime(Millisecond(0)),
+        communication_sim=SimpleCommunicationSimulation(default_delay_s=1))
+
+    agent1 = register(world, MyVisuBehavingAgent(0, "2"), "1")
+    agent2 = register(world, MyVisuBehavingAgent(0, "1"), "2")
+
+    topology = complete_topology(3)
+    auto_assign!(topology, world)
+
+    plot_topology(topology, write_to="test_topology_plot.svg")
+    rm("test_topology_plot.svg")
 end

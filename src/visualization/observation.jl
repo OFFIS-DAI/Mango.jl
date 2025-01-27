@@ -1,7 +1,6 @@
 export plot_world, plot_agents, plot_recordings
 
-using CairoMakie
-CairoMakie.activate!()
+using Makie
 
 function plot_world(world::World, recording::String; write_to::Union{Nothing,String}="world_observation.svg", fig=Figure())
 
@@ -28,7 +27,7 @@ function plot_agents(world::World, recording::String; write_to::Union{Nothing,St
     pairs = collect(data.timeseries)
     labels = [pair[1] for pair in pairs]
     values = [pair[2] for pair in pairs]
-    series!(ax, data.time, hcat(values...)', labels=labels, color=:coolwarm)
+    series!(ax, data.time, hcat(values...)', labels=labels)
     axislegend(ax, position=:lt)
     if !isnothing(write_to)
         save(write_to, fig)

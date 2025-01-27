@@ -229,9 +229,11 @@ Assign all agents of the `container` to the nodes of the `topology`. The agents 
 to the nodes in the order of the nodes in the graph.
 """
 function auto_assign!(topology::Topology, container::ContainerInterface)
-    for (i, label) in enumerate(labels(topology.graph))
+    index_to_label = collect(labels(topology.graph))
+    for (i, agent) in enumerate(agents(container))
+        label = index_to_label[(((i-1)%length(index_to_label))+1)]
         node = topology.graph[label]
-        add!(node, container[i])
+        add!(node, agent)
     end
     _build_neighborhoods_and_inject(topology)
 end

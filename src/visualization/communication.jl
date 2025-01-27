@@ -1,9 +1,34 @@
-export plot, show_communication_data
+export plot_topology, show_communication_data
 
+using Makie
 using GraphMakie.NetworkLayout
 using GraphMakie
 using Graphs
 using Dates
+
+function plot_topology(topology::Topology; write_to::Union{Nothing,String}="topology.svg", ax=nothing, fig=Figure())
+
+    if isnothing(ax)
+        ax = Axis(fig[1, 1])
+    end
+
+    g = topology.graph
+    graphplot!(ax, g, layout=Shell(),
+        elabels=["$i" for i in 1:ne(g)],
+        arrow_show=true,
+        node_size=48,
+        node_color=:gray,
+        arrow_size=24,
+        ilabels=repr.(1:nv(g)),
+        ilabels_color=:white)
+
+    hidedecorations!(ax)
+    hidespines!(ax)
+
+    if !isnothing(write_to)
+        save(write_to, fig)
+    end
+end
 
 function _to_seconds(date::DateTime, init::DateTime)
     return (date - init).value / 1000
@@ -24,7 +49,7 @@ function show_communication_data(topology::Topology,
     messages::Vector{MessageTransaction},
     initial_time::DateTime=DateTime(0);
     resolution_s::Real=0.1,
-    display::Bool=true)
+    show::Bool=true)
 
     fig = Figure()
     ax = Axis(fig[1, 1])
@@ -123,7 +148,7 @@ function show_communication_data(topology::Topology,
     hidedecorations!(ax)
     hidespines!(ax)
 
-    if display
+    if show
         wait(display(fig))
     end
     return fig
@@ -132,7 +157,7 @@ end
 function show_communication_data(topology::Topology,
     world::World;
     resolution_s::Real=0.1,
-    display::Bool=true)
+    show::Bool=true)
     return show_communication_data(topology, world.recorded_messages, world.initial_time,
-        resolution_s=resolution_s, display=display)
+        resolution_s=resolution_s, show=show)
 end
