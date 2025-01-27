@@ -70,3 +70,20 @@ end
     end
     rm("test_recordings_plot.svg")
 end
+
+@testset "TestVisuAgentsComm" begin
+    world = create_world(DateTime(Millisecond(0)),
+        communication_sim=SimpleCommunicationSimulation(default_delay_s=1))
+
+    agent1 = register(world, MyVisuBehavingAgent(0, "2"), "1")
+    agent2 = register(world, MyVisuBehavingAgent(0, "1"), "2")
+
+    topology = complete_topology(2)
+    auto_assign!(topology, world)
+
+    activate(world) do
+        results = discrete_step_until(world, 1000)
+    end
+
+    show_communication_data(topology, world, display=false)
+end

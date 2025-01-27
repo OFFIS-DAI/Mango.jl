@@ -15,6 +15,6 @@ using Documenter
     include("express_api_tests.jl")
     include("topology_tests.jl")
     include("environment_api_tests.jl")
-    incude("visualization_tests.jl")
+    include("visualization_tests.jl")
     doctest(Mango)
 end

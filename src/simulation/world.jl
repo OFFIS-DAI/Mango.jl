@@ -230,8 +230,8 @@ function cs_step_iteration(world::World,
         for (mp, pr) in sort([z for z in zip(message_packages, communication_result.package_results)], by=t -> add_seconds(t[1].sent_date, t[2].delay_s))
             if add_seconds(mp.sent_date, pr.delay_s) <= add_seconds(time(world), step_size_s) && pr.reached
                 state_changed = true
-                push!(world.recorded_messages, MessageTransaction(mp.sender_aid,
-                    mp.receiver_aid,
+                push!(world.recorded_messages, MessageTransaction(mp.sender_id,
+                    mp.receiver_id,
                     mp.sent_date,
                     add_seconds(mp.sent_date, pr.delay_s),
                     mp.content[1]))

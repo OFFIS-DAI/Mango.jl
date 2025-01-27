@@ -1,4 +1,4 @@
-export plot
+export plot, show_communication_data
 
 using Karnak
 using Colors
@@ -67,11 +67,11 @@ function _to_seconds(date::DateTime, init::DateTime)
     return (date - init).value / 1000
 end
 
-function _find_edge(graph::AbstractGraph, sender_id::String, receiver_id::String)
+function _find_edge(graph::AbstractGraph, sender_id::Int, receiver_id::Int)
     for (i, edge) in enumerate(edges(graph))
-        if collect(labels(graph))[src(edge)] == parse(Int, sender_id) && collect(labels(graph))[dst(edge)] == parse(Int, receiver_id)
+        if collect(labels(graph))[src(edge)] == sender_id && collect(labels(graph))[dst(edge)] == receiver_id
             return i, edge, :sender
-        elseif collect(labels(graph))[dst(edge)] == parse(Int, sender_id) && collect(labels(graph))[src(edge)] == parse(Int, receiver_id)
+        elseif collect(labels(graph))[dst(edge)] == sender_id && collect(labels(graph))[src(edge)] == receiver_id
             return i, edge, :receiver
         end
     end
@@ -79,15 +79,17 @@ function _find_edge(graph::AbstractGraph, sender_id::String, receiver_id::String
 end
 
 function show_communication_data(topology::Topology,
-    messages::Vector{MessageTransaction};
-    resolution_s::Real=0.1)
+    messages::Vector{MessageTransaction},
+    initial_time::DateTime=DateTime(0);
+    resolution_s::Real=0.1,
+    display::Bool=true)
 
     GLMakie.activate!()
 
     fig = Figure()
     ax = Axis(fig[1, 1])
 
-    min_date = min([m.sent_date for m in messages]...)
+    min_date = initial_time
     max_date = max([m.arriving_date for m in messages]...)
 
     delta = _to_seconds(max_date, min_date)
@@ -98,17 +100,21 @@ function show_communication_data(topology::Topology,
     sliderobservable = sg.sliders[1].value
 
     g = topology.graph
-
-    edgecolors = lift(sliderobservable) do s
-        time = Int(floor(s))
-        @info "time"
+    aid_to_node_id = Dict{String,Int}()
+    for label in labels(topology.graph)
+        node = topology.graph[label]
+        for agent in node.agents
+            aid_to_node_id[aid(agent)] = label
+        end
+    end
+    edgecolors = lift(sliderobservable) do time
         edgecolors = [:black for i in 1:ne(g)]
         for message in messages
             if time >= _to_seconds(message.sent_date, min_date) &&
                time <= _to_seconds(message.arriving_date, min_date)
 
-                found = _find_edge(g, message.sender_id, message.receiver_id)
-                @info found collect(labels(g))
+                found = _find_edge(g, aid_to_node_id[message.sender_id],
+                    aid_to_node_id[message.receiver_id])
                 if found != -1
                     edgecolors[found[1]] = :red
                 end
@@ -117,14 +123,13 @@ function show_communication_data(topology::Topology,
         edgecolors
     end
 
-    elabels = lift(sliderobservable) do s
-        time = Int(floor(s))
+    elabels = lift(sliderobservable) do time
         elabels = ["" for _ in 1:ne(g)]
         for message in messages
             if time >= _to_seconds(message.sent_date, min_date) &&
                time <= _to_seconds(message.arriving_date, min_date)
 
-                found = _find_edge(g, message.sender_id, message.receiver_id)
+                found = _find_edge(g, aid_to_node_id[message.sender_id], aid_to_node_id[message.receiver_id])
                 if found != -1
                     elabels[found[1]] = "$(typeof(message.content)): $(last("$(message.content)", 5))"
                 end
@@ -133,14 +138,13 @@ function show_communication_data(topology::Topology,
         elabels
     end
 
-    arrow_markers = lift(sliderobservable) do s
-        time = Int(floor(s))
+    arrow_markers = lift(sliderobservable) do time
         markers = [:hline for _ in 1:ne(g)]
         for message in messages
             if time >= _to_seconds(message.sent_date, min_date) &&
                time <= _to_seconds(message.arriving_date, min_date)
 
-                found = _find_edge(g, message.sender_id, message.receiver_id)
+                found = _find_edge(g, aid_to_node_id[message.sender_id], aid_to_node_id[message.receiver_id])
                 if found != -1
                     markers[found[1]] = found[3] == :sender ? :rtriangle : :ltriangle
                 end
@@ -149,14 +153,13 @@ function show_communication_data(topology::Topology,
         markers
     end
 
-    arrow_shifts = lift(sliderobservable) do s
-        time = Int(floor(s))
+    arrow_shifts = lift(sliderobservable) do time
         shifts = [1.0 for _ in 1:ne(g)]
         for message in messages
             if time >= _to_seconds(message.sent_date, min_date) &&
                time <= _to_seconds(message.arriving_date, min_date)
 
-                found = _find_edge(g, message.sender_id, message.receiver_id)
+                found = _find_edge(g, aid_to_node_id[message.sender_id], aid_to_node_id[message.receiver_id])
                 if found != -1
                     shifts[found[1]] = 0.8
                 end
@@ -180,5 +183,16 @@ function show_communication_data(topology::Topology,
     hidedecorations!(ax)
     hidespines!(ax)
 
-    fig
+    if display
+        wait(display(fig))
+    end
+    return fig
+end
+
+function show_communication_data(topology::Topology,
+    world::World;
+    resolution_s::Real=0.1,
+    display::Bool=true)
+    return show_communication_data(topology, world.recorded_messages, world.initial_time,
+        resolution_s=resolution_s, display=display)
 end
