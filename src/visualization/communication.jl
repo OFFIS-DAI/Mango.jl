@@ -37,9 +37,7 @@ end
 function _find_edge(graph::AbstractGraph, sender_id::Int, receiver_id::Int)
     for (i, edge) in enumerate(edges(graph))
         if collect(labels(graph))[src(edge)] == sender_id && collect(labels(graph))[dst(edge)] == receiver_id
-            return i, edge, :sender
-        elseif collect(labels(graph))[dst(edge)] == sender_id && collect(labels(graph))[src(edge)] == receiver_id
-            return i, edge, :receiver
+            return i, edge
         end
     end
     return -1
@@ -49,9 +47,20 @@ function show_communication_data(topology::Topology,
     messages::Vector{MessageTransaction},
     initial_time::DateTime=DateTime(0);
     resolution_s::Real=0.1,
-    show::Bool=true)
+    show::Bool=true,
+    size=(1200, 800))
 
-    fig = Figure()
+    g = topology.graph
+
+    if !is_directed(topology.graph)
+        edge_data = [[(e[1], e[2]) => topology.graph[e[1], e[2]] for e in edge_labels(topology.graph)];
+            [(e[2], e[1]) => topology.graph[e[1], e[2]] for e in edge_labels(topology.graph)]]
+        vertex_data = [l => topology.graph[l] for l in labels(topology.graph)]
+        underlying_graph = DiGraph(topology.graph.graph)
+        g = MetaGraph(underlying_graph, vertex_data, edge_data)
+    end
+
+    fig = Figure(size=size)
     ax = Axis(fig[1, 1])
 
     min_date = initial_time
@@ -64,7 +73,6 @@ function show_communication_data(topology::Topology,
 
     sliderobservable = sg.sliders[1].value
 
-    g = topology.graph
     aid_to_node_id = Dict{String,Int}()
     for label in labels(topology.graph)
         node = topology.graph[label]
@@ -87,20 +95,34 @@ function show_communication_data(topology::Topology,
         end
         edgecolors
     end
-
     elabels = lift(sliderobservable) do time
-        elabels = ["" for _ in 1:ne(g)]
+        i_elabels = ["" for _ in 1:ne(g)]
         for message in messages
             if time >= _to_seconds(message.sent_date, min_date) &&
                time <= _to_seconds(message.arriving_date, min_date)
 
                 found = _find_edge(g, aid_to_node_id[message.sender_id], aid_to_node_id[message.receiver_id])
                 if found != -1
-                    elabels[found[1]] = "$(typeof(message.content)): $(last("$(message.content)", 5))"
+                    i_elabels[found[1]] = "$(typeof(message.content))"
                 end
             end
         end
-        elabels
+        i_elabels
+    end
+
+    efull = lift(sliderobservable) do time
+        i_efull = ["" for _ in 1:ne(g)]
+        for message in messages
+            if time >= _to_seconds(message.sent_date, min_date) &&
+               time <= _to_seconds(message.arriving_date, min_date)
+
+                found = _find_edge(g, aid_to_node_id[message.sender_id], aid_to_node_id[message.receiver_id])
+                if found != -1
+                    i_efull[found[1]] = "$(message.content)"
+                end
+            end
+        end
+        i_efull
     end
 
     arrow_markers = lift(sliderobservable) do time
@@ -111,7 +133,7 @@ function show_communication_data(topology::Topology,
 
                 found = _find_edge(g, aid_to_node_id[message.sender_id], aid_to_node_id[message.receiver_id])
                 if found != -1
-                    markers[found[1]] = found[3] == :sender ? :rtriangle : :ltriangle
+                    markers[found[1]] = :rtriangle
                 end
             end
         end
@@ -133,23 +155,56 @@ function show_communication_data(topology::Topology,
         shifts
     end
 
-    graphplot!(ax, g, layout=Shell(),
+    edge_width = lift(sliderobservable) do time
+        ew = [1.0 for _ in 1:ne(g)]
+        for message in messages
+            if time >= _to_seconds(message.sent_date, min_date) &&
+               time <= _to_seconds(message.arriving_date, min_date)
+
+                found = _find_edge(g, aid_to_node_id[message.sender_id], aid_to_node_id[message.receiver_id])
+                if found != -1
+                    ew[found[1]] = 6
+                end
+            end
+        end
+        ew
+    end
+
+    p = graphplot!(ax, g, layout=Shell(),
         edge_color=edgecolors,
         elabels=elabels,
         arrow_show=true,
+        edge_width=edge_width,
         node_size=48,
         node_color=:gray,
+        node_strokewidth=0,
         arrow_size=24,
         arrow_shift=arrow_shifts,
         arrow_marker=arrow_markers,
         ilabels=repr.(1:nv(g)),
-        ilabels_color=:white)
+        ilabels_color=:white,
+        elabels_attr=(word_wrap_width=5,))
 
     hidedecorations!(ax)
     hidespines!(ax)
 
+    deregister_interaction!(ax, :rectanglezoom)
+    register_interaction!(ax, :ndrag, NodeDrag(p))
+
+    function edge_hover_action(state, idx, event, axis)
+        if !state
+            sliderobservable[] = sliderobservable[]
+        end
+        p.elabels[][idx] = state ? efull[][idx] : elabels[][idx]
+        p.elabels[] = p.elabels[]
+    end
+    ehover = EdgeHoverHandler(edge_hover_action)
+    register_interaction!(ax, :ehover, ehover)
+
     if show
         wait(display(fig))
+    else
+        save("communication.svg", fig)
     end
     return fig
 end
