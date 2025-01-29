@@ -1,15 +1,6 @@
-export Environment, Space, Position, Position2D, Area2D, location,
-    move, initialize, initialized, Behavior, schedule, WorldObserver,
+export Environment, Position2D, Area2D, location,
+    move, initialize, initialized, schedule,
     emit_global_event, behavior
-
-abstract type Position end
-abstract type Space{P<:Position} end
-abstract type WorldObserver end
-abstract type Behavior end
-
-function dispatch_global_event(observer::WorldObserver, event::Any)
-    # default no reaction
-end
 
 struct NoBehavior <: Behavior end
 
@@ -31,7 +22,7 @@ The environment is a separate entity, which describes some type of environment, 
 any type of space, this can be some model/evironment, which is observed by the agents. The agents can interact
 with the environment and exist in the defined space.  
 """
-@kwdef mutable struct Environment{S<:Space}
+@kwdef mutable struct Environment{S<:Space} <: EnvironmentInterface
     scheduler::SimulationScheduler
     space::S = Area2D(width=10, height=10)
     behavior::Behavior = NoBehavior()
@@ -40,7 +31,6 @@ with the environment and exist in the defined space.
 end
 
 schedule(f::Function, environment::Environment, data::TaskData) = schedule(f, environment.scheduler, data)
-
 
 """
     on_step(behavior::Behavior, environment::Environment, clock::Clock, step_size_s::Real)
@@ -55,34 +45,13 @@ function step(env::Environment, clock::Clock, step_size_s::Real)
     on_step(behavior(env), env, clock, step_size_s)
 end
 
-"""
-    location(space::Area2D, agent::Agent)::Position2D
-
-Return the location of the `agent`.
-"""
-function location(space::Space{P}, agent::Agent)::P where {P<:Position}
-    throw("Position on the space $space not defined!")
-end
-
 function location(space::Area2D, agent::Agent)::Position2D
     return space.to_position[aid(agent)]
 end
 
-"""
-    move(space::Space{P}, agent::Agent, position::P) where {P<:Position}
-
-Move the `agent` to `position` in `space`. 
-"""
-function move(space::Space{P}, agent::Agent, position::P) where {P<:Position}
-    throw("Move on the space $space not defined!")
-end
 
 function move(space::Area2D, agent::Agent, position::Position2D)
     space.to_position[aid(agent)] = position
-end
-
-function initialize(space::Space, agents::Vector{A}) where {A<:Agent}
-    throw("Initialization for $space is not defined!")
 end
 
 function initialize(space::Area2D, agents::Vector{A}) where {A<:Agent}

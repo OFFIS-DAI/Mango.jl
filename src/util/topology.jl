@@ -23,11 +23,14 @@ end
 end
 
 @kwdef mutable struct TopologyService
-    state_to_neighbors::Dict{State,Vector{AgentAddress}} = Dict()
+    tid_to_state_to_neighbors::Dict{Symbol,Dict{State,Vector{AgentAddress}}} = Dict()
 end
 
-function neighbors(service::TopologyService, state::State=NORMAL)
-    return get(service.state_to_neighbors, state, Vector())
+function neighbors(service::TopologyService, tid::Symbol=:default, state::State=NORMAL)
+    if haskey(service.tid_to_state_to_neighbors, tid)
+        return get(service.tid_to_state_to_neighbors[tid], state, Vector())
+    end
+    throw(ArgumentError("No neighbors found for tid=$tid"))
 end
 
 function _create_meta_graph_with(graph::AbstractGraph)
@@ -129,8 +132,26 @@ function set_edge_state!(topology::Topology, node_id_from::Int, node_id_to::Int,
     topology.graph[node_id_from, node_id_to] = state
 end
 
+function _build_neighborhoods_and_inject(topology::Topology, tid::Symbol=:default)
+    # 2nd pass, build the neighborhoods and add it to agents
+    for label in labels(topology.graph)
+        node = topology.graph[label]
+        state_to_neighbors::Dict{State,Vector{AgentAddress}} = Dict{State,Vector{AgentAddress}}()
+        for n_label in neighbor_labels(topology.graph, label)
+            n_node = topology.graph[n_label]
+            state = topology.graph[node.id, n_node.id]
+            neighbor_addresses = get!(state_to_neighbors, state, Vector())
+            append!(neighbor_addresses, [address(agent) for agent in n_node.agents])
+        end
+        for agent in node.agents
+            topology_service = service_of_type(agent, TopologyService, TopologyService())
+            topology_service.tid_to_state_to_neighbors[tid] = state_to_neighbors
+        end
+    end
+end
+
 """
-	create_topology(create_runnable)::Topology
+    create_topology(create_runnable::Function; tid::Symbol=:default, directed::Bool=false)
 
 Create a topology using the `create_runnable` function which is a one-argument
 function with an initially empty topology as argument.
@@ -149,10 +170,10 @@ topology = create_topology() do topology
 end
 ```
 """
-function create_topology(create_runnable::Function; directed::Bool=false)
+function create_topology(create_runnable::Function; tid::Symbol=:default, directed::Bool=false)
     topology = Topology(_create_meta_graph_with(directed ? DiGraph() : Graph()))
     create_runnable(topology)
-    _build_neighborhoods_and_inject(topology)
+    _build_neighborhoods_and_inject(topology, tid)
     return topology
 end
 
@@ -176,28 +197,10 @@ modify_topology(my_topology) do topology
 end
 ```
 """
-function modify_topology(modify_runnable::Function, topology::Topology)
+function modify_topology(modify_runnable::Function, topology::Topology; tid::Symbol=:default)
     modify_runnable(topology)
-    _build_neighborhoods_and_inject(topology)
+    _build_neighborhoods_and_inject(topology, tid)
     return topology
-end
-
-function _build_neighborhoods_and_inject(topology::Topology)
-    # 2nd pass, build the neighborhoods and add it to agents
-    for label in labels(topology.graph)
-        node = topology.graph[label]
-        state_to_neighbors::Dict{State,Vector{AgentAddress}} = Dict{State,Vector{AgentAddress}}()
-        for n_label in neighbor_labels(topology.graph, label)
-            n_node = topology.graph[n_label]
-            state = topology.graph[node.id, n_node.id]
-            neighbor_addresses = get!(state_to_neighbors, state, Vector())
-            append!(neighbor_addresses, [address(agent) for agent in n_node.agents])
-        end
-        for agent in node.agents
-            topology_service = service_of_type(agent, TopologyService, TopologyService())
-            topology_service.state_to_neighbors = state_to_neighbors
-        end
-    end
 end
 
 """
@@ -213,13 +216,13 @@ per_node(topology) do node
 end
 ```
 """
-function per_node(assign_runnable::Function, topology::Topology)
+function per_node(assign_runnable::Function, topology::Topology; tid::Symbol=:default)
     # 1st pass, let the user assign the agents
     for label in labels(topology.graph)
         node = topology.graph[label]
         assign_runnable(node)
     end
-    _build_neighborhoods_and_inject(topology)
+    _build_neighborhoods_and_inject(topology, tid)
 end
 
 """
@@ -228,14 +231,14 @@ end
 Assign all agents of the `container` to the nodes of the `topology`. The agents are assigned
 to the nodes in the order of the nodes in the graph.
 """
-function auto_assign!(topology::Topology, container::ContainerInterface)
+function auto_assign!(topology::Topology, container::ContainerInterface; tid::Symbol=:default)
     index_to_label = collect(labels(topology.graph))
     for (i, agent) in enumerate(agents(container))
         label = index_to_label[(((i-1)%length(index_to_label))+1)]
         node = topology.graph[label]
         add!(node, agent)
     end
-    _build_neighborhoods_and_inject(topology)
+    _build_neighborhoods_and_inject(topology, tid)
 end
 
 """
@@ -280,17 +283,23 @@ function choose_agent(choose_agent_function::Function, topology::Topology)
 end
 
 """
-	topology_neighbors(agent)
+    topology_neighbors(agent::Agent; tid::Symbol=:default, state::State=NORMAL)::Vector{AgentAddress}
 
 Retrieve the neighbors of the `agent`, represented by their addresses. These vaues will be
 updated when a topology is applied using `per_node` or `create_topology`.
 """
-function topology_neighbors(agent::Agent, state::State=NORMAL)::Vector{AgentAddress}
-    return neighbors(service_of_type(agent, TopologyService, TopologyService()), state)
+function topology_neighbors(agent::Agent; tid::Symbol=:default, state::State=NORMAL)::Vector{AgentAddress}
+    return neighbors(service_of_type(agent, TopologyService, TopologyService()), tid, state)
 end
 
-function topology_neighbors(role::Role, state::State=NORMAL)::Vector{AgentAddress}
-    return neighbors(service_of_type(role.context.agent, TopologyService, TopologyService()), state)
+"""
+    topology_neighbors(role::Role; tid::Symbol=:default, state::State=NORMAL)::Vector{AgentAddress}
+
+Retrieve the neighbors of the `agent`, represented by their addresses. These vaues will be
+updated when a topology is applied using `per_node` or `create_topology`.
+"""
+function topology_neighbors(role::Role; tid::Symbol=:default, state::State=NORMAL)::Vector{AgentAddress}
+    return neighbors(service_of_type(role.context.agent, TopologyService, TopologyService()), tid, state)
 end
 
 # Graphs API calls forwarded to Topology

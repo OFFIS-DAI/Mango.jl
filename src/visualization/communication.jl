@@ -202,7 +202,7 @@ function show_communication_data(topology::Topology,
     register_interaction!(ax, :ehover, ehover)
 
     if show
-        wait(display(fig))
+        return display(fig)
     else
         save("communication.svg", fig)
     end

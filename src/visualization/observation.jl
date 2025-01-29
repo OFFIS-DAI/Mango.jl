@@ -72,6 +72,6 @@ function plot_recordings(world::World;
     _create_label(agent_layout, "A")
 
     if !isnothing(write_to)
-        save(write_to, main_fig)
+        return save(write_to, main_fig)
     end
 end

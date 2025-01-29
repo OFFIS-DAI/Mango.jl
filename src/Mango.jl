@@ -9,6 +9,7 @@ include("util/scheduling.jl")
 include("util/encode_decode.jl")
 include("agent/api.jl")
 include("container/api.jl")
+include("environment/api.jl")
 
 include("agent/role.jl")
 include("agent/core.jl")
