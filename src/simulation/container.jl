@@ -11,6 +11,7 @@ end
 
 @kwdef mutable struct SimulationContainer <: ContainerInterface
     clock::Clock
+    env::Environment
     current_step_size_s::Real = 0
     agents::OrderedDict{String,Agent} = OrderedDict{String,Agent}()
     agent_counter::Integer = 0
@@ -38,7 +39,7 @@ function register(
     end
     container.agents[actual_aid] = agent
     agent.aid = actual_aid
-    agent.context = AgentContext(container)
+    agent.context = AgentContext(container, container.env)
     container.agent_counter += 1
 
     return agent

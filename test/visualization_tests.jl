@@ -12,7 +12,7 @@ end
     other_aid::String
 end
 
-function Mango.on_step(agent::MyVisuBehavingAgent, environment::Environment, clock::Clock, step_size_s::Real)
+function Mango.on_step(agent::MyVisuBehavingAgent, environment::DefaultEnvironment, clock::Clock, step_size_s::Real)
     if agent.counter > 10
         return
     end

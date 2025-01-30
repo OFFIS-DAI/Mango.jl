@@ -98,8 +98,8 @@ The World used as a base struct to enable simulations in Mango.jl. Always create
 @kwdef mutable struct World <: ContainerInterface
     clock::Clock = Clock(DateTime(0))
     initial_time::DateTime = DateTime(0)
-    container::SimulationContainer = SimulationContainer(clock=clock)
-    env::Environment = Environment(scheduler=SimulationScheduler(clock=clock))
+    env::Environment = DefaultEnvironment(scheduler=SimulationScheduler(clock=clock))
+    container::SimulationContainer = SimulationContainer(clock=clock, env=env)
     task_sim::TaskSimulation = SimpleTaskSimulation(clock=clock)
     communication_sim::CommunicationSimulation = SimpleCommunicationSimulation()
     world_observer::WorldObserver = DispatchToAgentWorldObserver(container.agents)

@@ -33,7 +33,7 @@ for the agent.
 """
 struct AgentContext
     container::ContainerInterface
-    evironment::EnvironmentInterface
+    evironment::Environment
 end
 
 """

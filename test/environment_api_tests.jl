@@ -17,7 +17,7 @@ end
 
 struct TestBehavior <: Behavior end
 
-function Mango.on_step(behavior::TestBehavior, environment::Environment, clock::Clock, step_size_s::Real)
+function Mango.on_step(behavior::TestBehavior, environment::DefaultEnvironment, clock::Clock, step_size_s::Real)
     emit_global_event(environment, "Hello Agent, I am the environment")
     schedule(environment, InstantTaskData()) do
         emit_global_event(environment, "Hello Agent, I am the environment")
