@@ -16,7 +16,7 @@ end
 end
 
 """
-Struct DefaultEnvironment. The environment is meant to provide a description of everything which exists outside of the agents.
+Struct DefaultEnvironment. The environment provides a description of everything which exists outside of the agents.
 
 The environment is a separate entity, which describes some type of environment, this can be anything which exists in
 any type of space, this can be some model/evironment, which is observed by the agents. The agents can interact
@@ -101,9 +101,9 @@ end
 """
     emit_global_event(environment::DefaultEnvironment, event::Any)
 
-Emit an global event. This types of events can be handled by any agent
+Emit a global event. This types of events can be handled by any agent
 living in the environment (resp. living in the world, the environment exists in).
-Therefore, any of those agents (and roles) can handle event emitted with
+Therefore, any of those agents (and roles) can handle events emitted with
 this function by defining [`on_global_event`](@ref).
 """
 function emit_global_event(environment::DefaultEnvironment, event::Any)

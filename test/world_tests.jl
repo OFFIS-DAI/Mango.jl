@@ -392,3 +392,36 @@ end
     @test world[aid(a1)] == a1
     @test world[1] == a1
 end
+
+
+@agent struct ErrorAgent
+    counter::Int
+end
+
+function handle_message(agent::ErrorAgent, message::Any, meta::AbstractDict)
+    throw("Something")
+end
+
+@testset "WorldTestExceptionInScheduledTask" begin
+    world = create_world(DateTime(0))
+
+    activate(world) do 
+        schedule(env(world), DelayTaskData(1)) do 
+            throw("Noooo")
+        end 
+        step_simulation(world) # start scheduling = 0
+        @test_throws CompositeException step_simulation(world) # schedule task = 1
+    end
+
+end
+
+@testset "WorldTestExceptionInMessageHandling" begin
+    world = create_world(DateTime(0))
+    a1 = register(world, ErrorAgent(0))
+    a2 = register(world, ErrorAgent(0))
+
+    activate(world) do 
+        send_message(a1, "1", address(a2))
+        @test_throws CompositeException step_simulation(world) # schedule task = 1
+    end
+end

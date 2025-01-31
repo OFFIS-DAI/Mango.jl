@@ -105,11 +105,11 @@ function execute_task_for(task_sim::SimpleTaskSimulation,
             break
         end
 
-        # Every time a task is running the state can change, so another iteration has to be calced
+        # Every time a task is running the state can change, so another iteration has to be calculated
         result.state_changed = true
 
         task = something(next_task)
-        if isa(task, Task)
+        if task isa Task
             @debug "Continue the old Task!" task
             notify(scheduler.events[task][1])
         else

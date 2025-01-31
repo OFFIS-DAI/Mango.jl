@@ -1,18 +1,18 @@
 
 
 """
-Represents a message data package including the arriving time of the package.
+Represents a message data package including the arrival time of the package.
 """
 struct MessageData
     content::Any
     meta::AbstractDict
-    arriving_time::DateTime
+    arrival_time::DateTime
 end
 
 @kwdef mutable struct SimulationContainer <: ContainerInterface
     clock::Clock
     env::Environment
-    current_step_size_s::Real = 0
+    step_size_s::Real = 0
     agents::OrderedDict{String,Agent} = OrderedDict{String,Agent}()
     agent_counter::Integer = 0
     shutdown::Bool = false
@@ -49,7 +49,7 @@ function forward_message(container::SimulationContainer, msg::Any, meta::Abstrac
     push!(container.message_queue,
         MessageData(msg,
             meta,
-            add_seconds(time(container), container.current_step_size_s)
+            add_seconds(time(container), container.step_size_s)
         )
     )
     return NonWaitable()
