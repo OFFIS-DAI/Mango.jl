@@ -8,6 +8,7 @@ The module provides different [`TaskData`](@ref) types, each catering to specifi
 
 1. [`PeriodicTaskData`](@ref): For tasks that need to be executed periodically, it holds the time interval in seconds between task executions.
 2. [`InstantTaskData`](@ref): For tasks that need to be executed instantly, without any delay.
+2. [`DelayTaskData`](@ref): For tasks that need to be executed with a specific delay once.
 3. [`DateTimeTaskData`](@ref): For tasks that need to be executed at a specific date and time.
 4. [`AwaitableTaskData`](@ref): For tasks that require waiting for an awaitable object to complete before execution.
 5. [`ConditionalTaskData`](@ref): For tasks that execute based on a specific condition at regular intervals.
@@ -85,6 +86,7 @@ The [`execute_task`](@ref) function executes a task with a specific [`TaskData`]
 ```julia
 execute_task(f::Function, data::PeriodicTaskData)
 execute_task(f::Function, data::InstantTaskData)
+execute_task(f::Function, data::DelayTaskData)
 execute_task(f::Function, data::DateTimeTaskData)
 execute_task(f::Function, data::AwaitableTaskData)
 execute_task(f::Function, data::ConditionalTaskData)

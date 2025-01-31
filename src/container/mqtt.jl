@@ -51,7 +51,7 @@ Initialize the Mosquitto looping task for the provided `protocol` and forward in
 function init(protocol::MQTTProtocol, stop_check::Function, data_handler::Function)
     tasks = []
     listen_task = errormonitor(
-        Threads.@spawn begin
+        @spawnlog begin
             try
                 run_mosquitto_loop(protocol, data_handler)
             catch err

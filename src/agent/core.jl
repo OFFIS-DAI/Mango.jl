@@ -15,7 +15,9 @@ export @agent,
     ForwardingRule,
     service_of_type,
     add_service!,
-    services
+    services,
+    on_global_event,
+    sender_address
 
 using UUIDs
 
@@ -168,6 +170,15 @@ function dispatch_message(agent::Agent, message::Any, meta::AbstractDict)
             handle_message(agent, message, meta)
         end
     end
+end
+
+"""
+    sender_address(meta::Any)
+
+Extract the sender address from the meta data of a message and return it as `AgentAddress`.
+"""
+function sender_address(meta::AbstractDict)
+    return AgentAddress(aid=meta[SENDER_ID], address=meta[SENDER_ADDR])
 end
 
 """
@@ -522,4 +533,29 @@ Return the `index`'th role of the agent.
 """
 function Base.getindex(agent::T, index::Int) where {T<:Agent}
     return roles(agent)[index]
+end
+
+function Base.getindex(agent::T, index::Type) where {T<:Agent}
+    for role in roles(agent)
+        if typeof(role) == index
+            return role
+        end
+    end
+    throw(ArgumentError("The agent has no role of the type index=$index."))
+end
+
+"""
+    on_global_event(agent::Agent, event::Any)
+
+Handle global event. See [`emit_global_event`](@ref).
+"""
+function on_global_event(agent::Agent, event::Any)
+    # to be overridden
+end
+
+function dispatch_global_event(agent::Agent, event::Any)
+    on_global_event(agent, event)
+    for role in roles(agent)
+        on_global_event(role, event)
+    end
 end

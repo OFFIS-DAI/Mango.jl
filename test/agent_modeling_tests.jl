@@ -8,12 +8,12 @@ import Mango.on_step
     counter::Real
 end
 
-function on_step(agent::ModellingAgent, world::World, clock::Clock, step_size_s::Real)
+function on_step(agent::ModellingAgent, env::Environment, clock::Clock, step_size_s::Real)
     agent.counter += step_size_s
 end
 
 @testset "TestAgentIsStepped" begin
-    container = create_simulation_container(DateTime(Millisecond(23)), communication_sim=SimpleCommunicationSimulation(default_delay_s=0))
+    container = create_world(DateTime(Millisecond(23)), communication_sim=SimpleCommunicationSimulation(default_delay_s=0))
     agent1 = ModellingAgent(0)
     agent2 = ModellingAgent(0)
     register(container, agent1)
@@ -30,12 +30,12 @@ end
     counter::Real
 end
 
-function on_step(role::ModellingRole, world::World, clock::Clock, step_size_s::Real)
+function on_step(role::ModellingRole, env::Environment, clock::Clock, step_size_s::Real)
     role.counter += step_size_s
 end
 
 @testset "TestAgentIsSteppedRole" begin
-    container = create_simulation_container(DateTime(Millisecond(23)), communication_sim=SimpleCommunicationSimulation(default_delay_s=0))
+    container = create_world(DateTime(Millisecond(23)), communication_sim=SimpleCommunicationSimulation(default_delay_s=0))
     agent = ModellingAgent(0)
     role = ModellingRole(0)
     register(container, agent)
@@ -54,14 +54,14 @@ end
     position::Position2D
 end
 
-function on_step(agent::ModellingMovingAgent, world::World, clock::Clock, step_size_s::Real)
-    agent.prev_position = location(world.space, agent)
-    move(world.space, agent, agent.target)
-    agent.position = location(world.space, agent)
+function on_step(agent::ModellingMovingAgent, env::Environment, clock::Clock, step_size_s::Real)
+    agent.prev_position = location(env.space, agent)
+    move(env.space, agent, agent.target)
+    agent.position = location(env.space, agent)
 end
 
 @testset "TestAgentStepPosition" begin
-    container = create_simulation_container(DateTime(Millisecond(23)), communication_sim=SimpleCommunicationSimulation(default_delay_s=0))
+    container = create_world(DateTime(Millisecond(23)), communication_sim=SimpleCommunicationSimulation(default_delay_s=0))
     given_initial = Position2D(-1, -1)
     given_target = Position2D(1, 1)
     agent = ModellingMovingAgent(given_target, given_initial, given_initial)

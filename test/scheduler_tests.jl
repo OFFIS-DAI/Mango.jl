@@ -14,6 +14,18 @@ import Dates
     @test result == 10
 end
 
+@testset "AgentSchedulerDelayThread" begin
+    scheduler = Scheduler()
+    result = 0
+
+    schedule(scheduler, DelayTaskData(0.1)) do
+        result = 10
+    end
+    sleep(0.2)
+
+    @test result == 10
+end
+
 @testset "AgentSchedulerPeriodicThread" begin
     scheduler = Scheduler()
     result = 0

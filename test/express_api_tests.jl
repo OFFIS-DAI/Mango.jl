@@ -175,12 +175,12 @@ end
     @test aid(express_two) == "agent0"
 end
 
-@testset "TestRunSimulationContainerExpress" begin
+@testset "TestRunWorldExpress" begin
     # Create agents based on roles
     express_one = agent_composed_of(ExpressRole(0), ExpressRole(0))
     express_two = agent_composed_of(ExpressRole(0), ExpressRole(0))
 
-    result = run_in_simulation(1, express_one, express_two) do container
+    result = run_in_simulation(1, express_one, express_two) do world
         wait(send_message(express_one, "TestMessage", address(express_two)))
     end
 

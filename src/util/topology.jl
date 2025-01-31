@@ -1,4 +1,7 @@
-export complete_topology, star_topology, cycle_topology, graph_topology, per_node, add!, topology_neighbors, create_topology, add_node!, add_edge!, Topology, modify_topology, choose_agent, assign_agent, NORMAL, BROKEN, INACTIVE, set_edge_state!, remove_edge!, remove_node!
+export complete_topology, star_topology, cycle_topology, graph_topology, per_node, add!,
+    topology_neighbors, create_topology, add_node!, add_edge!, Topology, modify_topology,
+    choose_agent, assign_agent, NORMAL, BROKEN, INACTIVE, set_edge_state!, remove_edge!, remove_node!,
+    auto_assign!
 
 using MetaGraphsNext
 using Graphs
@@ -215,6 +218,22 @@ function per_node(assign_runnable::Function, topology::Topology)
     for label in labels(topology.graph)
         node = topology.graph[label]
         assign_runnable(node)
+    end
+    _build_neighborhoods_and_inject(topology)
+end
+
+"""
+    auto_assign(topology, container)
+
+Assign all agents of the `container` to the nodes of the `topology`. The agents are assigned
+to the nodes in the order of the nodes in the graph.
+"""
+function auto_assign!(topology::Topology, container::ContainerInterface)
+    index_to_label = collect(labels(topology.graph))
+    for (i, agent) in enumerate(agents(container))
+        label = index_to_label[(((i-1)%length(index_to_label))+1)]
+        node = topology.graph[label]
+        add!(node, agent)
     end
     _build_neighborhoods_and_inject(topology)
 end

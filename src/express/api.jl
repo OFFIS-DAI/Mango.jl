@@ -312,20 +312,20 @@ end
 
 Let the agents run as simulation in a simulation container.
 
-Execute the `runnable` in [`SimulationContainer`](@ref) while the container is active to run. After the
+Execute the `runnable` in [`World`](@ref) while the container is active to run. After the
 runnable the simulation container is stepped `n_steps` time with a `step_size_s` (default is discrete event).
 The start time can be specified using `start_time`.
 """
 function run_in_simulation(runnable::Function, n_steps::Int, agents::Agent...; start_time::DateTime=DateTime(2000, 1, 1), step_size_s::Int=DISCRETE_EVENT, communication_sim::Union{Nothing,CommunicationSimulation}=nothing)
-    sim_container = create_simulation_container(start_time, communication_sim=communication_sim)
+    sim_world = create_world(start_time, communication_sim=communication_sim)
     for agent in agents
-        register(sim_container, agent)
+        register(sim_world, agent)
     end
     results = []
-    activate(sim_container) do
-        runnable(sim_container)
+    activate(sim_world) do
+        runnable(sim_world)
         for _ in 1:n_steps
-            push!(results, step_simulation(sim_container, step_size_s))
+            push!(results, step_simulation(sim_world, step_size_s))
         end
     end
     return results

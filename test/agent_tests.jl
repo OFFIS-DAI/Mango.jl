@@ -334,3 +334,10 @@ end
     @test agent_var_var.other == 2
     @test agent_var_var.the_float == 3.3
 end
+
+@testset "TestSenderAddr" begin
+    meta = Dict("sender_addr" => "sender_addr", "sender_id" => "sender_id", "tracking_id" => "tracking_id")
+    sa = sender_address(meta)
+
+    @test sa == AgentAddress(aid="sender_id", address="sender_addr")
+end
