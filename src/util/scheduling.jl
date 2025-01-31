@@ -325,7 +325,7 @@ end
 """
 Specific scheduler, defined to be injected to the agents and intercept scheduling 
 calls and especially the sleep calls while scheduling. This struct manages all necessary times and
-events, which shall fulfill the purpose to step the tasks only for a given step_size.
+events fulfilling the purpose to step the tasks only for a given step_size.
 """
 @kwdef struct SimulationScheduler <: AbstractScheduler
     clock::Clock

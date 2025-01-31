@@ -4,7 +4,10 @@ The simulation container has the same role as the real-time container and theref
 
 ## Create and stepping a simulation container
 
-To create a simulation container, it is advised to use `create_world`. This method will create a clock with the given simulation time and set default for the communication simulation and the general task simulation. In most cases the default task simulation will be what you desire. The communication simulation object (based on the abstract type `CommunicationSimulation`) is used to determine the delays of the messages in the simulation, while the task simulation determines the way the tasks are scheduled (within a time step, using parallelization etc.) in the simulation. 
+To create a simulation container, it is advised to use `create_world`. 
+This method will create a clock with the given simulation time and set default for the communication simulation and the general task simulation. 
+In most cases the default task simulation will be what you desire. 
+The communication simulation object (based on the abstract type `CommunicationSimulation`) is used to determine the delays of the messages in the simulation, while the task simulation determines the way the tasks are scheduled (within a time step, using parallelization etc.) in the simulation. 
 
 In the following example a simple simulation is executed.
 

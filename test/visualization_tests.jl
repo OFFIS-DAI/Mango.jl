@@ -69,6 +69,7 @@ end
     end
 
     show_communication_data(topology, world, show=false)
+    rm("communication.svg")
 end
 
 @testset "TestVisuAgentsTopo" begin

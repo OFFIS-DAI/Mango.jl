@@ -76,7 +76,7 @@ A WorldRecording is a container to record data in the world.
 end
 
 """
-A AgentsRecording is a container to record data of the agents.
+An AgentsRecording is a container to record data of the agents.
 """
 @kwdef mutable struct AgentsRecording
     timeseries::Dict{String,Vector{Any}} = Dict()
@@ -179,7 +179,7 @@ Internal
 function to_message_package(message_data::MessageData)::MessagePackage
     sender_aid = message_data.meta[SENDER_ID]
     receiver_aid = message_data.meta[RECEIVER_ID]
-    return MessagePackage(sender_aid, receiver_aid, message_data.arriving_time, (message_data.content, message_data.meta))
+    return MessagePackage(sender_aid, receiver_aid, message_data.arrival_time, (message_data.content, message_data.meta))
 end
 
 """
@@ -352,7 +352,7 @@ function step_simulation(world::World, step_size_s::Real=DISCRETE_EVENT)::Union{
             return nothing
         end
     end
-    world.container.current_step_size_s = time_step_s
+    world.container.step_size_s = time_step_s
 
     step_all_entities(world, time_step_s)
 
@@ -391,7 +391,7 @@ function step_simulation(world::World, step_size_s::Real=DISCRETE_EVENT)::Union{
     @debug "The simulation step needed $elapsed seconds"
 
     world.clock.simulation_time = add_seconds(time(world), time_step_s)
-    world.container.current_step_size_s = 0
+    world.container.step_size_s = 0
 
     @debug "New time" time(world)
 
