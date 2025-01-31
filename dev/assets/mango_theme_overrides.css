@@ -1,0 +1,91 @@
+body {
+  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI emojiEmoji;
+}
+
+html.theme--documenter-dark body {
+  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI emojiEmoji;
+}
+
+html.theme--documenter-dark #documenter .docs-sidebar {
+  border-right: none;
+}
+
+html.theme--documenter-dark .select select,
+html.theme--documenter-dark .textarea,
+html.theme--documenter-dark .input,
+html.theme--documenter-dark #documenter .docs-sidebar form.docs-search>input {
+  border-color: #2f4547;
+}
+
+#documenter {
+  width: 100%;
+  display: flex;
+}
+
+@media screen and (min-width: 1056px) {
+  #documenter .docs-sidebar {
+    position: sticky;
+    height: 100vh;
+    padding-left: calc(50% - 1200px / 2);
+    display: flex;
+    min-width: 18rem;
+    box-sizing: content-box;
+  }
+
+  html.theme--documenter-dark #documenter .docs-sidebar {
+    position: sticky;
+    height: 100vh;
+    padding-left: calc(50% - 1200px / 2);
+    display: flex;
+    min-width: 18rem;
+    box-sizing: content-box;
+    background-color: #252929;
+  }
+}
+
+html.theme--documenter-dark #documenter .docs-sidebar ul.docs-menu .tocitem {
+  background-color: transparent;
+}
+
+@media screen and (min-width: 1056px) {
+  #documenter .docs-main {
+    max-width: 52rem;
+    padding-right: 1rem;
+    margin-left: 50px;
+  }
+
+  html.theme--documenter-dark #documenter .docs-main {
+    max-width: 52rem;
+    padding-right: 1rem;
+    margin-left: 50px;
+  }
+}
+
+#documenter .docs-sidebar .docs-package-name {
+  visibility: hidden;
+  height: 0;
+}
+
+html.theme--documenter-dark .button.is-static {
+  border-color: #2f4547;
+}
+
+html.theme--documenter-dark #documenter .docs-main header.docs-navbar {
+  border-bottom: 1px solid #2f4547;
+}
+
+html.theme--documenter-dark #documenter .docs-sidebar ul.docs-menu ul.internal {
+  border-top: 1px solid #2f4547;
+}
+
+html.theme--documenter-dark #documenter .docs-sidebar ul.docs-menu li.is-active {
+  border-color: #2f4547;
+}
+
+html.theme--documenter-dark #documenter .docs-sidebar ul.docs-menu {
+  border-color: #2f4547;
+}
+
+html.theme--documenter-dark #documenter .docs-main .docs-footer {
+  border-color: #2f4547;
+}
