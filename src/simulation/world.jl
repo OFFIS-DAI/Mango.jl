@@ -36,8 +36,7 @@ function create_world(start_time::DateTime;
     space::Union{Nothing,Space}=nothing,
     behavior::Union{Nothing,Behavior}=nothing)
 
-    world = World()
-    world.clock = Clock(start_time)
+    world = World(clock=Clock(start_time))
     if !isnothing(communication_sim)
         world.communication_sim = communication_sim
     end

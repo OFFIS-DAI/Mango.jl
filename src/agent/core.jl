@@ -136,7 +136,7 @@ end
 
 function handle_transaction_message(agent::Agent, message::Any, meta::AbstractDict)
     caller, response_handler, addrs, msgs, metas = agent.transaction_handler[meta[TRACKING_ID]]
-    sender = sender_address(meta)
+    sender = sender_address_tracked(meta)
     if length(addrs) == 1
         if addrs[1] == sender
             push!(msgs, message)
@@ -220,6 +220,15 @@ end
 Extract the sender address from the meta data of a message and return it as `AgentAddress`.
 """
 function sender_address(meta::AbstractDict)
+    return AgentAddress(aid=meta[SENDER_ID], address=meta[SENDER_ADDR])
+end
+
+"""
+    sender_address(meta::Any)
+
+Extract the sender address from the meta data of a message and return it as `AgentAddress`.
+"""
+function sender_address_tracked(meta::AbstractDict)
     return AgentAddress(aid=meta[SENDER_ID], address=meta[SENDER_ADDR], tracking_id=haskey(meta, TRACKING_ID) ? meta[TRACKING_ID] : nothing)
 end
 

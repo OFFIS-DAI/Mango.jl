@@ -49,7 +49,7 @@ end
 
     send_message(world.container, "Hello Friends, this is RSd!", AgentAddress(aid="abc"))
 
-    @test_logs (:warn, "Container $(keys(world.container.agents)) has no agent with id: abc") min_level = Logging.Warn begin
+    @test_logs (:warn, "The container has no agent with id: abc (from AgentAddress(nothing, nothing, nothing) with String)") min_level = Logging.Warn begin
         stepping_result = step_simulation(world, 1)
     end
 
