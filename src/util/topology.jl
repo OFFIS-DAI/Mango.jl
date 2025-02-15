@@ -1,7 +1,7 @@
 export complete_topology, star_topology, cycle_topology, graph_topology, per_node, add!,
     topology_neighbors, create_topology, add_node!, add_edge!, Topology, modify_topology,
     choose_agent, assign_agent, NORMAL, BROKEN, INACTIVE, set_edge_state!, remove_edge!, remove_node!,
-    auto_assign!
+    auto_assign!, topology_node_id
 
 using MetaGraphsNext
 using Graphs
@@ -24,6 +24,14 @@ end
 
 @kwdef mutable struct TopologyService
     tid_to_state_to_neighbors::Dict{Symbol,Dict{State,Vector{AgentAddress}}} = Dict()
+    tid_to_node_id::Dict{Symbol,Int} = Dict()
+end
+
+function service_node_id(service::TopologyService, tid::Symbol=:default)
+    if !haskey(service.tid_to_node_id, tid)
+        throw(ArgumentError("Tid $tid is unknown!"))
+    end
+    return service.tid_to_node_id[tid]
 end
 
 function neighbors(service::TopologyService, tid::Symbol=:default, state::State=NORMAL)
@@ -146,6 +154,7 @@ function _build_neighborhoods_and_inject(topology::Topology, tid::Symbol=:defaul
         for agent in node.agents
             topology_service = service_of_type(agent, TopologyService, TopologyService())
             topology_service.tid_to_state_to_neighbors[tid] = state_to_neighbors
+            topology_service.tid_to_node_id[tid] = node.id
         end
     end
 end
@@ -292,14 +301,21 @@ function topology_neighbors(agent::Agent; tid::Symbol=:default, state::State=NOR
     return neighbors(service_of_type(agent, TopologyService, TopologyService()), tid, state)
 end
 
-"""
-    topology_neighbors(role::Role; tid::Symbol=:default, state::State=NORMAL)::Vector{AgentAddress}
-
-Retrieve the neighbors of the `agent`, represented by their addresses. These vaues will be
-updated when a topology is applied using `per_node` or `create_topology`.
-"""
 function topology_neighbors(role::Role; tid::Symbol=:default, state::State=NORMAL)::Vector{AgentAddress}
     return neighbors(service_of_type(role.context.agent, TopologyService, TopologyService()), tid, state)
+end
+
+"""
+    topology_node_id(agent::Agent; tid::Symbol=:default)::Int
+
+Retrieve the node id the `agent` is assigned to.
+"""
+function topology_node_id(agent::Agent; tid::Symbol=:default)::Int
+    return service_node_id(service_of_type(agent, TopologyService, TopologyService()), tid)
+end
+
+function topology_node_id(role::Role; tid::Symbol=:default)::Int
+    return service_node_id(service_of_type(role.context.agent, TopologyService, TopologyService()), tid)
 end
 
 # Graphs API calls forwarded to Topology

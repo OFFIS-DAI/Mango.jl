@@ -2,6 +2,7 @@ export @agent,
     AgentContext,
     AgentRoleHandler,
     handle_message,
+    handle_unanswered,
     add,
     schedule,
     stop_and_wait_for_all_tasks,
@@ -17,7 +18,11 @@ export @agent,
     add_service!,
     services,
     on_global_event,
-    sender_address
+    sender_address,
+    send_and_handle_answers,
+    send_tracked_messages,
+    send_messages,
+    has_role
 
 using UUIDs
 
@@ -65,6 +70,7 @@ AGENT_BASELINE_FIELDS::Vector = [
     :(aid::Union{Nothing,String} = nothing),
     :(transaction_handler::Dict{String,Tuple} = Dict{String,Tuple}()),
     :(forwarding_rules::Vector{ForwardingRule} = Vector{ForwardingRule}()),
+    :(outgoing::Vector{Tuple} = Vector{Tuple}()),
     :(services::Dict{DataType,Any} = Dict{DataType,Any}())
 ]
 
@@ -128,6 +134,35 @@ function build_forwarded_address_from_meta(meta::AbstractDict)
     return AgentAddress(aid=meta["reply_to_forwarded_from_id"], address=meta["reply_to_forwarded_from_address"], tracking_id=get(meta, TRACKING_ID, nothing))
 end
 
+function handle_transaction_message(agent::Agent, message::Any, meta::AbstractDict)
+    caller, response_handler, addrs, msgs, metas = agent.transaction_handler[meta[TRACKING_ID]]
+    sender = sender_address(meta)
+    if length(addrs) == 1
+        if addrs[1] == sender
+            push!(msgs, message)
+            push!(metas, meta)
+            delete!(agent.transaction_handler, meta[TRACKING_ID])
+            if length(msgs) == 1
+                response_handler(caller, msgs[1], metas[1])
+            else
+                response_handler(caller, msgs, metas)   
+            end
+        else
+            @warn "The transaction $(meta[TRACKING_ID]) seems to be polluted, no incoming message from $sender expected!" aid(agent) addrs message msgs
+        end
+    else
+        # length(addrs) always > 0 -> otherwise sending the message would fail in first place.
+        deleting = findall(x->x==sender, addrs)
+        if length(deleting) != 0
+            push!(msgs, message)
+            push!(metas, meta)
+            deleteat!(addrs, deleting)
+        else
+            @warn "The transaction $(meta[TRACKING_ID]) seems to be polluted, no incoming message from $sender expected!" aid(agent) addrs message msgs
+        end
+    end
+end
+
 """
 Internal API used by the container to dispatch an incoming message to the agent. 
 In this function the message will be handed over to the different handlers in the
@@ -150,15 +185,14 @@ function dispatch_message(agent::Agent, message::Any, meta::AbstractDict)
         end
     end
     if forwarded
+        agent.outgoing = []
         return
     end
 
     lock(agent.lock) do
         # check if part of a transaction
         if haskey(meta, TRACKING_ID) && haskey(agent.transaction_handler, meta[TRACKING_ID])
-            caller, response_handler = agent.transaction_handler[meta[TRACKING_ID]]
-            delete!(agent.transaction_handler, meta[TRACKING_ID])
-            response_handler(caller, message, meta)
+            handle_transaction_message(agent, message, meta)
         else
             for role in agent.role_handler.roles
                 handle_message(role, message, meta)
@@ -170,6 +204,13 @@ function dispatch_message(agent::Agent, message::Any, meta::AbstractDict)
             end
             handle_message(agent, message, meta)
         end
+        if length(agent.outgoing) < 1
+            for role in agent.role_handler.roles
+                handle_unanswered(role, message, meta)
+            end
+            handle_unanswered(agent, message, meta)
+        end
+        agent.outgoing = []
     end
 end
 
@@ -179,7 +220,7 @@ end
 Extract the sender address from the meta data of a message and return it as `AgentAddress`.
 """
 function sender_address(meta::AbstractDict)
-    return AgentAddress(aid=meta[SENDER_ID], address=meta[SENDER_ADDR])
+    return AgentAddress(aid=meta[SENDER_ID], address=meta[SENDER_ADDR], tracking_id=haskey(meta, TRACKING_ID) ? meta[TRACKING_ID] : nothing)
 end
 
 """
@@ -190,6 +231,17 @@ to the agent. This methods will be called with any arriving message (according t
 the multiple dispatch of julia).
 """
 function handle_message(agent::Agent, message::Any, meta::Any)
+    # do nothing by default
+end
+
+"""
+    handle_unanswered(agent::Agent, message::Any, meta::Any)
+
+Defines a function for an agent, which will be called when after a message has been handled 
+    without any messages sent while handling. Useful to do something when a incoming message is
+    unknown/ensure there is always an answer.
+"""
+function handle_unanswered(agent::Agent, message::Any, meta::Any)
     # do nothing by default
 end
 
@@ -253,6 +305,15 @@ Return all roles of the given agent
 """
 function roles(agent::Agent)
     return agent.role_handler.roles
+end
+
+function has_role(agent::Agent, role_type::DataType)
+    for role in roles(agent)
+        if role_type == typeof(role)
+            return true
+        end
+    end
+    return false
 end
 
 """
@@ -348,6 +409,15 @@ function schedule(f::Function, agent::Agent, data::TaskData)
 end
 
 """
+    clock(agent::Agent)
+
+Return clock of the agent.
+"""
+function clock(agent::Agent)
+    return clock(agent.scheduler)
+end
+
+"""
     stop_and_wait_for_all_tasks(agent::Agent)
 
 Delegates to the scheduler `Scheduler`
@@ -391,22 +461,39 @@ function address(agent::Agent)
     return AgentAddress(aid=aid(agent), address=addr)
 end
 
+function send_messages(
+    agent::Agent,
+    content::Any,
+    agent_addresses::Vector{AgentAddress};
+    kwargs...,
+)
+    push!(agent.outgoing, (content, kwargs))
+
+    for (role, handler) in agent.role_handler.send_message_subs
+        for agent_address in agent_addresses
+            handler(role, content, agent_address; kwargs...)
+        end
+    end
+    tasks = []
+    for agent_address in agent_addresses
+        push!(tasks, send_message(
+            agent.context.container,
+            content,
+            agent_address,
+            agent.aid;
+            kwargs...,
+        ))
+    end
+    return tasks
+end
+
 function send_message(
     agent::Agent,
     content::Any,
-    agent_adress::AgentAddress;
+    agent_address::AgentAddress;
     kwargs...,
 )
-    for (role, handler) in agent.role_handler.send_message_subs
-        handler(role, content, agent_adress; kwargs...)
-    end
-    return send_message(
-        agent.context.container,
-        content,
-        agent_adress,
-        agent.aid;
-        kwargs...,
-    )
+    return send_messages(agent, content, [agent_address]; kwargs...)[1]
 end
 
 function send_message(
@@ -426,6 +513,29 @@ function send_message(
     )
 end
 
+function send_tracked_messages(
+    agent::Agent,
+    content::Any,
+    agent_addresses::Vector{AgentAddress};
+    response_handler::Union{Function,Nothing}=nothing,
+    calling_object::Any=nothing,
+    kwargs...,
+)
+    tracking_id = string(uuid4())
+    if !isnothing(agent_addresses[1].tracking_id)
+        tracking_id = agent_addresses[1].tracking_id
+    end
+    addrs = [AgentAddress(addr.aid, addr.address, tracking_id) for addr in agent_addresses]
+    if !isnothing(response_handler)
+        caller = agent
+        if !isnothing(calling_object)
+            caller = calling_object
+        end
+        agent.transaction_handler[tracking_id] = (caller, response_handler, addrs, [], [])
+    end
+    return send_messages(agent, content, addrs; kwargs...)
+end
+
 function send_tracked_message(
     agent::Agent,
     content::Any,
@@ -434,18 +544,18 @@ function send_tracked_message(
     calling_object::Any=nothing,
     kwargs...,
 )
-    tracking_id = string(uuid1())
-    if !isnothing(agent_address.tracking_id)
-        tracking_id = agent_address.tracking_id
-    end
-    if !isnothing(response_handler)
-        caller = agent
-        if !isnothing(calling_object)
-            caller = calling_object
-        end
-        agent.transaction_handler[tracking_id] = (caller, response_handler)
-    end
-    return send_message(agent, content, AgentAddress(agent_address.aid, agent_address.address, tracking_id); kwargs...)
+    return send_tracked_messages(agent, content, [agent_address]; response_handler=response_handler, calling_object=calling_object, kwargs...)[1]
+end
+
+function send_and_handle_answers(
+    response_handler::Function,
+    agent::Agent,
+    content::Any,
+    agent_addresses::Vector{AgentAddress};
+    calling_object::Any=nothing,
+    kwargs...)
+    return send_tracked_messages(agent, content, agent_addresses; response_handler=response_handler,
+        calling_object=calling_object, kwargs...)
 end
 
 function send_and_handle_answer(
@@ -455,8 +565,7 @@ function send_and_handle_answer(
     agent_address::AgentAddress;
     calling_object::Any=nothing,
     kwargs...)
-    return send_tracked_message(agent, content, agent_address; response_handler=response_handler,
-        calling_object=calling_object, kwargs...)
+    return send_and_handle_answers(response_handler, agent, content, [agent_address]; calling_object=calling_object, kwargs...)[1]
 end
 
 function reply_to(agent::Agent,

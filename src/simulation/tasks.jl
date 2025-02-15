@@ -134,7 +134,7 @@ function execute_task_for(task_sim::SimpleTaskSimulation,
 
             # rethrow exception if exists
             if istaskfailed(task)
-                Base.show_backtrace(stderr, task.backtrace)
+                log_exception(task.exception, task.backtrace)
                 throw(task.exception)
             end
 
@@ -167,8 +167,7 @@ function step_iteration(task_sim::SimpleTaskSimulation, step_size_s::Real, first
             Threads.@spawn try
                 execute_task_for(task_sim, scheduler, result, step_size_s)
             catch ex
-                bt = stacktrace(catch_backtrace())
-                showerror(stderr, ex, bt)
+                log_exception(ex)
                 rethrow(ex)
             end
         end

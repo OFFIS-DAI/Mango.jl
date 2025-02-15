@@ -1,8 +1,47 @@
 export DefaultEnvironment, Position2D, Area2D, location,
     move, initialize, initialized, schedule,
-    emit_global_event, behavior
+    emit_global_event, behavior, space, install
 
 struct NoBehavior <: Behavior end
+
+abstract type Space{P<:Position} end
+
+"""
+    move(space::Space{P}, agent::Agent, position::P) where {P<:Position}
+
+Move the `agent` to `position` in `space`. 
+"""
+function move(space::Space{P}, agent::Agent, position::P) where {P<:Position}
+    throw("Move on the space $space not defined!")
+end
+
+
+"""
+    initialize(space::Space, agents::Vector{A}) where {A<:Agent}
+
+Initializes the space.
+"""
+function initialize(space::Space, agents::Vector{A}) where {A<:Agent}
+    throw("Initialization for $space is not defined!")
+end
+
+"""
+    install(space::Space{P}, agent::Agent; additional_information...) where {P<:Position}
+
+Install the agent on the space.
+"""
+function install(space::Space{P}, agent::Agent; additional_information...) where {P<:Position}
+    # do nothing by default
+end
+
+"""
+    location(space::Area2D, agent::Agent)::Position2D
+
+Return the location of the `agent`.
+"""
+function location(space::Space{P}, agent::Agent)::P where {P<:Position}
+    throw("Position on the space $space not defined!")
+end
 
 struct Position2D <: Position
     x::Real
@@ -41,6 +80,15 @@ function on_step(behavior::Behavior, environment::DefaultEnvironment, clock::Clo
     # default do nothing
 end
 
+"""
+    install(behavior::Behavior, agent::Agent; additional_information...)
+
+Install the agent using the behavior data.
+"""
+function install(behavior::Behavior, agent::Agent; additional_information...)
+    # do nothing by default
+end
+
 function step(env::DefaultEnvironment, clock::Clock, step_size_s::Real)
     on_step(behavior(env), env, clock, step_size_s)
 end
@@ -48,7 +96,6 @@ end
 function location(space::Area2D, agent::Agent)::Position2D
     return space.to_position[aid(agent)]
 end
-
 
 function move(space::Area2D, agent::Agent, position::Position2D)
     space.to_position[aid(agent)] = position
@@ -99,6 +146,15 @@ function behavior(env::DefaultEnvironment)
 end
 
 """
+    space(env::DefaultEnvironment)
+
+The space of the environment
+"""
+function space(env::DefaultEnvironment)
+    return env.space
+end
+
+"""
     emit_global_event(environment::DefaultEnvironment, event::Any)
 
 Emit a global event. This types of events can be handled by any agent
@@ -110,4 +166,9 @@ function emit_global_event(environment::DefaultEnvironment, event::Any)
     for observer in environment.observers
         dispatch_global_event(observer, event)
     end
+end
+
+function install(environment::DefaultEnvironment, agent::A; additional_information...) where {A<:Agent}
+    install(space(environment), agent; additional_information...)
+    install(behavior(environment), agent; additional_information...)
 end

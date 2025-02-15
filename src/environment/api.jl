@@ -1,7 +1,6 @@
-export Position, Space, WorldObserver, Behavior, Environment
+export Position, Space, WorldObserver, Behavior, Environment, install, dispatch_global_event, initialize, initialized, add_observer!
 
 abstract type Position end
-abstract type Space{P<:Position} end
 abstract type WorldObserver end
 abstract type Behavior end
 abstract type Environment end
@@ -12,42 +11,41 @@ function dispatch_global_event(observer::WorldObserver, event::Any)
     # default no reaction
 end
 
-"""
-    move(space::Space{P}, agent::Agent, position::P) where {P<:Position}
-
-Move the `agent` to `position` in `space`. 
-"""
-function move(space::Space{P}, agent::Agent, position::P) where {P<:Position}
-    throw("Move on the space $space not defined!")
-end
-
-function initialize(space::Space, agents::Vector{A}) where {A<:Agent}
-    throw("Initialization for $space is not defined!")
-end
 
 """
-    location(space::Area2D, agent::Agent)::Position2D
+    schedule(f::Function, environment::Environment, data::TaskData)
 
-Return the location of the `agent`.
+Schedule a task for the given environment.
 """
-function location(space::Space{P}, agent::Agent)::P where {P<:Position}
-    throw("Position on the space $space not defined!")
-end
-
 function schedule(f::Function, environment::Environment, data::TaskData) 
-    # default do nothing
+    throw("Schedule is not implemented for $environment")
 end
 
+"""
+    step(environment::Environment, clock::Clock, step_size_s::Real)
+
+Step the environment for the given time and advancing step_size_s.
+"""
 function step(environment::Environment, clock::Clock, step_size_s::Real)
-    # default do nothing
+    throw("Step is not implemented for $environment")
 end
 
+"""
+    initialize(environment::Environment, agents::Vector{A}) where {A<:Agent}
+
+Initialize the environment. Should be called once per instantiated Environment.
+"""
 function initialize(environment::Environment, agents::Vector{A}) where {A<:Agent}
     # default do nothing
 end
 
+"""
+    initialized(environment::Environment)
+
+Return true, if the environment is already initialized.
+"""
 function initialized(environment::Environment)
-    # default do nothing
+    throw("Initialized is not implemented for $environment")
 end
 
 """
@@ -70,4 +68,14 @@ this function by defining [`on_global_event`](@ref).
 """
 function emit_global_event(environment::Environment, event::Any)
     throw("Emit global event not implemented for $environment")
+end
+
+"""
+    install(environment::Environment, agent::A; kwargs...) where {A<:Agent}
+
+Install the agent to the environment using optional additional information. This method can
+be used to 
+"""
+function install(environment::Environment, agent::A; additional_information...) where {A<:Agent}
+    throw("Install is not implemented for $environment")
 end

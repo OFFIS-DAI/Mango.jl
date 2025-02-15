@@ -13,6 +13,7 @@ include("environment/api.jl")
 
 include("agent/role.jl")
 include("agent/core.jl")
+include("agent/services.jl")
 
 include("environment/core.jl")
 include("container/protocol.jl")

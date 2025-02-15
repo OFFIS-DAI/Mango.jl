@@ -155,6 +155,10 @@ function handle_message(role::Role, message::Any, meta::Any)
     # do nothing by default
 end
 
+function handle_unanswered(role::Role, message::Any, meta::Any)
+    # do nothing by default
+end
+
 """
     handle_event(role::Role, src::Role, event::Any; event_type::Any)
 
@@ -275,6 +279,10 @@ function schedule(f::Function, role::Role, data::TaskData)
     schedule(f, role.context.agent, data)
 end
 
+function clock(role::Role)
+    clock(role.context.agent)
+end
+
 function aid(role::Role)
     return address(role.context.agent).aid
 end
@@ -300,6 +308,14 @@ function send_message(
     return send_message(role.context.agent, content, agent_adress; kwargs...)
 end
 
+function send_messages(
+    role::Role,
+    content::Any,
+    agent_adresses::Vector{AgentAddress};
+    kwargs...,
+)
+    return send_message(role.context.agent, content, agent_adresses; kwargs...)
+end
 
 function send_tracked_message(
     role::Role,
@@ -309,6 +325,16 @@ function send_tracked_message(
     kwargs...,
 )
     return send_tracked_message(role.context.agent, content, agent_adress; response_handler=response_handler, calling_object=role, kwargs...)
+end
+
+function send_tracked_messages(
+    role::Role,
+    content::Any,
+    agent_adresses::Vector{AgentAddress};
+    response_handler::Function=(role, message, meta) -> nothing,
+    kwargs...,
+)
+    return send_tracked_messages(role.context.agent, content, agent_adresses; response_handler=response_handler, calling_object=role, kwargs...)
 end
 
 function send_and_handle_answer(
@@ -321,10 +347,20 @@ function send_and_handle_answer(
         calling_object=role, kwargs...)
 end
 
+function send_and_handle_answers(
+    response_handler::Function,
+    role::Role,
+    content::Any,
+    agent_addresses::Vector{AgentAddress};
+    kwargs...)
+    return send_and_handle_answers(response_handler, role.context.agent, content, agent_addresses;
+        calling_object=role, kwargs...)
+end
+
 function reply_to(role::Role,
     content::Any,
     received_meta::AbstractDict;
-    response_handler::Function=(agent, message, meta) -> nothing,
+    response_handler::Union{Nothing,Function}=nothing,
     kwargs...)
     return reply_to(role.context.agent, content, received_meta; response_handler=response_handler, calling_object=role, kwargs...)
 end

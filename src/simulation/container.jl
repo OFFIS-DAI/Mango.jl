@@ -85,7 +85,7 @@ function process_message(container::SimulationContainer, msg::Any, meta::Abstrac
     receiver_id = meta[RECEIVER_ID]
 
     if !haskey(container.agents, meta[RECEIVER_ID])
-        @warn "Container $(keys(container.agents)) has no agent with id: $receiver_id" msg meta
+        @warn "The container has no agent with id: $receiver_id (from $(sender_address(meta)) with $(typeof(msg)))" keys(container.agents) msg meta
     else
         agent = container.agents[receiver_id]
         return dispatch_message(agent, msg, meta)

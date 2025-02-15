@@ -213,6 +213,6 @@ function show_communication_data(topology::Topology,
     world::World;
     resolution_s::Real=0.1,
     show::Bool=true)
-    return show_communication_data(topology, world.recorded_messages, world.initial_time,
+    return show_communication_data(topology, world.recorded_messages, world.clock.initial_time,
         resolution_s=resolution_s, show=show)
 end

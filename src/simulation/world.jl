@@ -1,7 +1,7 @@
 export World, register, send_message, shutdown, protocol_addr,
     create_world, step_simulation, SimulationResult, CommunicationSimulationResult,
     TaskSimulationResult, on_step, discrete_step_until, env, space, time, clock,
-    record_world!, record_agent!
+    record_world!, record_agent!, record_agent_having!
 
 using Base.Threads
 using Dates
@@ -37,8 +37,7 @@ function create_world(start_time::DateTime;
     behavior::Union{Nothing,Behavior}=nothing)
 
     world = World()
-    world.clock.simulation_time = start_time
-    world.initial_time = start_time
+    world.clock = Clock(start_time)
     if !isnothing(communication_sim)
         world.communication_sim = communication_sim
     end
@@ -97,7 +96,6 @@ The World used as a base struct to enable simulations in Mango.jl. Always create
 """
 @kwdef mutable struct World <: ContainerInterface
     clock::Clock = Clock(DateTime(0))
-    initial_time::DateTime = DateTime(0)
     env::Environment = DefaultEnvironment(scheduler=SimulationScheduler(clock=clock))
     container::SimulationContainer = SimulationContainer(clock=clock, env=env)
     task_sim::TaskSimulation = SimpleTaskSimulation(clock=clock)
@@ -238,8 +236,7 @@ function cs_step_iteration(world::World,
                 Threads.@spawn try
                     process_message(world.container, mp.content[1], mp.content[2])
                 catch ex
-                    bt = stacktrace(catch_backtrace())
-                    showerror(stderr, ex, bt)
+                    log_exception(ex)
                     rethrow(ex)
                 end
             else
@@ -290,7 +287,7 @@ end
 Record data `data` at time `time` in the `recording`.
 """
 function insert_world_recording!(recording::WorldRecording, world::World, data::Any)
-    push!(recording.time, (time(world) - world.initial_time).value / 1000)
+    push!(recording.time, seconds_elapsed(clock(world)))
     push!(recording.timeseries, data)
 end
 
@@ -368,16 +365,14 @@ function step_simulation(world::World, step_size_s::Real=DISCRETE_EVENT)::Union{
                 Threads.@spawn try
                     comm_iter_result = cs_step_iteration(world, time_step_s, first_step ? comm_result : nothing)
                 catch ex
-                    bt = stacktrace(catch_backtrace())
-                    showerror(stderr, ex, bt)
+                    log_exception(ex)
                     rethrow(ex)
                 end
 
                 Threads.@spawn try
                     task_iter_result = step_iteration(world.task_sim, time_step_s, first_step)
                 catch ex
-                    bt = stacktrace(catch_backtrace())
-                    showerror(stderr, ex, bt)
+                    log_exception(ex)
                     rethrow(ex)
                 end
             end
@@ -393,7 +388,7 @@ function step_simulation(world::World, step_size_s::Real=DISCRETE_EVENT)::Union{
     world.clock.simulation_time = add_seconds(time(world), time_step_s)
     world.container.step_size_s = 0
 
-    @debug "New time" time(world)
+    @info "New time" time(world)
 
     do_recordings(world)
 
@@ -452,10 +447,10 @@ function register(
     suggested_aid::Union{String,Nothing}=nothing;
     kwargs...,
 )
-    agent = register(world.container, agent, suggested_aid, kwargs...)
     if !isnothing(world.task_sim)
         agent.scheduler = create_agent_scheduler(world.task_sim)
     end
+    agent = register(world.container, agent, suggested_aid, kwargs...)
     return agent
 end
 
@@ -500,7 +495,7 @@ function collect_agent_data(collector::Function, world::World, key::String)
     for agent in values(agents(world))
         push!(world.data_collectors, () -> collector(world, agent, dac))
     end
-    push!(world.data_collectors, () -> push!(dac.time, (time(world) - world.initial_time).value / 1000))
+    push!(world.data_collectors, () -> push!(dac.time, seconds_elapsed(clock(world))))
 end
 
 """
@@ -526,6 +521,14 @@ it in the data collection with the `key`. The data can be plotted using plot_age
 function record_agent!(agent_recorder::Function, world::World, key::String)
     collect_agent_data(world, key) do w, a, dc
         insert_agent_recording!(dc, w, a, agent_recorder(a))
+    end
+end
+
+function record_agent_having!(agent_recorder::Function, role_type::DataType, world::World, key::String)
+    collect_agent_data(world, key) do w, a, dc
+        if has_role(a, role_type)
+            insert_agent_recording!(dc, w, a, agent_recorder(a))
+        end
     end
 end
 
