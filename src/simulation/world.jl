@@ -312,14 +312,15 @@ function step_all_entities(world::World, time_step_s::Real)
 end
 
 """
-    step_simulation(world::World, step_size_s::Real=DISCRETE_EVENT)::Union{SimulationResult,Nothing}
+    step_simulation(world::World, step_size_s::Real=DISCRETE_EVENT; max_advance_time_s::Real=-1)::Union{SimulationResult,Nothing}
 
 Step the simulation using a continous time-span or until the next event happens. 
 
 For the continous simulation a `step_size_s` can be freely chosen, for the discrete event type 
-DISCRETE_EVENT has to be set for the `step_size_s`.
+DISCRETE_EVENT has to be set for the `step_size_s`. If you choose DISCRETE_EVENT, you can also specify 
+a max_advance_time_s, which will abort the step if the determined step_size exceeds the max_advance_time_s.
 """
-function step_simulation(world::World, step_size_s::Real=DISCRETE_EVENT)::Union{SimulationResult,Nothing}
+function step_simulation(world::World, step_size_s::Real=DISCRETE_EVENT; max_advance_time_s::Real=-1)::Union{SimulationResult,Nothing}
     # Init world if uninitialized
     if !initialized(world.env)
         initialize(world.env, [v for v in values(agents(world))])
@@ -341,8 +342,8 @@ function step_simulation(world::World, step_size_s::Real=DISCRETE_EVENT)::Union{
     comm_result = nothing
     if time_step_s == DISCRETE_EVENT
         time_step_s, comm_result = determine_time_step(world)
-        @debug "Determined the size to be $time_step_s"
-        if isnothing(time_step_s)
+        @info "Determined the size to be $time_step_s"
+        if isnothing(time_step_s) || (max_advance_time_s != -1 && time_step_s > max_advance_time_s)
             # only step guaranteed entities
             step_all_entities(world, 0)
             return nothing
@@ -407,14 +408,15 @@ function discrete_step_until(world::World, max_advance_time_s::Real)
     initial_time = time(world)
     prev_time = nothing
     results = []
+    max_time = add_seconds(initial_time, max_advance_time_s)
 
     elapsed = @elapsed begin
         while isnothing(prev_time) || ((prev_time < time(world) || length(results) == 1)
                                        &&
-                                       add_seconds(initial_time, max_advance_time_s) > time(world))
+                                       max_time > time(world))
 
             prev_time = time(world)
-            push!(results, step_simulation(world))
+            push!(results, step_simulation(world, max_advance_time_s=(max_time - prev_time).value / 1000))
         end
     end
     @info "The discrete event simulation needed $elapsed seconds"
@@ -523,9 +525,18 @@ function record_agent!(agent_recorder::Function, world::World, key::String)
     end
 end
 
-function record_agent_having!(agent_recorder::Function, role_type::DataType, world::World, key::String)
+function record_agent_having!(agent_recorder::Function, 
+    world::World, 
+    key::String, 
+    role_type::DataType; 
+    agent_color::Union{Nothing,Symbol}=nothing, 
+    aid_contains::Union{Nothing,String}=nothing)
+
     collect_agent_data(world, key) do w, a, dc
-        if has_role(a, role_type)
+        if has_role(a, role_type) &&
+           (isnothing(color) || agent_color == color(a)) && 
+           (isnothing(aid_contains) || occursin(aid_contains, aid(a)))
+
             insert_agent_recording!(dc, w, a, agent_recorder(a))
         end
     end

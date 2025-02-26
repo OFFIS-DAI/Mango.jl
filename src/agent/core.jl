@@ -22,7 +22,13 @@ export @agent,
     send_and_handle_answers,
     send_tracked_messages,
     send_messages,
-    has_role
+    has_role,
+    description,
+    name,
+    color,
+    category,
+    update_description,
+    AgentDescription
 
 using UUIDs
 
@@ -58,6 +64,12 @@ struct ForwardingRule
     forward_replies::Bool
 end
 
+mutable struct AgentDescription
+    name::String
+    category::Symbol
+    color::Symbol
+end
+
 """
 All baseline fields added by the @agent macro are listed in this vector.
 They are added in the same order defined here.
@@ -71,6 +83,7 @@ AGENT_BASELINE_FIELDS::Vector = [
     :(transaction_handler::Dict{String,Tuple} = Dict{String,Tuple}()),
     :(forwarding_rules::Vector{ForwardingRule} = Vector{ForwardingRule}()),
     :(outgoing::Vector{Tuple} = Vector{Tuple}()),
+    :(description::AgentDescription = AgentDescription("", :agent, :gray)),
     :(services::Dict{DataType,Any} = Dict{DataType,Any}())
 ]
 
@@ -292,6 +305,34 @@ end
 
 function aid(agent::Agent)
     return agent.aid
+end
+
+function description(agent::Agent)
+    return agent.description
+end
+
+function name(agent::Agent)
+    return description(agent).name
+end
+
+function category(agent::Agent)
+    return description(agent).category
+end
+
+function color(agent::Agent)
+    return description(agent).color
+end
+
+function update_description(agent::Agent; color=nothing, name=nothing, category=nothing)
+    if !isnothing(name)
+        description(agent).name = name
+    end
+    if !isnothing(color)
+        description(agent).color = color
+    end
+    if !isnothing(category)
+        description(agent).category = category
+    end
 end
 
 """

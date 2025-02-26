@@ -20,6 +20,7 @@ end
     NORMAL # normal neighbor
     INACTIVE # neighbor link exists but link is not active (could be activated/used)
     BROKEN # neighbor link exists but link is not usable (can not be activated)
+    UNKNOWN # = nothing
 end
 
 @kwdef mutable struct TopologyService

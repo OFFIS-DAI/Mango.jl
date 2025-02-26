@@ -199,6 +199,66 @@ end
     @test agent2.counter == 1
 end
 
+@testset "SimulationWithSpecificDelaysAndScheduledTasksPeriodicTaskDelayGrDelay" begin
+
+    com_sim = SimpleCommunicationSimulation(default_delay_s=0)
+    world = create_world(DateTime(0), communication_sim=com_sim)
+    agent1 = SimSchedulingAgent(0, 0)
+    agent2 = SimSchedulingAgent(0, 0)
+    register(world, agent1)
+    register(world, agent2)
+    com_sim.delay_s_directed_edge_dict[(nothing, aid(agent1))] = 1
+    com_sim.delay_s_directed_edge_dict[(nothing, aid(agent2))] = 2
+
+    schedule(agent1, PeriodicTaskData(3)) do
+        agent1.scheduled_counter += 1
+    end
+    schedule(agent1, InstantTaskData()) do
+        agent1.scheduled_counter += 100
+    end
+    send_message(world.container, "Hello Friends, this is RSc!", AgentAddress(aid=agent1.aid))
+    send_message(world.container, "Hello Friends, this is RSd!", AgentAddress(aid=agent2.aid))
+
+    stepping_result = step_simulation(world, 1)
+
+    @test agent1.counter == 1
+    @test agent1.scheduled_counter == 101
+    @test agent2.counter == 0
+
+    stepping_result = step_simulation(world, 3)
+
+    @test agent1.counter == 1
+    @test agent1.scheduled_counter == 102
+    @test agent2.counter == 1
+end
+
+@testset "SimulationWithSpecificDelaysAndScheduledTasksPeriodicTaskDelayGrDelayDiscreteUntil" begin
+
+    com_sim = SimpleCommunicationSimulation(default_delay_s=0)
+    world = create_world(DateTime(0), communication_sim=com_sim)
+    agent1 = SimSchedulingAgent(0, 0)
+    agent2 = SimSchedulingAgent(0, 0)
+    register(world, agent1)
+    register(world, agent2)
+    com_sim.delay_s_directed_edge_dict[(nothing, aid(agent1))] = 1
+    com_sim.delay_s_directed_edge_dict[(nothing, aid(agent2))] = 2
+
+    schedule(agent1, PeriodicTaskData(3)) do
+        agent1.scheduled_counter += 1
+    end
+    schedule(agent1, InstantTaskData()) do
+        agent1.scheduled_counter += 100
+    end
+    send_message(world.container, "Hello Friends, this is RSc!", AgentAddress(aid=agent1.aid))
+    send_message(world.container, "Hello Friends, this is RSd!", AgentAddress(aid=agent2.aid))
+
+    discrete_step_until(world, 4)
+
+    @test agent1.counter == 1
+    @test agent1.scheduled_counter == 102 
+    @test agent2.counter == 1
+end
+
 @agent struct ComplexSimSchedulingAgent
     counter::Int
     scheduled_counter::Int

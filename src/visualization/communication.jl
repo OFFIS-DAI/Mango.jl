@@ -43,21 +43,91 @@ function _find_edge(graph::AbstractGraph, sender_id::Int, receiver_id::Int)
     return -1
 end
 
-function show_communication_data(topology::Topology,
-    messages::Vector{MessageTransaction},
+@agent struct VisuProxyAgent
+    proxy_aid::String
+end
+
+function aid(agent::VisuProxyAgent)
+    return agent.proxy_aid
+end
+
+function _create_node_in_for_maybe(g, aid_to_node_id, aid) 
+    if !haskey(aid_to_node_id, aid)
+        next_id = length(labels(g)) == 0 ? 1 : maximum(collect(labels(g))) + 1
+
+        g[next_id] = Node(id=next_id, agents=[VisuProxyAgent(aid)])
+        aid_to_node_id[aid] = next_id
+        return next_id
+    end
+    return aid_to_node_id[aid]
+end
+
+function _create_aid_based_data(g, nid, aid_to_x, default)
+    label = label_for(g, nid)
+    agents = g[label].agents
+    if length(agents) > 0
+        c_aid = aid(agents[1])
+        return get(aid_to_x, c_aid, default)
+    end
+    return "$label"
+end
+
+function show_communication_data(messages::Vector{MessageTransaction},
     initial_time::DateTime=DateTime(0);
     resolution_s::Real=0.1,
     show::Bool=true,
-    size=(1200, 800))
+    size=(1200, 800),
+    based_on::Union{Nothing,MetaGraph,Topology}=nothing,
+    layout=Spring(C=4),
+    aid_to_name::Dict{String,String}=nothing,
+    aid_to_color::Dict{String,Symbol}=nothing)
 
-    g = topology.graph
+    g = based_on
+    if based_on isa Topology
+        g = g.graph
+    end
 
-    if !is_directed(topology.graph)
-        edge_data = [[(e[1], e[2]) => topology.graph[e[1], e[2]] for e in edge_labels(topology.graph)];
-            [(e[2], e[1]) => topology.graph[e[1], e[2]] for e in edge_labels(topology.graph)]]
-        vertex_data = [l => topology.graph[l] for l in labels(topology.graph)]
-        underlying_graph = DiGraph(topology.graph.graph)
-        g = MetaGraph(underlying_graph, vertex_data, edge_data)
+    if isnothing(based_on)
+        g = MetaGraph(
+            DiGraph();
+            label_type=Int,
+            vertex_data_type=Node,
+            edge_data_type=State,
+        )
+    else
+        if !is_directed(g)
+            edge_data = [[(e[1], e[2]) => g[e[1], e[2]] for e in edge_labels(g)];
+                [(e[2], e[1]) => g[e[1], e[2]] for e in edge_labels(g)]]
+            vertex_data = [l => g[l] for l in labels(g)]
+            underlying_graph = DiGraph(g.graph)
+            g = MetaGraph(underlying_graph, vertex_data, edge_data)
+        end
+    end
+
+    aid_to_node_id = Dict{String,Int}()
+    for label in labels(g)
+        node = g[label]
+        for agent in node.agents
+            aid_to_node_id[aid(agent)] = label
+        end
+    end
+
+    for message in messages
+        old_len = length(g)
+        first_node_label = _create_node_in_for_maybe(g, aid_to_node_id, message.sender_id)
+        second_node_label = _create_node_in_for_maybe(g, aid_to_node_id, message.receiver_id)
+
+        if old_len != length(g)
+            # edge did not exist before
+            g[first_node_label, second_node_label] = UNKNOWN
+        else
+            # edge may exist
+            first_node = code_for(g, first_node_label)
+            second_node = code_for(g, second_node_label)
+            if !has_edge(g, first_node, second_node)
+                g[first_node_label, second_node_label] = UNKNOWN
+            end
+        end
     end
 
     fig = Figure(size=size)
@@ -66,25 +136,18 @@ function show_communication_data(topology::Topology,
     min_date = initial_time
     max_date = max([m.arriving_date for m in messages]...)
 
-    delta = _to_seconds(max_date, min_date)
+    delta = _to_seconds(max_date, min_date) + resolution_s
     sg = SliderGrid(fig[2, 1],
-        (label="Time", range=0:resolution_s:delta, format="{:.1f}", startvalue=0),
+        (label="Time", range=0:resolution_s:delta, format="{:.2f}", startvalue=0),
         tellheight=true)
 
     sliderobservable = sg.sliders[1].value
 
-    aid_to_node_id = Dict{String,Int}()
-    for label in labels(topology.graph)
-        node = topology.graph[label]
-        for agent in node.agents
-            aid_to_node_id[aid(agent)] = label
-        end
-    end
     edgecolors = lift(sliderobservable) do time
         edgecolors = [:black for i in 1:ne(g)]
         for message in messages
             if time >= _to_seconds(message.sent_date, min_date) &&
-               time <= _to_seconds(message.arriving_date, min_date)
+               time < _to_seconds(message.arriving_date, min_date)
 
                 found = _find_edge(g, aid_to_node_id[message.sender_id],
                     aid_to_node_id[message.receiver_id])
@@ -99,7 +162,7 @@ function show_communication_data(topology::Topology,
         i_elabels = ["" for _ in 1:ne(g)]
         for message in messages
             if time >= _to_seconds(message.sent_date, min_date) &&
-               time <= _to_seconds(message.arriving_date, min_date)
+               time < _to_seconds(message.arriving_date, min_date)
 
                 found = _find_edge(g, aid_to_node_id[message.sender_id], aid_to_node_id[message.receiver_id])
                 if found != -1
@@ -114,7 +177,7 @@ function show_communication_data(topology::Topology,
         i_efull = ["" for _ in 1:ne(g)]
         for message in messages
             if time >= _to_seconds(message.sent_date, min_date) &&
-               time <= _to_seconds(message.arriving_date, min_date)
+               time < _to_seconds(message.arriving_date, min_date)
 
                 found = _find_edge(g, aid_to_node_id[message.sender_id], aid_to_node_id[message.receiver_id])
                 if found != -1
@@ -129,7 +192,7 @@ function show_communication_data(topology::Topology,
         markers = [:hline for _ in 1:ne(g)]
         for message in messages
             if time >= _to_seconds(message.sent_date, min_date) &&
-               time <= _to_seconds(message.arriving_date, min_date)
+               time < _to_seconds(message.arriving_date, min_date)
 
                 found = _find_edge(g, aid_to_node_id[message.sender_id], aid_to_node_id[message.receiver_id])
                 if found != -1
@@ -144,7 +207,7 @@ function show_communication_data(topology::Topology,
         shifts = [1.0 for _ in 1:ne(g)]
         for message in messages
             if time >= _to_seconds(message.sent_date, min_date) &&
-               time <= _to_seconds(message.arriving_date, min_date)
+               time < _to_seconds(message.arriving_date, min_date)
 
                 found = _find_edge(g, aid_to_node_id[message.sender_id], aid_to_node_id[message.receiver_id])
                 if found != -1
@@ -159,7 +222,7 @@ function show_communication_data(topology::Topology,
         ew = [1.0 for _ in 1:ne(g)]
         for message in messages
             if time >= _to_seconds(message.sent_date, min_date) &&
-               time <= _to_seconds(message.arriving_date, min_date)
+               time < _to_seconds(message.arriving_date, min_date)
 
                 found = _find_edge(g, aid_to_node_id[message.sender_id], aid_to_node_id[message.receiver_id])
                 if found != -1
@@ -170,18 +233,21 @@ function show_communication_data(topology::Topology,
         ew
     end
 
-    p = graphplot!(ax, g, layout=Shell(),
+    ilabels = [_create_aid_based_data(g, i, aid_to_name, "unknown") for i in 1:nv(g)]
+    node_colors = [_create_aid_based_data(g, i, aid_to_color, :gray) for i in 1:nv(g)]
+
+    p = graphplot!(ax, g, layout=layout,
         edge_color=edgecolors,
         elabels=elabels,
         arrow_show=true,
         edge_width=edge_width,
         node_size=48,
-        node_color=:gray,
+        node_color=node_colors,
         node_strokewidth=0,
         arrow_size=24,
         arrow_shift=arrow_shifts,
         arrow_marker=arrow_markers,
-        ilabels=repr.(1:nv(g)),
+        ilabels=ilabels,
         ilabels_color=:white,
         elabels_attr=(word_wrap_width=5,))
 
@@ -209,10 +275,18 @@ function show_communication_data(topology::Topology,
     return fig
 end
 
-function show_communication_data(topology::Topology,
-    world::World;
+function show_communication_data(world::World;
     resolution_s::Real=0.1,
-    show::Bool=true)
-    return show_communication_data(topology, world.recorded_messages, world.clock.initial_time,
-        resolution_s=resolution_s, show=show)
+    show::Bool=true,
+    based_on::Union{Nothing,MetaGraph,Topology}=nothing)
+
+    aid_to_name = Dict(aid(agent) => name(agent) for agent in agents(world))
+    aid_to_color = Dict(aid(agent) => color(agent) for agent in agents(world))
+    return show_communication_data(world.recorded_messages, 
+                world.clock.initial_time,
+                resolution_s=resolution_s,
+                show=show, 
+                based_on=based_on, 
+                aid_to_name=aid_to_name,
+                aid_to_color=aid_to_color)
 end

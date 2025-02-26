@@ -236,7 +236,6 @@ function execute_task(f::Function, scheduler::AbstractScheduler, data::DelayTask
 end
 
 function execute_task(f::Function, scheduler::AbstractScheduler, data::DateTimeTaskData)
-    @info data.date now(scheduler)
     sleep(scheduler, (data.date - now(scheduler)).value / 1000)
     f()
 end
@@ -349,7 +348,8 @@ events fulfilling the purpose to step the tasks only for a given step_size.
 """
 @kwdef struct SimulationScheduler <: AbstractScheduler
     clock::Clock
-    events::ConcurrentDict{Task,Tuple{Base.Event,DateTime}} = ConcurrentDict{Task,Tuple{Base.Event,DateTime}}()
+    events::ConcurrentDict{Task,Base.Event} = ConcurrentDict{Task,Base.Event}()
+    task_time::ConcurrentDict{Task,DateTime} = ConcurrentDict{Task,DateTime}()
     tasks::ConcurrentDict{Task,Tuple{TaskData,Base.Event}} = ConcurrentDict{Task,Tuple{TaskData,Base.Event}}()
     queue::ConcurrentQueue{Union{Tuple{Function,TaskData,Base.Event},Task}} = ConcurrentQueue{Union{Tuple{Function,TaskData,Base.Event},Task}}()
     wait_queue::ConcurrentQueue{Task} = ConcurrentQueue{Task}()
@@ -384,7 +384,7 @@ function determine_next_event_time_with(scheduler::SimulationScheduler, simulati
     # wait queue
     next = scheduler.wait_queue.head.next
     while !isnothing(next)
-        t = scheduler.events[next.value][2]
+        t = scheduler.task_time[next.value]
         if isnothing(lowest) || t < lowest
             lowest = t
         end
@@ -399,13 +399,11 @@ end
 function wait_for_finish_or_sleeping(scheduler::SimulationScheduler, task::Task, step_size_s::Real, timeout_s::Real=10, check_delay_s=0.001)::WaitResult
     remaining = timeout_s
     while remaining > 0
-        sleep(check_delay_s)
-        remaining -= check_delay_s
         if !istaskdone(task)
             if haskey(scheduler.events, task)
-                event_time = scheduler.events[task]
-                @debug "not done, found event" event_time[2] add_seconds(scheduler.clock.simulation_time, step_size_s)
-                if event_time[2] <= add_seconds(scheduler.clock.simulation_time, step_size_s)
+                event_time = scheduler.task_time[task]
+                @debug "not done, found event" event_time add_seconds(scheduler.clock.simulation_time, step_size_s)
+                if event_time <= add_seconds(scheduler.clock.simulation_time, step_size_s)
                     return WaitResult(true, nothing)
                 else
                     return WaitResult(false, nothing)
@@ -414,6 +412,8 @@ function wait_for_finish_or_sleeping(scheduler::SimulationScheduler, task::Task,
         else
             return WaitResult(false, Some(task.result))
         end
+        sleep(check_delay_s)
+        remaining -= check_delay_s
     end
     throw("Simulation encountered a task timeout!")
 end
@@ -425,10 +425,11 @@ end
 function sleep(scheduler::SimulationScheduler, time_s::Real)
     event = Base.Event()
     ctime = scheduler.clock.simulation_time
-    if haskey(scheduler.events, current_task())
-        ctime = scheduler.events[current_task()][2]
+    if haskey(scheduler.task_time, current_task())
+        ctime = scheduler.task_time[current_task()]
     end
-    scheduler.events[current_task()] = (event, add_seconds(ctime, time_s))
+    scheduler.events[current_task()] = event
+    scheduler.task_time[current_task()] = add_seconds(ctime, time_s)
     @debug "Sleep task with" current_task() event ctime time_s
     wait(event)
 end

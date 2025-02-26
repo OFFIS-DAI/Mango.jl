@@ -68,7 +68,7 @@ end
         results = discrete_step_until(world, 1000)
     end
 
-    show_communication_data(topology, world, show=false)
+    show_communication_data(world, show=false, based_on=topology)
     rm("communication.svg")
 end
 

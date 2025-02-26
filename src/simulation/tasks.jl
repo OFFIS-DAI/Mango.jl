@@ -111,7 +111,20 @@ function execute_task_for(task_sim::SimpleTaskSimulation,
         task = something(next_task)
         if task isa Task
             @debug "Continue the old Task!" task
-            notify(scheduler.events[task][1])
+
+            # in this state the task need to wait on an event
+            event = scheduler.events[task]
+            event_time = scheduler.task_time[task]
+            # only continue if the event time has been reached
+            if event_time <= add_seconds(scheduler.clock.simulation_time, step_size_s)
+                @debug "Notify!" task event_time add_seconds(scheduler.clock.simulation_time, step_size_s)
+                maybepop!(scheduler.events, task)
+                notify(event)
+            else 
+                push!(scheduler.wait_queue, task)
+                @debug "Skip old Task!" task
+                continue
+            end
         else
             @debug "Processing new Task!"
             func, td, event = task
@@ -128,9 +141,6 @@ function execute_task_for(task_sim::SimpleTaskSimulation,
 
             # clean up task data
             maybepop!(scheduler.tasks, task)
-            if haskey(scheduler.events, task)
-                maybepop!(scheduler.events, task)
-            end
 
             # rethrow exception if exists
             if istaskfailed(task)
