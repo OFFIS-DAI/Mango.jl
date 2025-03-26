@@ -1,4 +1,5 @@
-export CommunicationSimulation, PackageResult, CommunicationSimulationResult, MessagePackage, calculate_communication, SimpleCommunicationSimulation
+export CommunicationSimulation, PackageResult, CommunicationSimulationResult, MessagePackage, calculate_communication, 
+    SimpleCommunicationSimulation, DelayProviderCommunicationSimulation
 
 using Dates
 
@@ -54,9 +55,6 @@ such that the delay is specified for every link between agents.
     delay_s_directed_edge_dict::Dict{Tuple{Union{String,Nothing},String},Real} = Dict()
 end
 
-"""
-Implementation for SimpleCommunicationSimulation
-"""
 function calculate_communication(communication_sim::SimpleCommunicationSimulation, clock::Clock, messages::Vector{MessagePackage})::CommunicationSimulationResult
     results::Vector{PackageResult} = Vector()
     for message in messages
@@ -64,6 +62,31 @@ function calculate_communication(communication_sim::SimpleCommunicationSimulatio
         delay_s = communication_sim.default_delay_s
         if haskey(communication_sim.delay_s_directed_edge_dict, key)
             delay_s = communication_sim.delay_s_directed_edge_dict[key]
+        end
+        push!(results, PackageResult(true, delay_s))
+    end
+    return CommunicationSimulationResult(results)
+end
+
+"""
+Dynamically-based communication delay provider implementation for a communication simulation.
+
+With this implementation you are able to set a default provider function, which return a delay_s on
+call, when no other provider are defined. To assign a speicific delay provider for an edge between 
+agents, `delay_s_directed_edge_dict` can be used.
+"""
+@kwdef struct DelayProviderCommunicationSimulation <: CommunicationSimulation
+    default_delay_s_provider::Function = () -> 0
+    delay_s_directed_edge_dict::Dict{Tuple{Union{String,Nothing},String},Function} = Dict()
+end
+
+function calculate_communication(communication_sim::DelayProviderCommunicationSimulation, clock::Clock, messages::Vector{MessagePackage})::CommunicationSimulationResult
+    results::Vector{PackageResult} = Vector()
+    for message in messages
+        key = (message.sender_id, message.receiver_id)
+        delay_s = communication_sim.default_delay_s_provider()
+        if haskey(communication_sim.delay_s_directed_edge_dict, key)
+            delay_s = communication_sim.delay_s_directed_edge_dict[key]()
         end
         push!(results, PackageResult(true, delay_s))
     end

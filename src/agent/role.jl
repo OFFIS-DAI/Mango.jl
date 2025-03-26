@@ -287,6 +287,22 @@ function aid(role::Role)
     return address(role.context.agent).aid
 end
 
+function description(role::Role)
+    return description(role.context.agent)
+end
+
+function name(role::Role)
+    return name(role.context.agent)
+end
+
+function category(role::Role)
+    return category(role.context.agent)
+end
+
+function color(role::Role)
+    return color(role.context.agent)
+end
+
 function address(role::Role)
     return address(role.context.agent)
 end

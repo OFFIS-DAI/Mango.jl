@@ -80,6 +80,7 @@ An AgentsRecording is a container to record data of the agents.
     timeseries::Dict{String,Vector{Any}} = Dict()
     time::Vector{Real} = Vector()
     data::Any = nothing
+    dedicated_plots = false
 end
 
 struct MessageTransaction
@@ -100,8 +101,8 @@ The World used as a base struct to enable simulations in Mango.jl. Always create
     task_sim::TaskSimulation = SimpleTaskSimulation(clock=clock)
     communication_sim::CommunicationSimulation = SimpleCommunicationSimulation()
     world_observer::WorldObserver = DispatchToAgentWorldObserver(container.agents)
-    data_collections::Dict{String,WorldRecording} = Dict()
-    data_agent_collections::Dict{String,AgentsRecording} = Dict()
+    data_collections::OrderedDict{String,WorldRecording} = OrderedDict()
+    data_agent_collections::OrderedDict{String,AgentsRecording} = OrderedDict()
     data_collectors::Vector{Function} = Vector()
     recorded_messages::Vector{MessageTransaction} = Vector()
 end
@@ -342,7 +343,7 @@ function step_simulation(world::World, step_size_s::Real=DISCRETE_EVENT; max_adv
     comm_result = nothing
     if time_step_s == DISCRETE_EVENT
         time_step_s, comm_result = determine_time_step(world)
-        @info "Determined the size to be $time_step_s"
+        @debug "Determined the size to be $time_step_s"
         if isnothing(time_step_s) || (max_advance_time_s != -1 && time_step_s > max_advance_time_s)
             # only step guaranteed entities
             step_all_entities(world, 0)
@@ -388,7 +389,7 @@ function step_simulation(world::World, step_size_s::Real=DISCRETE_EVENT; max_adv
     world.clock.simulation_time = add_seconds(time(world), time_step_s)
     world.container.step_size_s = 0
 
-    @info "New time" time(world)
+    @debug "New time" time(world)
 
     do_recordings(world)
 
@@ -469,8 +470,8 @@ end
 
 Return the data collection with the `key` from the world.
 """
-function data_agent_collection(world::World, key::String)
-    return get!(world.data_agent_collections, key, AgentsRecording())
+function data_agent_collection(world::World, key::String; dedicated_plots::Bool=false)
+    return get!(world.data_agent_collections, key, AgentsRecording(dedicated_plots=dedicated_plots))
 end
 
 """
@@ -491,8 +492,8 @@ store it in the data collection with the `key`.
 
 The data can be plotted using plot_agents.
 """
-function collect_agent_data(collector::Function, world::World, key::String)
-    dac = data_agent_collection(world, key)
+function collect_agent_data(collector::Function, world::World, key::String; dedicated_plots::Bool=false)
+    dac = data_agent_collection(world, key, dedicated_plots=dedicated_plots)
     for agent in values(agents(world))
         push!(world.data_collectors, () -> collector(world, agent, dac))
     end
@@ -519,9 +520,9 @@ Record the agents in the world using the `agent_recorder` function and store
 it in the data collection with the `key`. The data can be plotted using plot_agents.
 
 """
-function record_agent!(agent_recorder::Function, world::World, key::String)
-    collect_agent_data(world, key) do w, a, dc
-        insert_agent_recording!(dc, w, a, agent_recorder(a))
+function record_agent!(agent_recorder::Function, world::World, key::String; dedicated_plots::Bool=false)
+    collect_agent_data(world, key, dedicated_plots=dedicated_plots) do w, a, dc
+        insert_agent_recording!(dc, w, a, agent_recorder(a), dedicated_plots=dedicated_plots)
     end
 end
 
@@ -530,11 +531,12 @@ function record_agent_having!(agent_recorder::Function,
     key::String, 
     role_type::DataType; 
     agent_color::Union{Nothing,Symbol}=nothing, 
-    aid_contains::Union{Nothing,String}=nothing)
+    aid_contains::Union{Nothing,String}=nothing,
+    dedicated_plots::Bool=false)
 
-    collect_agent_data(world, key) do w, a, dc
+    collect_agent_data(world, key, dedicated_plots=dedicated_plots) do w, a, dc
         if has_role(a, role_type) &&
-           (isnothing(color) || agent_color == color(a)) && 
+           (isnothing(agent_color) || agent_color == color(a)) && 
            (isnothing(aid_contains) || occursin(aid_contains, aid(a)))
 
             insert_agent_recording!(dc, w, a, agent_recorder(a))

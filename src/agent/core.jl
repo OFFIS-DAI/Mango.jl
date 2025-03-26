@@ -142,6 +142,7 @@ macro agent(struct_def)
     esc(Expr(:block, new_struct_def))
 end
 
+Base.show(io::IO, p::Agent) = print(io, "Agent $(aid(p))")
 
 function build_forwarded_address_from_meta(meta::AbstractDict)
     return AgentAddress(aid=meta["reply_to_forwarded_from_id"], address=meta["reply_to_forwarded_from_address"], tracking_id=get(meta, TRACKING_ID, nothing))
@@ -719,3 +720,4 @@ function dispatch_global_event(agent::Agent, event::Any)
         on_global_event(role, event)
     end
 end
+

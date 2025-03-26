@@ -1,7 +1,7 @@
 export complete_topology, star_topology, cycle_topology, graph_topology, per_node, add!,
     topology_neighbors, create_topology, add_node!, add_edge!, Topology, modify_topology,
     choose_agent, assign_agent, NORMAL, BROKEN, INACTIVE, set_edge_state!, remove_edge!, remove_node!,
-    auto_assign!, topology_node_id
+    auto_assign!, topology_node_id, topology_to_aid_graph
 
 using MetaGraphsNext
 using Graphs
@@ -13,6 +13,7 @@ import Graphs.add_edge!
 end
 
 struct Topology
+    tid::Symbol
     graph::MetaGraph
 end
 
@@ -54,9 +55,9 @@ end
 
 Create a fully-connected topology.
 """
-function complete_topology(number_of_nodes::Int)::Topology
+function complete_topology(number_of_nodes::Int, tid::Symbol=:default)::Topology
     graph = complete_graph(number_of_nodes)
-    return Topology(_create_meta_graph_with(graph))
+    return Topology(tid, _create_meta_graph_with(graph))
 end
 
 """
@@ -64,9 +65,9 @@ end
 
 Create a star topology.
 """
-function star_topology(number_of_nodes::Int)
+function star_topology(number_of_nodes::Int, tid::Symbol=:default)
     graph = star_graph(number_of_nodes)
-    return Topology(_create_meta_graph_with(graph))
+    return Topology(tid, _create_meta_graph_with(graph))
 end
 
 """
@@ -74,9 +75,9 @@ end
 
 Create a cycle topology.
 """
-function cycle_topology(number_of_nodes::Int)
+function cycle_topology(number_of_nodes::Int, tid::Symbol=:default)
     graph = cycle_graph(number_of_nodes)
-    return Topology(_create_meta_graph_with(graph))
+    return Topology(tid, _create_meta_graph_with(graph))
 end
 
 """
@@ -84,8 +85,8 @@ end
 
 Create a topology based on a Graphs.jl (abstract) graph.
 """
-function graph_topology(graph::AbstractGraph)
-    return Topology(_create_meta_graph_with(graph))
+function graph_topology(graph::AbstractGraph, tid::Symbol=:default)
+    return Topology(tid, _create_meta_graph_with(graph))
 end
 
 """
@@ -137,11 +138,16 @@ end
 
 Set the state of the state of the edge `(node_id_from, node_id_to)` to `state`.
 """
-function set_edge_state!(topology::Topology, node_id_from::Int, node_id_to::Int, state::State)
+function set_edge_state!(topology::Topology, node_id_from::Int, node_id_to::Int, state::State, include_other_direction=true)
     topology.graph[node_id_from, node_id_to] = state
+    if include_other_direction
+        if has_edge(topology.graph, node_id_to, node_id_from)
+            topology.graph[node_id_to, node_id_from] = state
+        end
+    end
 end
 
-function _build_neighborhoods_and_inject(topology::Topology, tid::Symbol=:default)
+function _build_neighborhoods_and_inject(topology::Topology)
     # 2nd pass, build the neighborhoods and add it to agents
     for label in labels(topology.graph)
         node = topology.graph[label]
@@ -153,9 +159,17 @@ function _build_neighborhoods_and_inject(topology::Topology, tid::Symbol=:defaul
             append!(neighbor_addresses, [address(agent) for agent in n_node.agents])
         end
         for agent in node.agents
+            # also include agents from your own node (not you!)
+            state_to_same = deepcopy(state_to_neighbors)
+            for other_agent in node.agents
+                if aid(agent) != aid(other_agent)
+                    neighbor_addresses = get!(state_to_same, NORMAL, Vector()) 
+                    push!(neighbor_addresses, address(other_agent))
+                end
+            end
             topology_service = service_of_type(agent, TopologyService, TopologyService())
-            topology_service.tid_to_state_to_neighbors[tid] = state_to_neighbors
-            topology_service.tid_to_node_id[tid] = node.id
+            topology_service.tid_to_state_to_neighbors[topology.tid] = state_to_same
+            topology_service.tid_to_node_id[topology.tid] = node.id
         end
     end
 end
@@ -181,9 +195,9 @@ end
 ```
 """
 function create_topology(create_runnable::Function; tid::Symbol=:default, directed::Bool=false)
-    topology = Topology(_create_meta_graph_with(directed ? DiGraph() : Graph()))
+    topology = Topology(tid, _create_meta_graph_with(directed ? DiGraph() : Graph()))
     create_runnable(topology)
-    _build_neighborhoods_and_inject(topology, tid)
+    _build_neighborhoods_and_inject(topology)
     return topology
 end
 
@@ -207,9 +221,9 @@ modify_topology(my_topology) do topology
 end
 ```
 """
-function modify_topology(modify_runnable::Function, topology::Topology; tid::Symbol=:default)
+function modify_topology(modify_runnable::Function, topology::Topology)
     modify_runnable(topology)
-    _build_neighborhoods_and_inject(topology, tid)
+    _build_neighborhoods_and_inject(topology)
     return topology
 end
 
@@ -226,13 +240,13 @@ per_node(topology) do node
 end
 ```
 """
-function per_node(assign_runnable::Function, topology::Topology; tid::Symbol=:default)
+function per_node(assign_runnable::Function, topology::Topology)
     # 1st pass, let the user assign the agents
     for label in labels(topology.graph)
         node = topology.graph[label]
         assign_runnable(node)
     end
-    _build_neighborhoods_and_inject(topology, tid)
+    _build_neighborhoods_and_inject(topology)
 end
 
 """
@@ -241,14 +255,14 @@ end
 Assign all agents of the `container` to the nodes of the `topology`. The agents are assigned
 to the nodes in the order of the nodes in the graph.
 """
-function auto_assign!(topology::Topology, container::ContainerInterface; tid::Symbol=:default)
+function auto_assign!(topology::Topology, container::ContainerInterface)
     index_to_label = collect(labels(topology.graph))
     for (i, agent) in enumerate(agents(container))
         label = index_to_label[(((i-1)%length(index_to_label))+1)]
         node = topology.graph[label]
         add!(node, agent)
     end
-    _build_neighborhoods_and_inject(topology, tid)
+    _build_neighborhoods_and_inject(topology)
 end
 
 """
@@ -358,4 +372,50 @@ end
 
 function Graphs.nv(topology::Topology)
     return nv(topology.graph)
+end
+
+"""
+    topology_to_aid_graph(topology::Topology)::AbstractGraph
+
+Convert the topology graph to an aid based graph, where every node is representing exactly one agent.
+"""
+function topology_to_aid_graph(topology::Topology)
+    vertex_description::Vector{Pair{String,Agent}} = []
+    edges_description::Vector{Pair{Tuple{String,String},State}} = []
+    graph = SimpleGraph()
+    aid_to_vertex = Dict()
+    for vertex in vertices(topology.graph)
+        label = label_for(topology.graph, vertex)
+        node = topology.graph[label]
+        for agent in node.agents
+            add_vertex!(graph)
+            push!(vertex_description, aid(agent) => agent)
+            aid_to_vertex[aid(agent)] = nv(graph)
+        end
+        for agent in node.agents
+            for agent_two in node.agents
+                if !has_edge(graph, aid_to_vertex[aid(agent)], aid_to_vertex[aid(agent_two)])
+                    add_edge!(graph, aid_to_vertex[aid(agent)], aid_to_vertex[aid(agent_two)])
+                    push!(edges_description, (aid(agent), aid(agent_two)) => NORMAL)
+                end
+            end
+        end
+    end
+    for edge in edges(topology.graph)
+        edge_src_code = edge.src
+        edge_dst_code = edge.dst
+        edge_src_label = label_for(topology.graph, edge_src_code)
+        edge_dst_label = label_for(topology.graph, edge_dst_code)
+        edge_src_node = topology.graph[edge_src_label]
+        edge_dst_node = topology.graph[edge_dst_label]
+        for agent_src in edge_src_node.agents
+            for agent_dst in edge_dst_node.agents
+                if !has_edge(graph, aid_to_vertex[aid(agent_src)], aid_to_vertex[aid(agent_dst)])
+                    add_edge!(graph, aid_to_vertex[aid(agent_src)], aid_to_vertex[aid(agent_dst)])
+                    push!(edges_description, (aid(agent_src), aid(agent_dst)) => topology.graph[edge_src_label, edge_dst_label])
+                end
+            end
+        end
+    end
+    return MetaGraph(graph, vertex_description, edges_description), graph
 end
