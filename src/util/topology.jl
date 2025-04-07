@@ -1,6 +1,6 @@
 export complete_topology, star_topology, cycle_topology, graph_topology, per_node, add!,
     topology_neighbors, create_topology, add_node!, add_edge!, Topology, modify_topology,
-    choose_agent, assign_agent, NORMAL, BROKEN, INACTIVE, set_edge_state!, remove_edge!, remove_node!,
+    choose_agents!, assign_agents!, NORMAL, BROKEN, INACTIVE, set_edge_state!, remove_edge!, remove_node!,
     auto_assign!, topology_node_id, topology_to_aid_graph, set_as_connector!, connect_topologies!, mark_as_connector!
 
 using MetaGraphsNext
@@ -357,7 +357,7 @@ Assign all agents of the `container` to the nodes based on the given `assign_con
 takes as `Agent` and a `Node` (node.id for the identifier of the node) and shall return a boolean indicating
 whether the agent shall be assigned to the node.
 """
-function assign_agent(assign_condition::Function, topology::Topology, container::ContainerInterface)
+function assign_agents!(assign_condition::Function, topology::Topology, container::ContainerInterface)
     per_node(topology) do node
         for agent in agents(container)
             if assign_condition(agent, node)
@@ -373,7 +373,7 @@ end
 Choose the agents, which shall be assigned to the nodes. For this the `choose_agent_function` has to be provided. This 
 function expects `Node` as argument and shall return an `Agent` or `Agent...`. The returned agent will be assigned to the node.
 """
-function choose_agent(choose_agent_function::Function, topology::Topology)
+function choose_agents!(choose_agent_function::Function, topology::Topology)
     per_node(topology) do node
         agent = choose_agent_function(node)
         add!(node, agent)
