@@ -254,7 +254,7 @@ Internal
 function determine_time_step(world::World)
     message_packages = to_cs_input(messages(world.container))
     communication_result = calculate_communication(world.communication_sim, clock(world), message_packages)
-
+    
     # earliest message or -1 if no message arrives
     message_arrival_times = [add_seconds(t[1].sent_date, t[2].delay_s) for t in zip(message_packages, communication_result.package_results)]
     time_to_next_message_s = nothing
@@ -522,7 +522,7 @@ it in the data collection with the `key`. The data can be plotted using plot_age
 """
 function record_agent!(agent_recorder::Function, world::World, key::String; dedicated_plots::Bool=false)
     collect_agent_data(world, key, dedicated_plots=dedicated_plots) do w, a, dc
-        insert_agent_recording!(dc, w, a, agent_recorder(a), dedicated_plots=dedicated_plots)
+        insert_agent_recording!(dc, w, a, agent_recorder(a))
     end
 end
 

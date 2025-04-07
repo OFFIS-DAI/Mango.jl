@@ -1,7 +1,7 @@
 export complete_topology, star_topology, cycle_topology, graph_topology, per_node, add!,
     topology_neighbors, create_topology, add_node!, add_edge!, Topology, modify_topology,
     choose_agent, assign_agent, NORMAL, BROKEN, INACTIVE, set_edge_state!, remove_edge!, remove_node!,
-    auto_assign!, topology_node_id, topology_to_aid_graph
+    auto_assign!, topology_node_id, topology_to_aid_graph, set_as_connector!, connect_topologies!, mark_as_connector!
 
 using MetaGraphsNext
 using Graphs
@@ -12,9 +12,11 @@ import Graphs.add_edge!
     agents::Vector{Agent} = Vector()
 end
 
-struct Topology
+@kwdef struct Topology
     tid::Symbol
     graph::MetaGraph
+    connectors::Vector{Tuple{Symbol,AgentAddress}} = Vector() # connection type to connector
+    connections::Vector{Tuple{Symbol,Topology}} = Vector() # tid to connection type
 end
 
 @enum State begin
@@ -25,8 +27,10 @@ end
 end
 
 @kwdef mutable struct TopologyService
-    tid_to_state_to_neighbors::Dict{Symbol,Dict{State,Vector{AgentAddress}}} = Dict()
-    tid_to_node_id::Dict{Symbol,Int} = Dict()
+    tid_to_state_to_neighbors::Dict{Symbol,Dict{State,Vector{AgentAddress}}} = Dict() # tid to (edge state to agents)
+    tid_to_connectors::Dict{Symbol,Vector{Tuple{Symbol, AgentAddress}}} = Dict() # tid to (connection type to connected agents)
+    tid_to_node_id::Dict{Symbol,Int} = Dict() # tid to id of the node
+    marked_connector_for::Vector{Symbol} = Vector()
 end
 
 function service_node_id(service::TopologyService, tid::Symbol=:default)
@@ -36,9 +40,10 @@ function service_node_id(service::TopologyService, tid::Symbol=:default)
     return service.tid_to_node_id[tid]
 end
 
-function neighbors(service::TopologyService, tid::Symbol=:default, state::State=NORMAL)
+function neighbors(service::TopologyService, tid::Symbol=:default, state::State=NORMAL; include_connectors::Vector{Symbol}=Vector{Symbol}())
     if haskey(service.tid_to_state_to_neighbors, tid)
-        return get(service.tid_to_state_to_neighbors[tid], state, Vector())
+        return vcat(get(service.tid_to_state_to_neighbors[tid], state, Vector()), 
+                    [t[2] for t in service.tid_to_connectors[tid] if t[1] in include_connectors])
     end
     throw(ArgumentError("No neighbors found for tid=$tid"))
 end
@@ -57,7 +62,7 @@ Create a fully-connected topology.
 """
 function complete_topology(number_of_nodes::Int, tid::Symbol=:default)::Topology
     graph = complete_graph(number_of_nodes)
-    return Topology(tid, _create_meta_graph_with(graph))
+    return Topology(tid=tid, graph=_create_meta_graph_with(graph))
 end
 
 """
@@ -67,7 +72,7 @@ Create a star topology.
 """
 function star_topology(number_of_nodes::Int, tid::Symbol=:default)
     graph = star_graph(number_of_nodes)
-    return Topology(tid, _create_meta_graph_with(graph))
+    return Topology(tid=tid, graph=_create_meta_graph_with(graph))
 end
 
 """
@@ -77,7 +82,7 @@ Create a cycle topology.
 """
 function cycle_topology(number_of_nodes::Int, tid::Symbol=:default)
     graph = cycle_graph(number_of_nodes)
-    return Topology(tid, _create_meta_graph_with(graph))
+    return Topology(tid=tid, graph=_create_meta_graph_with(graph))
 end
 
 """
@@ -86,7 +91,7 @@ end
 Create a topology based on a Graphs.jl (abstract) graph.
 """
 function graph_topology(graph::AbstractGraph, tid::Symbol=:default)
-    return Topology(tid, _create_meta_graph_with(graph))
+    return Topology(tid=tid, graph=_create_meta_graph_with(graph))
 end
 
 """
@@ -134,6 +139,39 @@ function add_node!(topology::Topology, agents::Agent...; id::Union{Int,Nothing}=
 end
 
 """
+    set_as_connectors!(topology::Topology, agents..., connector_type::Symbol=:default)
+
+Set `agents` as connectors (has to be part of the topology)
+"""
+function set_as_connector!(topology::Topology, agents...; connector_type::Symbol=:default)
+    for a in agents
+        push!(topology.connectors, (connector_type, address(a)))
+    end
+end
+
+function mark_as_connector!(agent::Agent, connector_type::Symbol=:default)
+    ts = service_of_type(agent, TopologyService, TopologyService())
+    push!(ts.marked_connector_for, connector_type)
+end
+
+"""
+    connect(topology_one::Topology, topology_two::Topology, connection_type::Symbol; directed::Bool=false)
+
+Connect two topologies on all connectors identified by connection_type.
+"""
+function connect_topologies!(topology_one::Topology, topology_two::Topology, connection_type::Symbol=:default; directed::Bool=false)
+    if directed
+        push!(topology_one.connections, (connection_type, topology_two))
+        _build_neighborhoods_and_inject(topology_one)
+    else
+        push!(topology_two.connections, (connection_type, topology_one))
+        push!(topology_one.connections, (connection_type, topology_two))
+        _build_neighborhoods_and_inject(topology_one)
+        _build_neighborhoods_and_inject(topology_two)
+    end
+end
+
+"""
     set_state!(topology::Topology, node_id_from::Int, node_id_to::Int, state::State)
 
 Set the state of the state of the edge `(node_id_from, node_id_to)` to `state`.
@@ -145,6 +183,25 @@ function set_edge_state!(topology::Topology, node_id_from::Int, node_id_to::Int,
             topology.graph[node_id_to, node_id_from] = state
         end
     end
+end
+
+function _build_connectors_list_for(topology, agent)
+    connectors_for_agent = []
+    for (type, other_topo) in topology.connections
+        # check whether agent is a connector for the connection
+        for (c_type, addr) in topology.connectors
+            if type == c_type && address(agent) == addr
+                # it is a connector
+                # now find the fitting connectors in the connected topo
+                for (other_c_type, other_addr) in other_topo.connectors
+                    if type == other_c_type 
+                        push!(connectors_for_agent, (type, other_addr))
+                    end
+                end
+            end
+        end
+    end
+    return connectors_for_agent
 end
 
 function _build_neighborhoods_and_inject(topology::Topology)
@@ -163,13 +220,23 @@ function _build_neighborhoods_and_inject(topology::Topology)
             state_to_same = deepcopy(state_to_neighbors)
             for other_agent in node.agents
                 if aid(agent) != aid(other_agent)
-                    neighbor_addresses = get!(state_to_same, NORMAL, Vector()) 
+                    neighbor_addresses = get!(state_to_same, NORMAL, Vector())
                     push!(neighbor_addresses, address(other_agent))
                 end
             end
             topology_service = service_of_type(agent, TopologyService, TopologyService())
             topology_service.tid_to_state_to_neighbors[topology.tid] = state_to_same
             topology_service.tid_to_node_id[topology.tid] = node.id
+
+            # look for marks and transfer to topology 
+            for type in topology_service.marked_connector_for
+                push!(topology.connectors, (type, address(agent)))
+            end
+            empty!(topology_service.marked_connector_for)
+
+            # search for connection agents
+            connectors_for_agent = _build_connectors_list_for(topology, agent)
+            topology_service.tid_to_connectors[topology.tid] = connectors_for_agent
         end
     end
 end
@@ -195,7 +262,7 @@ end
 ```
 """
 function create_topology(create_runnable::Function; tid::Symbol=:default, directed::Bool=false)
-    topology = Topology(tid, _create_meta_graph_with(directed ? DiGraph() : Graph()))
+    topology = Topology(tid=tid, graph=_create_meta_graph_with(directed ? DiGraph() : Graph()))
     create_runnable(topology)
     _build_neighborhoods_and_inject(topology)
     return topology
@@ -247,6 +314,19 @@ function per_node(assign_runnable::Function, topology::Topology)
         assign_runnable(node)
     end
     _build_neighborhoods_and_inject(topology)
+    return topology
+end
+
+
+function auto_assign!(topology::Topology, agents)
+    index_to_label = collect(labels(topology.graph))
+    for (i, agent) in enumerate(agents)
+        label = index_to_label[(((i-1)%length(index_to_label))+1)]
+        node = topology.graph[label]
+        add!(node, agent)
+    end
+    _build_neighborhoods_and_inject(topology)
+    return topology
 end
 
 """
@@ -256,13 +336,7 @@ Assign all agents of the `container` to the nodes of the `topology`. The agents 
 to the nodes in the order of the nodes in the graph.
 """
 function auto_assign!(topology::Topology, container::ContainerInterface)
-    index_to_label = collect(labels(topology.graph))
-    for (i, agent) in enumerate(agents(container))
-        label = index_to_label[(((i-1)%length(index_to_label))+1)]
-        node = topology.graph[label]
-        add!(node, agent)
-    end
-    _build_neighborhoods_and_inject(topology)
+    return auto_assign!(topology::Topology, agents(container))
 end
 
 """
@@ -312,12 +386,12 @@ end
 Retrieve the neighbors of the `agent`, represented by their addresses. These vaues will be
 updated when a topology is applied using `per_node` or `create_topology`.
 """
-function topology_neighbors(agent::Agent; tid::Symbol=:default, state::State=NORMAL)::Vector{AgentAddress}
-    return neighbors(service_of_type(agent, TopologyService, TopologyService()), tid, state)
+function topology_neighbors(agent::Agent; tid::Symbol=:default, state::State=NORMAL, include_connectors::Vector{Symbol}=Vector{Symbol}())::Vector{AgentAddress}
+    return neighbors(service_of_type(agent, TopologyService, TopologyService()), tid, state, include_connectors=include_connectors)
 end
 
-function topology_neighbors(role::Role; tid::Symbol=:default, state::State=NORMAL)::Vector{AgentAddress}
-    return neighbors(service_of_type(role.context.agent, TopologyService, TopologyService()), tid, state)
+function topology_neighbors(role::Role; tid::Symbol=:default, state::State=NORMAL, include_connectors::Vector{Symbol}=Vector{Symbol}())::Vector{AgentAddress}
+    return neighbors(service_of_type(role.context.agent, TopologyService, TopologyService()), tid, state, include_connectors=include_connectors)
 end
 
 """
@@ -417,5 +491,5 @@ function topology_to_aid_graph(topology::Topology)
             end
         end
     end
-    return MetaGraph(graph, vertex_description, edges_description), graph
+    return MetaGraph(graph, vertex_description, edges_description)
 end

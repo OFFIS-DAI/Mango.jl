@@ -324,7 +324,7 @@ function color(agent::Agent)
     return description(agent).color
 end
 
-function update_description(agent::Agent; color=nothing, name=nothing, category=nothing)
+function update_description(agent::Agent; color::Union{Nothing, Symbol}=nothing, name::Union{Nothing, String}=nothing, category::Union{Nothing, Symbol}=nothing)
     if !isnothing(name)
         description(agent).name = name
     end
