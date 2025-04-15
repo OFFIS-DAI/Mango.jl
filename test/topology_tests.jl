@@ -159,7 +159,7 @@ end
     topology = cycle_topology(4)
     container = create_tcp_container("127.0.0.1", 3333)
 
-    choose_agent(topology) do node
+    choose_agents!(topology) do node
         return register(container, TopologyAgent())
     end
 
@@ -177,7 +177,7 @@ end
     register(container, TopologyAgent())
     register(container, TopologyAgent())
 
-    assign_agent(topology, container) do agent, node
+    assign_agents!(topology, container) do agent, node
         return aid(agent) == "agent" * string(node.id - 1)
     end
 
