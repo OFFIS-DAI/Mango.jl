@@ -1,4 +1,4 @@
-export plot_topology, show_communication_data
+export plot_node_topology, plot_multi_agent_topology, show_communication_data
 
 using Makie
 using GraphMakie.NetworkLayout
@@ -6,7 +6,7 @@ using GraphMakie
 using Graphs
 using Dates
 
-function plot_topology(topology::Topology; write_to::Union{Nothing,String}="topology.svg", ax=nothing, fig=Figure())
+function plot_node_topology(topology::Topology; write_to::Union{Nothing,String}="topology.svg", ax=nothing, fig=Figure())
 
     if isnothing(ax)
         ax = Axis(fig[1, 1])
@@ -21,6 +21,82 @@ function plot_topology(topology::Topology; write_to::Union{Nothing,String}="topo
         arrow_size=24,
         ilabels=repr.(1:nv(g)),
         ilabels_color=:white)
+
+    hidedecorations!(ax)
+    hidespines!(ax)
+
+    if !isnothing(write_to)
+        save(write_to, fig)
+    end
+end
+
+function combine_simple_graphs(graphs::Vector{<:MetaGraph})
+    # Count total vertices
+    total_vertices = sum(nv(g) for g in graphs)
+    combined = SimpleGraph(total_vertices)
+
+    offset = 0
+    for g in graphs
+        for e in edges(g)
+            s = src(e) + offset
+            d = dst(e) + offset
+            add_edge!(combined, s, d)
+        end
+        offset += nv(g)
+    end
+    return combined
+end
+
+function combine_meta_graphs(graphs::Vector{<:MetaGraph})
+    vertices_description::Vector{Pair{String,Agent}} = []
+    edges_description::Vector{Pair{Tuple{String,String},State}} = []
+    offset = 0
+    for graph in graphs
+        vertices_description = [vertices_description; ["$(label_for(graph, i))-$offset" => graph[label_for(graph, i)] for i in vertices(graph)]]
+        edges_description = [edges_description; [("$(label_for(graph, src(e)))-$offset", "$(label_for(graph, dst(e)))-$offset") => NORMAL for e in edges(graph)]]
+        offset += 1
+    end
+
+    return MetaGraph(combine_simple_graphs(graphs), vertices_description, edges_description)
+end
+
+function plot_multi_agent_topology(topologies::Vector{Topology}; write_to::Union{Nothing,String}="multi_topology.svg")
+    graphs = [topology_to_aid_graph(top) for top in topologies]
+    g = combine_meta_graphs(graphs)
+    for top in topologies
+        for (connected_type, connected_topology) in top.connections
+            for (type, connector) in top.connectors 
+                if type == connected_type
+                    for (other_type, other_connector) in connected_topology.connectors
+                        if other_type == type
+                            for i in 0:(length(topologies)-1)
+                                offset_i = i
+                                for j in 0:(length(topologies)-1)
+                                    offset_j = j
+                                    aid_f = "$(connector.aid)-$offset_i"
+                                    aid_s = "$(other_connector.aid)-$offset_j" 
+                                    if aid_f != aid_s
+                                        g[aid_f, aid_s] = EXT_CONNECTION
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    fig=Figure()
+    ax = Axis(fig[1, 1])
+    
+    graphplot!(ax, g, layout=Stress(),
+        elabels=["" for e in edges(g)],
+        node_size=18,
+        node_color=:gray,
+        ilabels=[name(g[label_for(g,i)]) for i in 1:nv(g)],
+        ilabels_color=:white,
+        ilabels_fontsize=5)
 
     hidedecorations!(ax)
     hidespines!(ax)

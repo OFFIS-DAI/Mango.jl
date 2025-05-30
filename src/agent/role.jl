@@ -209,8 +209,8 @@ to the message dispatching. This handler function will be called everytime the g
 condition function ((message, meta) -> boolean) evaluates to true when a message arrives
 at the roles agent.
 """
-function subscribe_message(role::Role, handler::Function, condition::Function)
-    subscribe_message_handle(role.context.agent, role, handler, condition)
+function subscribe_message(role::Role, handler::Function, condition::Function; preprocessor::Union{Nothing,MessagePreprocessor}=nothing)
+    subscribe_message_handle(role.context.agent, role, handler, condition, preprocessor=preprocessor)
 end
 
 """

@@ -1,6 +1,7 @@
 export @agent,
     AgentContext,
     AgentRoleHandler,
+    SystemHandler,
     handle_message,
     handle_unanswered,
     add,
@@ -52,7 +53,7 @@ Internal data regarding the roles.
 """
 struct AgentRoleHandler
     roles::Vector{Role}
-    handle_message_subs::Vector{Tuple{Role,Function,Function}}
+    handle_message_subs::Vector{Tuple{Role,Function,Function,Union{Nothing,MessagePreprocessor}}}
     send_message_subs::Vector{Tuple{Role,Function}}
     event_subs::Dict{Any,Vector{Tuple{Role,Function,Function}}}
     models::Dict{DataType,Any}
@@ -70,6 +71,12 @@ mutable struct AgentDescription
     color::Symbol
 end
 
+struct SystemHandler
+    message_subs::Vector{Tuple{Function,Function}}
+    event_subs::Dict{Any,Vector{Tuple{Function,Function}}}
+    global_event_subs::Vector{Tuple{Function,Function}}
+end
+
 """
 All baseline fields added by the @agent macro are listed in this vector.
 They are added in the same order defined here.
@@ -77,7 +84,8 @@ They are added in the same order defined here.
 AGENT_BASELINE_FIELDS::Vector = [
     :(lock::ReentrantLock = ReentrantLock()),
     :(context::Union{Nothing,AgentContext} = nothing),
-    :(role_handler::Union{AgentRoleHandler} = AgentRoleHandler(Vector(), Vector(), Vector(), Dict(), Dict())),
+    :(role_handler::AgentRoleHandler = AgentRoleHandler(Vector(), Vector(), Vector(), Dict(), Dict())),
+    :(system_handler::SystemHandler = SystemHandler(Vector(), Dict(), Vector())),
     :(scheduler::AbstractScheduler = Scheduler()),
     :(aid::Union{Nothing,String} = nothing),
     :(transaction_handler::Dict{String,Tuple} = Dict{String,Tuple}()),
@@ -177,6 +185,28 @@ function handle_transaction_message(agent::Agent, message::Any, meta::AbstractDi
     end
 end
 
+@kwdef struct WaitingMessagePreprocessor <: MessagePreprocessor
+    waiting_for_func::Function
+    waiting::Dict{AgentAddress,Bool} = Dict() 
+end
+
+function init(preprocessor::WaitingMessagePreprocessor, role::Role)
+    for addr in preprocessor.waiting_for_func()
+        preprocessor.waiting[addr] = true
+    end
+end
+
+function handle(preprocessor::WaitingMessagePreprocessor, role::Role, handler::Function, message::Any, meta::AbstractDict)
+    sender = sender_addr(meta)
+    if sender in preprocessor.waiting
+        preprocessor.waiting[sender] = false
+    end 
+    if !any(preprocessor.waiting)
+        init(preprocessor, role)
+        handler(role, message, meta)
+    end
+end
+
 """
 Internal API used by the container to dispatch an incoming message to the agent. 
 In this function the message will be handed over to the different handlers in the
@@ -205,18 +235,32 @@ function dispatch_message(agent::Agent, message::Any, meta::AbstractDict)
 
     lock(agent.lock) do
         # check if part of a transaction
-        if haskey(meta, TRACKING_ID) && haskey(agent.transaction_handler, meta[TRACKING_ID])
+        if haskey(meta, TRACKING_ID) && 
+            haskey(agent.transaction_handler, meta[TRACKING_ID]) && 
+            haskey(meta, "reply")
+            
             handle_transaction_message(agent, message, meta)
         else
             for role in agent.role_handler.roles
                 handle_message(role, message, meta)
             end
-            for (role, call, condition) in agent.role_handler.handle_message_subs
-                if condition(message, meta)
-                    call(role, message, meta)
+            for (role, call, condition, preprocessor) in agent.role_handler.handle_message_subs
+                if isnothing(preprocessor)
+                    if condition(message, meta)
+                        call(role, message, meta)
+                    end
+                else 
+                    if condition(message, meta)
+                        handle(preprocessor, role, call, message, meta)
+                    end
                 end
             end
             handle_message(agent, message, meta)
+            for (condition, call) in agent.system_handler.message_subs
+                if condition(message, meta)
+                    call(agent, message, meta)
+                end
+            end
         end
         if length(agent.outgoing) < 1
             for role in agent.role_handler.roles
@@ -385,9 +429,13 @@ function subscribe_message_handle(
     agent::Agent,
     role::Role,
     condition::Function,
-    handler::Function,
+    handler::Function;
+    preprocessor::Union{Nothing,MessagePreprocessor}=nothing,
 )
-    push!(agent.role_handler.handle_message_subs, (role, condition, handler))
+    if !isnothing(preprocessor)
+        init(preprocessor, role)
+    end
+    push!(agent.role_handler.handle_message_subs, (role, condition, handler, preprocessor))
 end
 
 function subscribe_send_handle(agent::Agent, role::Role, handler::Function)
@@ -412,6 +460,13 @@ function emit_event_handle(agent::Agent, src::Role, event::Any; event_type::Any=
     end
     for role in roles(agent)
         handle_event(role, src, event, event_type=event_type)
+    end
+    if haskey(agent.system_handler.event_subs, key)
+        for (role, condition, func) in agent.system_handler.event_subs[key]
+            if condition(src, event)
+                func(role, src, event, event_type)
+            end
+        end
     end
 end
 
@@ -719,5 +774,22 @@ function dispatch_global_event(agent::Agent, event::Any)
     for role in roles(agent)
         on_global_event(role, event)
     end
+    for (condition, call) in agent.system_handler.global_event_subs
+        if condition(event)
+            call(agent, event)
+        end
+    end
 end
 
+function _add_system_handle_message_sub(agent::Agent, filter::Function, handle::Function)
+    push!(agent.system_handler.message_subs, (filter, handle))
+end
+
+function _add_system_event_sub(agent::Agent, event_type::Any, filter::Function, handle::Function)
+    event_type_subs = get!(agent.system_handler.event_subs, event_type, Vector())
+    push!(event_type_subs, (filter, handle))
+end
+
+function _add_system_global_event_sub(agent::Agent, filter::Function, handle::Function)
+    push!(agent.system_handler.global_event_subs, (filter, handle))
+end

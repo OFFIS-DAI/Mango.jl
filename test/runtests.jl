@@ -2,6 +2,7 @@ using Test
 using Documenter
 
 @testset "Mango Tests" begin
+    include("system_programming_tests.jl")
     include("datastructure_util_tests.jl")
     include("scheduler_tests.jl")
     include("agent_tests.jl")

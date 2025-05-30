@@ -110,6 +110,7 @@ function create_distribution_based_com_sim(aid_graph::MetaGraph,
                                         agents::Vector{Agent};
                                         default_delay_per_edge::Real=1, 
                                         base_delay_per_message::Real=20, 
+                                        max_edge_delay::Real=100,
                                         distribution_provider::Function=(delay) -> Poisson(delay),
                                         label_replacer::Function=(label) -> label)::DelayProviderCommunicationSimulation
 
@@ -132,6 +133,9 @@ function create_distribution_based_com_sim(aid_graph::MetaGraph,
         
         for (code_other, distance) in enumerate(ds.dists)
             label_other = label_for(aid_graph, code_other)
+            if distance == typemax(Int)
+                distance = 100
+            end
             specific_distr = distribution_provider(base_delay_per_message + distance)
             provider_com.delay_s_directed_edge_dict[(aid(agent), label_other)] = () -> abs(rand(specific_distr)) / 1000
             provider_com.delay_s_directed_edge_dict[(label_other, aid(agent))] = provider_com.delay_s_directed_edge_dict[(label, label_other)]

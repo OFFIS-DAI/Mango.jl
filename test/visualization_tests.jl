@@ -82,6 +82,31 @@ end
     topology = complete_topology(3)
     auto_assign!(topology, world)
 
-    plot_topology(topology, write_to="test_topology_plot.svg")
+    plot_node_topology(topology, write_to="test_topology_plot.svg")
+    rm("test_topology_plot.svg")
+end
+
+
+@testset "TestMultiTopo" begin
+    world = create_world(DateTime(Millisecond(0)),
+        communication_sim=SimpleCommunicationSimulation(default_delay_s=1))
+
+    agent1 = register(world, MyVisuBehavingAgent(0, "2"), "1")
+    agent2 = register(world, MyVisuBehavingAgent(0, "1"), "2")
+    agent3 = register(world, MyVisuBehavingAgent(0, "3"), "3")
+    mark_as_connector!(agent1)
+    agent4 = register(world, MyVisuBehavingAgent(0, "4"), "4")
+    agent5 = register(world, MyVisuBehavingAgent(0, "5"), "5")
+    agent6 = register(world, MyVisuBehavingAgent(0, "6"), "6")
+    mark_as_connector!(agent6)
+
+    topology = complete_topology(3)
+    topology2 = complete_topology(3)
+    auto_assign!(topology, world)
+    auto_assign!(topology2, world)
+    connect_topologies!(topology, topology2)
+
+    plot_multi_agent_topology([topology, topology2], write_to="test_topology_plot.svg")
+    @test stat("test_topology_plot.svg").size == 13348
     rm("test_topology_plot.svg")
 end

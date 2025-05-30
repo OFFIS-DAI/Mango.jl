@@ -1,7 +1,8 @@
 export complete_topology, star_topology, cycle_topology, graph_topology, per_node, add!,
     topology_neighbors, create_topology, add_node!, add_edge!, Topology, modify_topology,
     choose_agents!, assign_agents!, NORMAL, BROKEN, INACTIVE, set_edge_state!, remove_edge!, remove_node!,
-    auto_assign!, topology_node_id, topology_to_aid_graph, set_as_connector!, connect_topologies!, mark_as_connector!
+    auto_assign!, topology_node_id, topology_to_aid_graph, set_as_connector!, connect_topologies!, mark_as_connector!,
+    topology_connectors, topology_connection_types
 
 using MetaGraphsNext
 using Graphs
@@ -24,6 +25,7 @@ end
     INACTIVE # neighbor link exists but link is not active (could be activated/used)
     BROKEN # neighbor link exists but link is not usable (can not be activated)
     UNKNOWN # = nothing
+    EXT_CONNECTION # external connection
 end
 
 @kwdef mutable struct TopologyService
@@ -48,6 +50,20 @@ function neighbors(service::TopologyService, tid::Symbol=:default, state::State=
     throw(ArgumentError("No neighbors found for tid=$tid"))
 end
 
+function connectors(service::TopologyService, tid::Symbol=:default; include_connectors::Vector{Symbol}=Vector{Symbol}())
+    if haskey(service.tid_to_state_to_neighbors, tid)
+        return [t[2] for t in service.tid_to_connectors[tid] if t[1] in include_connectors || length(include_connectors) == 0]
+    end
+    throw(ArgumentError("No neighbors found for tid=$tid"))
+end
+
+function connection_types(service::TopologyService, tid::Symbol=:default)
+    if haskey(service.tid_to_state_to_neighbors, tid)
+        return [t[1] for t in service.tid_to_connectors[tid]]
+    end
+    throw(ArgumentError("No neighbors found for tid=$tid"))
+end
+
 function _create_meta_graph_with(graph::AbstractGraph)
     vertices_description = [i => Node(id=i) for i in vertices(graph)]
     edges_description = [(e.src, e.dst) => NORMAL for e in edges(graph)]
@@ -60,7 +76,7 @@ end
 
 Create a fully-connected topology.
 """
-function complete_topology(number_of_nodes::Int, tid::Symbol=:default)::Topology
+function complete_topology(number_of_nodes::Int; tid::Symbol=:default)::Topology
     graph = complete_graph(number_of_nodes)
     return Topology(tid=tid, graph=_create_meta_graph_with(graph))
 end
@@ -70,7 +86,7 @@ end
 
 Create a star topology.
 """
-function star_topology(number_of_nodes::Int, tid::Symbol=:default)
+function star_topology(number_of_nodes::Int; tid::Symbol=:default)
     graph = star_graph(number_of_nodes)
     return Topology(tid=tid, graph=_create_meta_graph_with(graph))
 end
@@ -80,7 +96,7 @@ end
 
 Create a cycle topology.
 """
-function cycle_topology(number_of_nodes::Int, tid::Symbol=:default)
+function cycle_topology(number_of_nodes::Int; tid::Symbol=:default)
     graph = cycle_graph(number_of_nodes)
     return Topology(tid=tid, graph=_create_meta_graph_with(graph))
 end
@@ -90,7 +106,7 @@ end
 
 Create a topology based on a Graphs.jl (abstract) graph.
 """
-function graph_topology(graph::AbstractGraph, tid::Symbol=:default)
+function graph_topology(graph::AbstractGraph; tid::Symbol=:default)
     return Topology(tid=tid, graph=_create_meta_graph_with(graph))
 end
 
@@ -230,9 +246,10 @@ function _build_neighborhoods_and_inject(topology::Topology)
 
             # look for marks and transfer to topology 
             for type in topology_service.marked_connector_for
-                push!(topology.connectors, (type, address(agent)))
+                if !((type, address(agent)) in topology.connectors)
+                    push!(topology.connectors, (type, address(agent)))
+                end
             end
-            empty!(topology_service.marked_connector_for)
 
             # search for connection agents
             connectors_for_agent = _build_connectors_list_for(topology, agent)
@@ -407,6 +424,35 @@ function topology_node_id(role::Role; tid::Symbol=:default)::Int
     return service_node_id(service_of_type(role.context.agent, TopologyService, TopologyService()), tid)
 end
 
+"""
+    topology_connectors(agent::Agent; tid::Symbol=:default, state::State=NORMAL, include_connectors::Vector{Symbol}=Vector{Symbol}())::Vector{AgentAddress}
+
+Retrieve the connectors of the `agent`, represented by their addresses. These vaues will be
+updated when a topology is applied using `per_node` or `create_topology`.
+"""
+function topology_connectors(agent::Agent; tid::Symbol=:default, include_connectors::Vector{Symbol}=Vector{Symbol}())::Vector{AgentAddress}
+    return connectors(service_of_type(agent, TopologyService, TopologyService()), tid, include_connectors=include_connectors)
+end
+
+function topology_connectors(role::Role; tid::Symbol=:default, include_connectors::Vector{Symbol}=Vector{Symbol}())::Vector{AgentAddress}
+    return connectors(service_of_type(role.context.agent, TopologyService, TopologyService()), tid, include_connectors=include_connectors)
+end
+
+
+"""
+    topology_connection_types(agent::Agent; tid::Symbol=:default, include_connectors::Vector{Symbol}=Vector{Symbol}())::Vector{AgentAddress}
+
+Retrieve the connection_types for connectors used available to the `agent`, represented by their addresses. These vaues will be
+updated when a topology is applied using `per_node` or `create_topology`.
+"""
+function topology_connection_types(agent::Agent; tid::Symbol=:default)::Vector{Symbol}
+    return connection_types(service_of_type(agent, TopologyService, TopologyService()), tid)
+end
+
+function topology_connection_types(role::Role; tid::Symbol=:default)::Vector{Symbol}
+    return connection_types(service_of_type(role.context.agent, TopologyService, TopologyService()), tid)
+end
+
 # Graphs API calls forwarded to Topology
 function Graphs.edges(topology::Topology)
     return edges(topology.graph)
@@ -468,6 +514,9 @@ function topology_to_aid_graph(topology::Topology)
         end
         for agent in node.agents
             for agent_two in node.agents
+                if agent == agent_two
+                    continue
+                end
                 if !has_edge(graph, aid_to_vertex[aid(agent)], aid_to_vertex[aid(agent_two)])
                     add_edge!(graph, aid_to_vertex[aid(agent)], aid_to_vertex[aid(agent_two)])
                     push!(edges_description, (aid(agent), aid(agent_two)) => NORMAL)
