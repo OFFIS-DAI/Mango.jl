@@ -2,6 +2,8 @@ using Mango
 using Test
 using Graphs
 using Dates
+using Makie
+using GraphMakie
 using CairoMakie
 
 @agent struct TopologyPlotAgent

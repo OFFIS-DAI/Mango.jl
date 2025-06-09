@@ -1,12 +1,13 @@
-export plot_node_topology, plot_multi_agent_topology, show_communication_data
 
+using Mango
 using Makie
 using GraphMakie.NetworkLayout
 using GraphMakie
 using Graphs
 using Dates
+using MetaGraphsNext
 
-function plot_node_topology(topology::Topology; write_to::Union{Nothing,String}="topology.svg", ax=nothing, fig=Figure())
+function Mango.plot_node_topology(topology::Topology; write_to::Union{Nothing,String}="topology.svg", ax=nothing, fig=Figure())
 
     if isnothing(ax)
         ax = Axis(fig[1, 1])
@@ -60,7 +61,7 @@ function combine_meta_graphs(graphs::Vector{<:MetaGraph})
     return MetaGraph(combine_simple_graphs(graphs), vertices_description, edges_description)
 end
 
-function plot_multi_agent_topology(topologies::Vector{Topology}; write_to::Union{Nothing,String}="multi_topology.svg")
+function Mango.plot_multi_agent_topology(topologies::Vector{Topology}; write_to::Union{Nothing,String}="multi_topology.svg")
     graphs = [topology_to_aid_graph(top) for top in topologies]
     g = combine_meta_graphs(graphs)
     for top in topologies
@@ -123,7 +124,7 @@ end
     proxy_aid::String
 end
 
-function aid(agent::VisuProxyAgent)
+function Mango.aid(agent::VisuProxyAgent)
     return agent.proxy_aid
 end
 
@@ -148,7 +149,7 @@ function _create_aid_based_data(g, nid, aid_to_x, default)
     return "$label"
 end
 
-function show_communication_data(messages::Vector{MessageTransaction},
+function Mango.show_communication_data(messages::Vector{MessageTransaction},
     initial_time::DateTime=DateTime(0);
     resolution_s::Real=0.1,
     show::Bool=true,
@@ -351,7 +352,7 @@ function show_communication_data(messages::Vector{MessageTransaction},
     return fig
 end
 
-function show_communication_data(world::World;
+function Mango.show_communication_data(world::World;
     resolution_s::Real=0.1,
     show::Bool=true,
     based_on::Union{Nothing,MetaGraph,Topology}=nothing)

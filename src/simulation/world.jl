@@ -1,7 +1,7 @@
 export World, register, send_message, shutdown, protocol_addr,
     create_world, step_simulation, SimulationResult, CommunicationSimulationResult,
     TaskSimulationResult, on_step, discrete_step_until, env, space, time, clock,
-    record_world!, record_agent!, record_agent_having!
+    record_world!, record_agent!, record_agent_having!, MessageTransaction, data_collection, data_agent_collection
 
 using Base.Threads
 using Dates

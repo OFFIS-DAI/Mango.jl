@@ -1,8 +1,8 @@
-export plot_world, plot_agents, plot_recordings
 
+using Mango
 using Makie
 
-function plot_world(world::World, recording::String;
+function Mango.plot_world(world::World, recording::String;
     write_to::Union{Nothing,String}="world_observation.png",
     fig=Figure(),
     color=:black,
@@ -20,7 +20,7 @@ function plot_world(world::World, recording::String;
     end
 end
 
-function plot_agents(world::World, recording::String;
+function Mango.plot_agents(world::World, recording::String;
     write_to::Union{Nothing,String}="agent_observation.png",
     fig=Figure(),
     color=:viridis)
@@ -60,7 +60,7 @@ function _create_label(layout, label, y)
         halign=:left)
 end
 
-function plot_recordings(world::World;
+function Mango.plot_recordings(world::World;
     write_to::Union{Nothing,String}="observation.png",
     size=:auto,
     color=:black,

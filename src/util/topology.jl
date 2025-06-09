@@ -2,7 +2,7 @@ export complete_topology, star_topology, cycle_topology, graph_topology, per_nod
     topology_neighbors, create_topology, add_node!, add_edge!, Topology, modify_topology,
     choose_agents!, assign_agents!, NORMAL, BROKEN, INACTIVE, set_edge_state!, remove_edge!, remove_node!,
     auto_assign!, topology_node_id, topology_to_aid_graph, set_as_connector!, connect_topologies!, mark_as_connector!,
-    topology_connectors, topology_connection_types
+    topology_connectors, topology_connection_types, NORMAL, INACTIVE, BROKEN, UNKNOWN, EXT_CONNECTION, State
 
 using MetaGraphsNext
 using Graphs

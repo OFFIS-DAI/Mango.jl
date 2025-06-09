@@ -20,7 +20,7 @@ export TaskData,
 using Dates
 using ConcurrentCollections
 
-import Base.schedule, Base.sleep, Base.wait
+import Base.schedule, Base.sleep, Base.wait, Base.notify
 
 """
 Abstract type of a clock, which holds the time of a simulation
@@ -108,6 +108,20 @@ Wait for `timer`.
 """
 function wait(scheduler::AbstractScheduler, timer::Timer, delay_s::Real)
     return wait(timer)
+end
+
+
+"""
+    wait(scheduler::AbstractScheduler, awaitable::Any)
+
+Wait on awaitable based on its schedulers policy.
+"""
+function wait(scheduler::AbstractScheduler, awaitable::Any)
+    return wait(awaitable)
+end
+
+function notify(scheduler::AbstractScheduler, event::Threads.Event)
+    return notify(event)
 end
 
 """
@@ -441,6 +455,22 @@ end
 function wait(scheduler::SimulationScheduler, awaitable_task_data::AwaitableTaskData)
     elapsed = @elapsed wait(awaitable_task_data.awaitable)
     sleep(scheduler, elapsed)
+end
+
+function wait(scheduler::SimulationScheduler, event::Threads.Event)
+    ctime = scheduler.clock.simulation_time
+    if haskey(scheduler.task_time, current_task())
+        ctime = scheduler.task_time[current_task()]
+    end
+    scheduler.events[current_task()] = event
+    scheduler.task_time[current_task()] = DateTime(9999)
+    return wait(event)
+end
+
+function notify(scheduler::SimulationScheduler, event::Threads.Event)
+    maybepop!(scheduler.events, current_task())
+    scheduler.task_time[current_task()] = DateTime(0)
+    return Base.notify(event)
 end
 
 function tasks(scheduler::SimulationScheduler)

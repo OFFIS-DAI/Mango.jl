@@ -72,9 +72,9 @@ mutable struct AgentDescription
 end
 
 struct SystemHandler
-    message_subs::Vector{Tuple{Function,Function}}
-    event_subs::Dict{Any,Vector{Tuple{Function,Function}}}
-    global_event_subs::Vector{Tuple{Function,Function}}
+    message_subs::Vector{Tuple{Function,Function,Union{Nothing,MessagePreprocessor},Any}}
+    event_subs::Dict{Any,Vector{Tuple{Function,Function,Any}}}
+    global_event_subs::Vector{Tuple{Function,Function,Any}}
 end
 
 """
@@ -190,20 +190,20 @@ end
     waiting::Dict{AgentAddress,Bool} = Dict() 
 end
 
-function init(preprocessor::WaitingMessagePreprocessor, role::Role)
+function init(preprocessor::WaitingMessagePreprocessor, role_or_agent::Union{Role, Agent})
     for addr in preprocessor.waiting_for_func()
         preprocessor.waiting[addr] = true
     end
 end
 
-function handle(preprocessor::WaitingMessagePreprocessor, role::Role, handler::Function, message::Any, meta::AbstractDict)
-    sender = sender_addr(meta)
-    if sender in preprocessor.waiting
+function handle(preprocessor::WaitingMessagePreprocessor, role_or_agent::Union{Role, Agent}, handler::Function, message::Any, meta::AbstractDict)
+    sender = sender_address(meta)
+    if sender in keys(preprocessor.waiting)
         preprocessor.waiting[sender] = false
-    end 
-    if !any(preprocessor.waiting)
-        init(preprocessor, role)
-        handler(role, message, meta)
+    end
+    if !any(values(preprocessor.waiting))
+        init(preprocessor, role_or_agent)
+        handler(role_or_agent, message, meta)
     end
 end
 
@@ -256,9 +256,15 @@ function dispatch_message(agent::Agent, message::Any, meta::AbstractDict)
                 end
             end
             handle_message(agent, message, meta)
-            for (condition, call) in agent.system_handler.message_subs
-                if condition(message, meta)
-                    call(agent, message, meta)
+            for (condition, call, preprocessor, caller) in agent.system_handler.message_subs
+                if isnothing(preprocessor)
+                    if condition(message, meta)
+                        call(caller, message, meta)
+                    end
+                else 
+                    if condition(message, meta)
+                        handle(preprocessor, agent, call, message, meta)
+                    end
                 end
             end
         end
@@ -438,6 +444,18 @@ function subscribe_message_handle(
     push!(agent.role_handler.handle_message_subs, (role, condition, handler, preprocessor))
 end
 
+function subscribe_message(
+    agent::Agent,
+    condition::Function,
+    handler::Function;
+    preprocessor::Union{Nothing,MessagePreprocessor}=nothing,
+)
+    if !isnothing(preprocessor)
+        init(preprocessor, agent)
+    end
+    _add_system_handle_message_sub(agent, agent, condition, handler; preprocessor=preprocessor)
+end
+
 function subscribe_send_handle(agent::Agent, role::Role, handler::Function)
     push!(agent.role_handler.send_message_subs, (role, handler))
 end
@@ -462,9 +480,9 @@ function emit_event_handle(agent::Agent, src::Role, event::Any; event_type::Any=
         handle_event(role, src, event, event_type=event_type)
     end
     if haskey(agent.system_handler.event_subs, key)
-        for (role, condition, func) in agent.system_handler.event_subs[key]
+        for (condition, func, caller) in agent.system_handler.event_subs[key]
             if condition(src, event)
-                func(role, src, event, event_type)
+                func(caller, src, event, event_type)
             end
         end
     end
@@ -774,22 +792,22 @@ function dispatch_global_event(agent::Agent, event::Any)
     for role in roles(agent)
         on_global_event(role, event)
     end
-    for (condition, call) in agent.system_handler.global_event_subs
+    for (condition, call, caller) in agent.system_handler.global_event_subs
         if condition(event)
-            call(agent, event)
+            call(caller, event)
         end
     end
 end
 
-function _add_system_handle_message_sub(agent::Agent, filter::Function, handle::Function)
-    push!(agent.system_handler.message_subs, (filter, handle))
+function _add_system_handle_message_sub(agent::Agent, caller::Any, filter::Function, handle::Function; preprocessor::Union{Nothing,<:MessagePreprocessor}=nothing)
+    push!(agent.system_handler.message_subs, (filter, handle, preprocessor, caller))
 end
 
-function _add_system_event_sub(agent::Agent, event_type::Any, filter::Function, handle::Function)
+function _add_system_event_sub(agent::Agent, caller::Any, event_type::Any, filter::Function, handle::Function)
     event_type_subs = get!(agent.system_handler.event_subs, event_type, Vector())
-    push!(event_type_subs, (filter, handle))
+    push!(event_type_subs, (filter, handle, caller))
 end
 
-function _add_system_global_event_sub(agent::Agent, filter::Function, handle::Function)
-    push!(agent.system_handler.global_event_subs, (filter, handle))
+function _add_system_global_event_sub(agent::Agent, caller::Any, filter::Function, handle::Function)
+    push!(agent.system_handler.global_event_subs, (filter, handle, caller))
 end

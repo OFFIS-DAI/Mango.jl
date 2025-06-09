@@ -366,3 +366,82 @@ end
 
     @test sa == AgentAddress(aid="sender_id", address="sender_addr")
 end
+
+@agent struct MyExpectingPrepAgent 
+    triggered::Bool = false
+end
+
+@agent struct MySendingPrepAgent end
+
+function handle_trigger_cp(a::MyExpectingPrepAgent, msg::Any, meta::Any)
+    a.triggered = true
+end
+
+struct ExpectedMessage end
+
+@testset "AgentWaitingMessagePreprocessor" begin
+
+    container = Container()
+    agent1 = MyExpectingPrepAgent()
+    agent2 = MySendingPrepAgent()
+    register(container, agent1)
+    register(container, agent2)
+    wmp = WaitingMessagePreprocessor(waiting_for_func=() -> [address(agent2)])
+    subscribe_message(agent1, (msg, meta) -> typeof(msg) == ExpectedMessage, handle_trigger_cp, preprocessor=wmp)
+    wait(send_message(agent2, ExpectedMessage(), address(agent1)))
+    sleep(0.01)
+
+    @test agent1.triggered
+end
+
+@testset "AgentWaitingMessagePreprocessorNoTrig" begin
+
+    container = Container()
+    agent1 = MyExpectingPrepAgent()
+    agent2 = MySendingPrepAgent()
+    agent3 = MySendingPrepAgent()
+    register(container, agent1)
+    register(container, agent2)
+    register(container, agent3)
+    wmp = WaitingMessagePreprocessor(waiting_for_func=() -> [address(agent2),address(agent3)])
+    subscribe_message(agent1, (msg, meta) -> typeof(msg) == ExpectedMessage, handle_trigger_cp, preprocessor=wmp)
+    wait(send_message(agent2, ExpectedMessage(), address(agent1)))
+    sleep(0.01)
+
+    @test !agent1.triggered
+end
+@testset "AgentWaitingMessagePreprocessorMultiTrig" begin
+
+    container = Container()
+    agent1 = MyExpectingPrepAgent()
+    agent2 = MySendingPrepAgent()
+    agent3 = MySendingPrepAgent()
+    register(container, agent1)
+    register(container, agent2)
+    register(container, agent3)
+    wmp = WaitingMessagePreprocessor(waiting_for_func=() -> [address(agent2),address(agent3)])
+    subscribe_message(agent1, (msg, meta) -> typeof(msg) == ExpectedMessage, handle_trigger_cp, preprocessor=wmp)
+    wait(send_message(agent2, ExpectedMessage(), address(agent1)))
+    wait(send_message(agent3, ExpectedMessage(), address(agent1)))
+    sleep(0.01)
+
+    @test agent1.triggered
+end
+
+@testset "AgentWaitingMessagePreprocessorWrongTrig" begin
+
+    container = Container()
+    agent1 = MyExpectingPrepAgent()
+    agent2 = MySendingPrepAgent()
+    agent3 = MySendingPrepAgent()
+    register(container, agent1)
+    register(container, agent2)
+    register(container, agent3)
+    wmp = WaitingMessagePreprocessor(waiting_for_func=() -> [address(agent2),address(agent3)])
+    subscribe_message(agent1, (msg, meta) -> typeof(msg) == ExpectedMessage, handle_trigger_cp, preprocessor=wmp)
+    wait(send_message(agent2, ExpectedMessage(), address(agent1)))
+    wait(send_message(agent2, ExpectedMessage(), address(agent1)))
+    sleep(0.01)
+
+    @test !agent1.triggered
+end
