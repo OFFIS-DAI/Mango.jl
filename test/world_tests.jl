@@ -25,7 +25,7 @@ end
     register(world, agent1)
     register(world, agent2)
 
-    send_message(world.container, "Hello Friends, this is RSc!", AgentAddress(aid=agent1.aid), test=2)
+    send_message(world.container, "Hello Friends, this is RSc!", AgentAddress(aid=aid(agent1)), test=2)
 
     stepping_result = step_simulation(world, 1)
 
@@ -66,8 +66,8 @@ end
     register(world, agent1)
     register(world, agent2)
 
-    send_message(world.container, "Hello Friends, this is RSc!", AgentAddress(aid=agent1.aid))
-    send_message(world.container, "Hello Friends, this is RSd!", AgentAddress(aid=agent2.aid))
+    send_message(world.container, "Hello Friends, this is RSc!", AgentAddress(aid=aid(agent1)))
+    send_message(world.container, "Hello Friends, this is RSd!", AgentAddress(aid=aid(agent2)))
 
     stepping_result = step_simulation(world, 1)
 
@@ -87,8 +87,8 @@ end
     register(world, agent1)
     register(world, agent2)
 
-    send_message(world.container, "Hello Friends, this is RSc!", AgentAddress(aid=agent1.aid))
-    send_message(world.container, "Hello Friends, this is RSd!", AgentAddress(aid=agent2.aid))
+    send_message(world.container, "Hello Friends, this is RSc!", AgentAddress(aid=aid(agent1)))
+    send_message(world.container, "Hello Friends, this is RSd!", AgentAddress(aid=aid(agent2)))
 
     stepping_result = step_simulation(world, 1)
 
@@ -109,16 +109,16 @@ end
     register(world, agent1)
     register(world, agent2)
 
-    send_message(world.container, "Hello Friends, this is RSc!", AgentAddress(aid=agent1.aid))
-    send_message(world.container, "Hello Friends, this is RSd!", AgentAddress(aid=agent2.aid))
+    send_message(world.container, "Hello Friends, this is RSc!", AgentAddress(aid=aid(agent1)))
+    send_message(world.container, "Hello Friends, this is RSd!", AgentAddress(aid=aid(agent2)))
 
     stepping_result = step_simulation(world, 1)
 
     @test agent1.counter == 0
     @test agent2.counter == 0
 
-    send_message(world.container, "Hello Friends, this is RSc!", AgentAddress(aid=agent1.aid))
-    send_message(world.container, "Hello Friends, this is RSd!", AgentAddress(aid=agent2.aid))
+    send_message(world.container, "Hello Friends, this is RSc!", AgentAddress(aid=aid(agent1)))
+    send_message(world.container, "Hello Friends, this is RSd!", AgentAddress(aid=aid(agent2)))
 
     stepping_result = step_simulation(world, 1)
 
@@ -142,8 +142,8 @@ end
     com_sim.delay_s_directed_edge_dict[(nothing, aid(agent1))] = 1
     com_sim.delay_s_directed_edge_dict[(nothing, aid(agent2))] = 2
 
-    send_message(world.container, "Hello Friends, this is RSc!", AgentAddress(aid=agent1.aid))
-    send_message(world.container, "Hello Friends, this is RSd!", AgentAddress(aid=agent2.aid))
+    send_message(world.container, "Hello Friends, this is RSc!", AgentAddress(aid=aid(agent1)))
+    send_message(world.container, "Hello Friends, this is RSd!", AgentAddress(aid=aid(agent2)))
 
     stepping_result = step_simulation(world, 1)
 
@@ -183,8 +183,8 @@ end
     schedule(agent1, InstantTaskData()) do
         agent1.scheduled_counter += 100
     end
-    send_message(world.container, "Hello Friends, this is RSc!", AgentAddress(aid=agent1.aid))
-    send_message(world.container, "Hello Friends, this is RSd!", AgentAddress(aid=agent2.aid))
+    send_message(world.container, "Hello Friends, this is RSc!", AgentAddress(aid=aid(agent1)))
+    send_message(world.container, "Hello Friends, this is RSd!", AgentAddress(aid=aid(agent2)))
 
     stepping_result = step_simulation(world, 1)
 
@@ -216,8 +216,8 @@ end
     schedule(agent1, InstantTaskData()) do
         agent1.scheduled_counter += 100
     end
-    send_message(world.container, "Hello Friends, this is RSc!", AgentAddress(aid=agent1.aid))
-    send_message(world.container, "Hello Friends, this is RSd!", AgentAddress(aid=agent2.aid))
+    send_message(world.container, "Hello Friends, this is RSc!", AgentAddress(aid=aid(agent1)))
+    send_message(world.container, "Hello Friends, this is RSd!", AgentAddress(aid=aid(agent2)))
 
     stepping_result = step_simulation(world, 1)
 
@@ -249,8 +249,8 @@ end
     schedule(agent1, InstantTaskData()) do
         agent1.scheduled_counter += 100
     end
-    send_message(world.container, "Hello Friends, this is RSc!", AgentAddress(aid=agent1.aid))
-    send_message(world.container, "Hello Friends, this is RSd!", AgentAddress(aid=agent2.aid))
+    send_message(world.container, "Hello Friends, this is RSc!", AgentAddress(aid=aid(agent1)))
+    send_message(world.container, "Hello Friends, this is RSd!", AgentAddress(aid=aid(agent2)))
 
     discrete_step_until(world, 4)
 
@@ -285,8 +285,8 @@ end
     schedule(agent1, PeriodicTaskData(0.1)) do
         agent1.scheduled_counter += 1
     end
-    send_message(world.container, "Hello Friends, this is RSc!", AgentAddress(aid=agent1.aid))
-    send_message(world.container, "Hello Friends, this is RSd!", AgentAddress(aid=agent2.aid))
+    send_message(world.container, "Hello Friends, this is RSc!", AgentAddress(aid=aid(agent1)))
+    send_message(world.container, "Hello Friends, this is RSd!", AgentAddress(aid=aid(agent2)))
 
     stepping_result = step_simulation(world, 1)
 
@@ -332,8 +332,8 @@ end
     schedule(agent1, PeriodicTaskData(0.1)) do
         agent1.scheduled_counter += 1
     end
-    send_message(world.container, "Hello Friends, this is RSc!", AgentAddress(aid=agent1.aid), agent2.aid)
-    send_message(world.container, "Hello Friends, this is RSd!", AgentAddress(aid=agent2.aid))
+    send_message(world.container, "Hello Friends, this is RSc!", AgentAddress(aid=aid(agent1)), aid(agent2))
+    send_message(world.container, "Hello Friends, this is RSd!", AgentAddress(aid=aid(agent2)))
 
     stepping_result = step_simulation(world, 1)
 
@@ -367,8 +367,8 @@ end
     schedule(agent1, InstantTaskData()) do
         agent1.scheduled_counter += 1
     end
-    send_message(world.container, "Hello Friends, this is RSc!", AgentAddress(aid=agent1.aid), agent2.aid)
-    send_message(world.container, "Hello Friends, this is RSd!", AgentAddress(aid=agent2.aid))
+    send_message(world.container, "Hello Friends, this is RSc!", AgentAddress(aid=aid(agent1)), aid(agent2))
+    send_message(world.container, "Hello Friends, this is RSd!", AgentAddress(aid=aid(agent2)))
 
     stepping_result = step_simulation(world)
 

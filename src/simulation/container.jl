@@ -38,7 +38,7 @@ function register(
         actual_aid = suggested_aid
     end
     container.agents[actual_aid] = agent
-    agent.aid = actual_aid
+    description(agent).aid = actual_aid
     agent.context = AgentContext(container, container.env)
     container.agent_counter += 1
 

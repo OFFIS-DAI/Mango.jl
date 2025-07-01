@@ -74,8 +74,8 @@ function Mango.plot_multi_agent_topology(topologies::Vector{Topology}; write_to:
                                 offset_i = i
                                 for j in 0:(length(topologies)-1)
                                     offset_j = j
-                                    aid_f = "$(connector.aid)-$offset_i"
-                                    aid_s = "$(other_connector.aid)-$offset_j" 
+                                    aid_f = "$(connector.address.aid)-$offset_i"
+                                    aid_s = "$(other_connector.address.aid)-$offset_j" 
                                     if aid_f != aid_s
                                         g[aid_f, aid_s] = EXT_CONNECTION
                                     end

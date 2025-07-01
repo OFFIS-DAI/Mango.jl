@@ -240,3 +240,25 @@ end
     @test nv(topology) == 5
     @test collect(vertices(topology)) == [1, 2, 3, 4, 5]
 end
+
+@testset "TestMarkForConnector" begin
+    topologyA = complete_topology(3, tid=:A)
+    topologyB = cycle_topology(3, tid=:B)
+    connect_topologies!(topologyA, topologyB)
+    
+    marked_A = TopologyAgent()
+    mark_as_connector!(marked_A)
+    marked_B = TopologyAgent()
+    mark_as_connector!(marked_B)
+    
+    agents_1 = [marked_A, TopologyAgent(), TopologyAgent()]
+    agents_2 = [marked_B, TopologyAgent(), TopologyAgent()]
+    
+    @warn marked_A
+    
+    auto_assign!(topologyA, agents_1)
+    auto_assign!(topologyB, agents_2)
+
+    @test length(topology_neighbors(marked_A, tid=:A)) == 2
+    @test length(topology_connectors(marked_A, tid=:A)) == 1
+end

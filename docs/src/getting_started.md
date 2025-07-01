@@ -70,7 +70,7 @@ function Mango.handle_message(agent::TCPPingPongAgent, message::Any, meta::Any)
     agent.counter += 1
 
     println(
-        "$(agent.aid) got a message: $message." *
+        "$(aid(agent)) got a message: $message." *
         "This is message number: $(agent.counter) for me!"
     )
 

@@ -36,7 +36,7 @@ end
     register(container, agent1)
     register(container, agent2)
 
-    wait(send_message(container, "Hello Roles, this is RSc!", AgentAddress(aid=agent2.aid)))
+    wait(send_message(container, "Hello Roles, this is RSc!", AgentAddress(aid=aid(agent2))))
 
     @test agent2.role_handler.roles[1] === role1
     @test agent2.counter == 10
@@ -57,7 +57,7 @@ end
     register(container, agent1)
     register(container, agent2)
 
-    wait(send_message(container, "Hello Roles, this is RSc!", AgentAddress(aid=agent2.aid)))
+    wait(send_message(container, "Hello Roles, this is RSc!", AgentAddress(aid=aid(agent2))))
 
     @test agent2.role_handler.roles[1] === role1
     @test agent2.role_handler.roles[1].counter == 15
@@ -82,7 +82,7 @@ end
     register(container, agent1)
     register(container, agent2)
 
-    wait(send_message(agent2, "Hello Roles, this is RSc!", AgentAddress(aid=agent1.aid)))
+    wait(send_message(agent2, "Hello Roles, this is RSc!", AgentAddress(aid=aid(agent1))))
 
     @test agent2.role_handler.roles[1] === role1
     @test agent2.role_handler.roles[1].invoked
@@ -95,7 +95,7 @@ end
     register(container, agent1)
     register(container, agent2)
 
-    wait(send_message(agent1, "Hello Agents, this is RSc!", AgentAddress(aid=agent2.aid)))
+    wait(send_message(agent1, "Hello Agents, this is RSc!", AgentAddress(aid=aid(agent2))))
 
     @test agent2.counter == 10
 end
@@ -107,7 +107,7 @@ end
     register(container, agent1)
     register(container, agent2)
 
-    wait(send_message(agent1, "Hello Agents, this is RSc!", AgentAddress(aid=agent2.aid); kw=1, kw2=2))
+    wait(send_message(agent1, "Hello Agents, this is RSc!", AgentAddress(aid=aid(agent2)); kw=1, kw2=2))
 
     @test agent2.counter == 10
 end
@@ -123,7 +123,7 @@ end
     register(container, agent1)
     register(container, agent2)
 
-    wait(send_message(role2, "Hello Roles, this is RSc!", AgentAddress(aid=agent2.aid)))
+    wait(send_message(role2, "Hello Roles, this is RSc!", AgentAddress(aid=aid(agent2))))
 
     @test agent2.role_handler.roles[1] === role1
     @test agent2.counter == 10
@@ -165,11 +165,11 @@ end
 
     container = Container()
     agent1 = MyTrackedAgent(0)
-    agent2 = MyRespondingAgent(0, AgentAddress(aid=agent1.aid))
+    agent2 = MyRespondingAgent(0, AgentAddress(aid=aid(agent1)))
     register(container, agent1)
     register(container, agent2)
 
-    wait(send_tracked_message(agent1, "Hello Agent, this is DialogRico", AgentAddress(aid=agent2.aid); response_handler=handle_response))
+    wait(send_tracked_message(agent1, "Hello Agent, this is DialogRico", AgentAddress(aid=aid(agent2)); response_handler=handle_response))
 
     @test agent2.counter == 10
     @test agent1.counter == 1337

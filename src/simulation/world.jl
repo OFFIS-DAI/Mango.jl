@@ -298,7 +298,7 @@ end
 
 function do_recordings(world::World)
     for collector in world.data_collectors
-        collector()
+        collector(world)
     end
 end
 
@@ -311,6 +311,11 @@ function step_all_entities(world::World, time_step_s::Real)
         step_agent(agent, world.env, clock(world), time_step_s)
     end
 end
+
+elapsed_det::Real = 0
+elapsed_step::Real = 0
+elapsed_sim::Real = 0
+elapsed_rec::Real = 0
 
 """
     step_simulation(world::World, step_size_s::Real=DISCRETE_EVENT; max_advance_time_s::Real=-1)::Union{SimulationResult,Nothing}
@@ -337,22 +342,34 @@ function step_simulation(world::World, step_size_s::Real=DISCRETE_EVENT; max_adv
     first_step = true
     time_step_s = step_size_s
 
-    # We are in discrete event mode, so we need to determine
-    # the time until the next event occurs, this time will
-    # be used to execute the time-based simulation
-    comm_result = nothing
-    if time_step_s == DISCRETE_EVENT
-        time_step_s, comm_result = determine_time_step(world)
-        @debug "Determined the size to be $time_step_s"
-        if isnothing(time_step_s) || (max_advance_time_s != -1 && time_step_s > max_advance_time_s)
-            # only step guaranteed entities
-            step_all_entities(world, 0)
-            return nothing
+    elapsed = @elapsed begin
+        # We are in discrete event mode, so we need to determine
+        # the time until the next event occurs, this time will
+        # be used to execute the time-based simulation
+        comm_result = nothing
+        if time_step_s == DISCRETE_EVENT
+            time_step_s, comm_result = determine_time_step(world)
+            @debug "Determined the size to be $time_step_s"
+            if isnothing(time_step_s) || (max_advance_time_s != -1 && time_step_s > max_advance_time_s)
+                # only step guaranteed entities
+                step_all_entities(world, 0)
+                return nothing
+            end
         end
+        world.container.step_size_s = time_step_s
     end
-    world.container.step_size_s = time_step_s
 
-    step_all_entities(world, time_step_s)
+    global elapsed_det
+    elapsed_det += elapsed
+    @debug "The determine step needed $elapsed seconds"
+
+    elapsed = @elapsed begin
+        step_all_entities(world, time_step_s)
+    end
+
+    global elapsed_step
+    elapsed_step += elapsed
+    @debug "The steps enti step needed $elapsed seconds"
 
     elapsed = @elapsed begin
         # now we process everything which happened in the steps,
@@ -384,14 +401,23 @@ function step_simulation(world::World, step_size_s::Real=DISCRETE_EVENT; max_adv
             @debug "Finish simulation iteration" state_changed
         end
     end
+
+    global elapsed_sim
+    elapsed_sim += elapsed
     @debug "The simulation step needed $elapsed seconds"
+    
+    elapsed = @elapsed begin
+        world.clock.simulation_time = add_seconds(time(world), time_step_s)
+        world.container.step_size_s = 0
 
-    world.clock.simulation_time = add_seconds(time(world), time_step_s)
-    world.container.step_size_s = 0
+        @debug "New time" time(world)
 
-    @debug "New time" time(world)
+        do_recordings(world)
+    end
 
-    do_recordings(world)
+    global elapsed_rec
+    elapsed_rec += elapsed
+    @debug "The recording update step needed $elapsed seconds"
 
     return SimulationResult(elapsed, messaging_sim_result, task_sim_result, time_step_s)
 end
@@ -406,6 +432,9 @@ This function will step the world until the clock has advanced to the initial_ti
 or if the time of the world does not advance anymore (which would mean no events are scheduled).
 """
 function discrete_step_until(world::World, max_advance_time_s::Real)
+    global elapsed_det, elapsed_step, elapsed_sim, elapsed_rec
+    elapsed_det = elapsed_rec = elapsed_sim = elapsed_step = 0
+
     initial_time = time(world)
     prev_time = nothing
     results = []
@@ -421,6 +450,8 @@ function discrete_step_until(world::World, max_advance_time_s::Real)
         end
     end
     @info "The discrete event simulation needed $elapsed seconds"
+    @info "The different parts needed" elapsed_det elapsed_step elapsed_sim elapsed_rec
+
     return results
 end
 
@@ -481,7 +512,7 @@ Collect data from the world using the `collector` function and
 store it in the data collection with the `key`.
 """
 function collect_data(collector::Function, world::World, key::String)
-    push!(world.data_collectors, () -> collector(world, data_collection(world, key)))
+    push!(world.data_collectors, (world) -> collector(world, data_collection(world, key)))
 end
 
 """
@@ -495,9 +526,9 @@ The data can be plotted using plot_agents.
 function collect_agent_data(collector::Function, world::World, key::String; dedicated_plots::Bool=false)
     dac = data_agent_collection(world, key, dedicated_plots=dedicated_plots)
     for agent in values(agents(world))
-        push!(world.data_collectors, () -> collector(world, agent, dac))
+        push!(world.data_collectors, (world) -> collector(world, agent, dac))
     end
-    push!(world.data_collectors, () -> push!(dac.time, seconds_elapsed(clock(world))))
+    push!(world.data_collectors, (world) -> push!(dac.time, seconds_elapsed(clock(world))))
 end
 
 """

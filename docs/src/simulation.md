@@ -28,7 +28,7 @@ agent1 = register(container, SimAgent())
 agent2 = register(container, SimAgent())
 
 # Send a message from agent2 to agent1, the message will be written to a queue instead of processed by some protocol
-send_message(agent2, "Hello Friends, this is RSc!", AgentAddress(aid=agent1.aid))
+send_message(agent2, "Hello Friends, this is RSc!", AgentAddress(aid=aid(agent1)))
 
 # in this stepping call the message will be delivered and handled to/by the agent1  
 # step_size=1, if no size is specified the simulation will work as discrete event simulation, executing all tasks occurring on the next event time.

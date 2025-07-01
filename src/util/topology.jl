@@ -2,7 +2,7 @@ export complete_topology, star_topology, cycle_topology, graph_topology, per_nod
     topology_neighbors, create_topology, add_node!, add_edge!, Topology, modify_topology,
     choose_agents!, assign_agents!, NORMAL, BROKEN, INACTIVE, set_edge_state!, remove_edge!, remove_node!,
     auto_assign!, topology_node_id, topology_to_aid_graph, set_as_connector!, connect_topologies!, mark_as_connector!,
-    topology_connectors, topology_connection_types, NORMAL, INACTIVE, BROKEN, UNKNOWN, EXT_CONNECTION, State
+    topology_connectors, topology_connection_types, NORMAL, INACTIVE, BROKEN, UNKNOWN, EXT_CONNECTION, State, topology_service
 
 using MetaGraphsNext
 using Graphs
@@ -13,10 +13,15 @@ import Graphs.add_edge!
     agents::Vector{Agent} = Vector()
 end
 
+struct TopologyNeighbor
+    address::AgentAddress
+    description::AgentDescription
+end
+
 @kwdef struct Topology
     tid::Symbol
     graph::MetaGraph
-    connectors::Vector{Tuple{Symbol,AgentAddress}} = Vector() # connection type to connector
+    connectors::Vector{Tuple{Symbol,TopologyNeighbor}} = Vector() # connection type to connector
     connections::Vector{Tuple{Symbol,Topology}} = Vector() # tid to connection type
 end
 
@@ -29,8 +34,8 @@ end
 end
 
 @kwdef mutable struct TopologyService
-    tid_to_state_to_neighbors::Dict{Symbol,Dict{State,Vector{AgentAddress}}} = Dict() # tid to (edge state to agents)
-    tid_to_connectors::Dict{Symbol,Vector{Tuple{Symbol, AgentAddress}}} = Dict() # tid to (connection type to connected agents)
+    tid_to_state_to_neighbors::Dict{Symbol,Dict{State,Vector{TopologyNeighbor}}} = Dict() # tid to (edge state to agents)
+    tid_to_connectors::Dict{Symbol,Vector{Tuple{Symbol, TopologyNeighbor}}} = Dict() # tid to (connection type to connected agents)
     tid_to_node_id::Dict{Symbol,Int} = Dict() # tid to id of the node
     marked_connector_for::Vector{Symbol} = Vector()
 end
@@ -42,17 +47,17 @@ function service_node_id(service::TopologyService, tid::Symbol=:default)
     return service.tid_to_node_id[tid]
 end
 
-function neighbors(service::TopologyService, tid::Symbol=:default, state::State=NORMAL; include_connectors::Vector{Symbol}=Vector{Symbol}())
+function neighbors(service::TopologyService, tid::Symbol=:default, state::State=NORMAL; include_connectors::Vector{Symbol}=Vector{Symbol}(), match_func::Function=(desc)->true)
     if haskey(service.tid_to_state_to_neighbors, tid)
-        return vcat(get(service.tid_to_state_to_neighbors[tid], state, Vector()), 
-                    [t[2] for t in service.tid_to_connectors[tid] if t[1] in include_connectors])
+        return vcat([n.address for n in get(service.tid_to_state_to_neighbors[tid], state, Vector()) if match_func(n)], 
+                    [t[2].address for t in service.tid_to_connectors[tid] if t[1] in include_connectors && match_func(t)])
     end
     throw(ArgumentError("No neighbors found for tid=$tid"))
-end
+end 
 
-function connectors(service::TopologyService, tid::Symbol=:default; include_connectors::Vector{Symbol}=Vector{Symbol}())
+function connectors(service::TopologyService, tid::Symbol=:default; include_connectors::Vector{Symbol}=Vector{Symbol}(), match_func::Function=(desc)->true)
     if haskey(service.tid_to_state_to_neighbors, tid)
-        return [t[2] for t in service.tid_to_connectors[tid] if t[1] in include_connectors || length(include_connectors) == 0]
+        return [t[2].address for t in service.tid_to_connectors[tid] if (t[1] in include_connectors || length(include_connectors) == 0) && match_func(t)]
     end
     throw(ArgumentError("No neighbors found for tid=$tid"))
 end
@@ -161,7 +166,7 @@ Set `agents` as connectors (has to be part of the topology)
 """
 function set_as_connector!(topology::Topology, agents...; connector_type::Symbol=:default)
     for a in agents
-        push!(topology.connectors, (connector_type, address(a)))
+        push!(topology.connectors, (connector_type, TopologyNeighbor(address(a), description(a))))
     end
 end
 
@@ -205,13 +210,13 @@ function _build_connectors_list_for(topology, agent)
     connectors_for_agent = []
     for (type, other_topo) in topology.connections
         # check whether agent is a connector for the connection
-        for (c_type, addr) in topology.connectors
-            if type == c_type && address(agent) == addr
+        for (c_type, neighbor) in topology.connectors
+            if type == c_type && uid(agent) == neighbor.description.uid
                 # it is a connector
                 # now find the fitting connectors in the connected topo
-                for (other_c_type, other_addr) in other_topo.connectors
-                    if type == other_c_type 
-                        push!(connectors_for_agent, (type, other_addr))
+                for (other_c_type, other_neighbor) in other_topo.connectors
+                    if type == other_c_type
+                        push!(connectors_for_agent, (type, other_neighbor))
                     end
                 end
             end
@@ -220,24 +225,24 @@ function _build_connectors_list_for(topology, agent)
     return connectors_for_agent
 end
 
-function _build_neighborhoods_and_inject(topology::Topology)
+function _build_neighborhoods_and_inject(topology::Topology; build_connected=true)
     # 2nd pass, build the neighborhoods and add it to agents
     for label in labels(topology.graph)
         node = topology.graph[label]
-        state_to_neighbors::Dict{State,Vector{AgentAddress}} = Dict{State,Vector{AgentAddress}}()
+        state_to_neighbors::Dict{State,Vector{TopologyNeighbor}} = Dict{State,Vector{TopologyNeighbor}}()
         for n_label in neighbor_labels(topology.graph, label)
             n_node = topology.graph[n_label]
             state = topology.graph[node.id, n_node.id]
             neighbor_addresses = get!(state_to_neighbors, state, Vector())
-            append!(neighbor_addresses, [address(agent) for agent in n_node.agents])
+            append!(neighbor_addresses, [TopologyNeighbor(address(agent), description(agent)) for agent in n_node.agents])
         end
         for agent in node.agents
             # also include agents from your own node (not you!)
             state_to_same = deepcopy(state_to_neighbors)
             for other_agent in node.agents
                 if aid(agent) != aid(other_agent)
-                    neighbor_addresses = get!(state_to_same, NORMAL, Vector())
-                    push!(neighbor_addresses, address(other_agent))
+                    neighbors = get!(state_to_same, NORMAL, Vector())
+                    push!(neighbors, TopologyNeighbor(address(other_agent), description(agent)))
                 end
             end
             topology_service = service_of_type(agent, TopologyService, TopologyService())
@@ -246,14 +251,18 @@ function _build_neighborhoods_and_inject(topology::Topology)
 
             # look for marks and transfer to topology 
             for type in topology_service.marked_connector_for
-                if !((type, address(agent)) in topology.connectors)
-                    push!(topology.connectors, (type, address(agent)))
+                if (type, description(agent)) ∉ [(c[1], c[2].description) for c in topology.connectors]
+                    push!(topology.connectors, (type, TopologyNeighbor(address(agent), description(agent))))
                 end
             end
-
             # search for connection agents
             connectors_for_agent = _build_connectors_list_for(topology, agent)
             topology_service.tid_to_connectors[topology.tid] = connectors_for_agent
+        end
+    end
+    if build_connected
+        for (_, topo) in topology.connections
+            _build_neighborhoods_and_inject(topo, build_connected=false)
         end
     end
 end
@@ -403,12 +412,16 @@ end
 Retrieve the neighbors of the `agent`, represented by their addresses. These vaues will be
 updated when a topology is applied using `per_node` or `create_topology`.
 """
-function topology_neighbors(agent::Agent; tid::Symbol=:default, state::State=NORMAL, include_connectors::Vector{Symbol}=Vector{Symbol}())::Vector{AgentAddress}
-    return neighbors(service_of_type(agent, TopologyService, TopologyService()), tid, state, include_connectors=include_connectors)
+function topology_neighbors(agent::Agent; tid::Symbol=:default, state::State=NORMAL, include_connectors::Vector{Symbol}=Vector{Symbol}(), match_func::Function=(desc)->true)::Vector{AgentAddress}
+    return neighbors(service_of_type(agent, TopologyService, TopologyService()), tid, state, include_connectors=include_connectors, match_func=match_func)
 end
 
-function topology_neighbors(role::Role; tid::Symbol=:default, state::State=NORMAL, include_connectors::Vector{Symbol}=Vector{Symbol}())::Vector{AgentAddress}
-    return neighbors(service_of_type(role.context.agent, TopologyService, TopologyService()), tid, state, include_connectors=include_connectors)
+function topology_neighbors(role::Role; tid::Symbol=:default, state::State=NORMAL, include_connectors::Vector{Symbol}=Vector{Symbol}(), match_func::Function=(desc)->true)::Vector{AgentAddress}
+    return neighbors(service_of_type(role.context.agent, TopologyService, TopologyService()), tid, state, include_connectors=include_connectors, match_func=match_func)
+end
+
+function topology_service(role::Role)
+    return service_of_type(role.context.agent, TopologyService, TopologyService())
 end
 
 """
@@ -430,12 +443,12 @@ end
 Retrieve the connectors of the `agent`, represented by their addresses. These vaues will be
 updated when a topology is applied using `per_node` or `create_topology`.
 """
-function topology_connectors(agent::Agent; tid::Symbol=:default, include_connectors::Vector{Symbol}=Vector{Symbol}())::Vector{AgentAddress}
-    return connectors(service_of_type(agent, TopologyService, TopologyService()), tid, include_connectors=include_connectors)
+function topology_connectors(agent::Agent; tid::Symbol=:default, include_connectors::Vector{Symbol}=Vector{Symbol}(), match_func::Function=(desc)->true)::Vector{AgentAddress}
+    return connectors(service_of_type(agent, TopologyService, TopologyService()), tid, include_connectors=include_connectors, match_func=match_func)
 end
 
-function topology_connectors(role::Role; tid::Symbol=:default, include_connectors::Vector{Symbol}=Vector{Symbol}())::Vector{AgentAddress}
-    return connectors(service_of_type(role.context.agent, TopologyService, TopologyService()), tid, include_connectors=include_connectors)
+function topology_connectors(role::Role; tid::Symbol=:default, include_connectors::Vector{Symbol}=Vector{Symbol}(), match_func::Function=(desc)->true)::Vector{AgentAddress}
+    return connectors(service_of_type(role.context.agent, TopologyService, TopologyService()), tid, include_connectors=include_connectors, match_func=match_func)
 end
 
 

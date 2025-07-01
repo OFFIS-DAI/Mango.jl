@@ -29,7 +29,9 @@ export @agent,
     color,
     category,
     update_description,
-    AgentDescription
+    AgentDescription,
+    uid,
+    uuid4
 
 using UUIDs
 
@@ -66,9 +68,11 @@ struct ForwardingRule
 end
 
 mutable struct AgentDescription
+    aid::Union{Nothing,String}
     name::String
     category::Symbol
     color::Symbol
+    uid::UUID
 end
 
 struct SystemHandler
@@ -87,11 +91,10 @@ AGENT_BASELINE_FIELDS::Vector = [
     :(role_handler::AgentRoleHandler = AgentRoleHandler(Vector(), Vector(), Vector(), Dict(), Dict())),
     :(system_handler::SystemHandler = SystemHandler(Vector(), Dict(), Vector())),
     :(scheduler::AbstractScheduler = Scheduler()),
-    :(aid::Union{Nothing,String} = nothing),
     :(transaction_handler::Dict{String,Tuple} = Dict{String,Tuple}()),
     :(forwarding_rules::Vector{ForwardingRule} = Vector{ForwardingRule}()),
     :(outgoing::Vector{Tuple} = Vector{Tuple}()),
-    :(description::AgentDescription = AgentDescription("", :agent, :gray)),
+    :(description::AgentDescription = AgentDescription(nothing, "", :agent, :gray, uuid4())),
     :(services::Dict{DataType,Any} = Dict{DataType,Any}())
 ]
 
@@ -354,12 +357,12 @@ function on_ready(agent::Agent)
     # do nothing by default
 end
 
-function aid(agent::Agent)
-    return agent.aid
-end
-
 function description(agent::Agent)
     return agent.description
+end
+
+function aid(agent::Agent)
+    return description(agent).aid
 end
 
 function name(agent::Agent)
@@ -372,6 +375,10 @@ end
 
 function color(agent::Agent)
     return description(agent).color
+end
+
+function uid(agent::Agent)
+    return description(agent).uid
 end
 
 function update_description(agent::Agent; color::Union{Nothing, Symbol}=nothing, name::Union{Nothing, String}=nothing, category::Union{Nothing, Symbol}=nothing)
@@ -604,7 +611,7 @@ function send_messages(
             agent.context.container,
             content,
             agent_address,
-            agent.aid;
+            aid(agent);
             kwargs...,
         ))
     end
