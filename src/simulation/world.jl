@@ -71,6 +71,7 @@ A WorldRecording is a container to record data in the world.
     timeseries::Vector{Any} = Vector()
     time::Vector{Real} = Vector()
     data::Any = nothing
+    no_plot = false
 end
 
 """
@@ -81,6 +82,7 @@ An AgentsRecording is a container to record data of the agents.
     time::Vector{Real} = Vector()
     data::Any = nothing
     dedicated_plots = false
+    no_plot = false
 end
 
 struct MessageTransaction
@@ -492,8 +494,8 @@ end
 
 Return the data collection with the `key` from the world.
 """
-function data_collection(world::World, key::String)
-    return get!(world.data_collections, key, WorldRecording())
+function data_collection(world::World, key::String; no_plot::Bool=false)
+    return get!(world.data_collections, key, WorldRecording(no_plot=no_plot))
 end
 
 """
@@ -501,8 +503,8 @@ end
 
 Return the data collection with the `key` from the world.
 """
-function data_agent_collection(world::World, key::String; dedicated_plots::Bool=false)
-    return get!(world.data_agent_collections, key, AgentsRecording(dedicated_plots=dedicated_plots))
+function data_agent_collection(world::World, key::String; dedicated_plots::Bool=false, no_plot::Bool=false)
+    return get!(world.data_agent_collections, key, AgentsRecording(dedicated_plots=dedicated_plots, no_plot=no_plot))
 end
 
 """
@@ -511,8 +513,8 @@ end
 Collect data from the world using the `collector` function and 
 store it in the data collection with the `key`.
 """
-function collect_data(collector::Function, world::World, key::String)
-    push!(world.data_collectors, (world) -> collector(world, data_collection(world, key)))
+function collect_data(collector::Function, world::World, key::String; no_plot::Bool=false)
+    push!(world.data_collectors, (world) -> collector(world, data_collection(world, key, no_plot=no_plot)))
 end
 
 """
@@ -523,8 +525,8 @@ store it in the data collection with the `key`.
 
 The data can be plotted using plot_agents.
 """
-function collect_agent_data(collector::Function, world::World, key::String; dedicated_plots::Bool=false)
-    dac = data_agent_collection(world, key, dedicated_plots=dedicated_plots)
+function collect_agent_data(collector::Function, world::World, key::String; dedicated_plots::Bool=false, no_plot::Bool=false) 
+    dac = data_agent_collection(world, key, dedicated_plots=dedicated_plots, no_plot=no_plot)
     for agent in values(agents(world))
         push!(world.data_collectors, (world) -> collector(world, agent, dac))
     end
@@ -538,8 +540,8 @@ Record the world using the `world_recorder` function and store it in the data co
 
 The data can be plotted using plot_world.
 """
-function record_world!(world_recorder::Function, world::World, key::String)
-    collect_data(world, key) do w, dc
+function record_world!(world_recorder::Function, world::World, key::String; no_plot::Bool=false)
+    collect_data(world, key, no_plot=no_plot) do w, dc
         insert_world_recording!(dc, w, world_recorder())
     end
 end
@@ -551,8 +553,8 @@ Record the agents in the world using the `agent_recorder` function and store
 it in the data collection with the `key`. The data can be plotted using plot_agents.
 
 """
-function record_agent!(agent_recorder::Function, world::World, key::String; dedicated_plots::Bool=false)
-    collect_agent_data(world, key, dedicated_plots=dedicated_plots) do w, a, dc
+function record_agent!(agent_recorder::Function, world::World, key::String; dedicated_plots::Bool=false, no_plot::Bool=false)
+    collect_agent_data(world, key, dedicated_plots=dedicated_plots, no_plot=no_plot) do w, a, dc
         insert_agent_recording!(dc, w, a, agent_recorder(a))
     end
 end

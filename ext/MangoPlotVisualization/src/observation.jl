@@ -67,8 +67,8 @@ function Mango.plot_recordings(world::World;
     colormap=:viridis)
 
     row_length = 3
-    dc = world.data_collections
-    dac = world.data_agent_collections
+    dc = Dict(key => value for (key,value) in world.data_collections if !value.no_plot)
+    dac = Dict(key => value for (key,value) in world.data_agent_collections if !value.no_plot)
     if size == :auto
         dac_length = sum([record.dedicated_plots ? length(record.timeseries) : 1 for record in values(dac)])
         size = (
