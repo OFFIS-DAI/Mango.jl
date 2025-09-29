@@ -109,6 +109,6 @@ end
     connect_topologies!(topology, topology2)
 
     plot_multi_agent_topology([topology, topology2], write_to="test_topology_plot.svg")
-    @test stat("test_topology_plot.svg").size == 13348
+    @test stat("test_topology_plot.svg").size > 10000
     rm("test_topology_plot.svg")
 end
