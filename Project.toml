@@ -11,6 +11,7 @@ ConcurrentUtilities = "f0e56b4a-5159-44fe-b623-3e5288b988bb"
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 Graphs = "86223c79-3864-5bf0-83f7-82e725a168b6"
 JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 LightBSON = "a4a7f996-b3a6-4de6-b9db-2fa5f350df41"
@@ -22,12 +23,21 @@ Parameters = "d96e819e-fc66-5662-9728-84c9c7592b0a"
 Sockets = "6462fe0b-24de-5631-8697-dd941f90decc"
 UUIDs = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
 
+[weakdeps]
+GraphMakie = "1ecd5474-83a3-4783-bb4f-06765db800d2"
+Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
+
+[extensions]
+MangoGraphVisualization = ["Makie", "GraphMakie"]
+MangoPlotVisualization = ["Makie"]
+
 [compat]
 CairoMakie = "0.13.1"
 Colors = "~0.12"
 ConcurrentCollections = "~0.1"
 ConcurrentUtilities = "~2.2"
 Distributions = "~0.25"
+Documenter = "1.14.1"
 GraphMakie = "0.5.13"
 Graphs = "~1.10"
 JSON = "~0.21"
@@ -39,19 +49,11 @@ OrderedCollections = "~1.6"
 Parameters = "~0.12"
 julia = "^1.9"
 
-[weakdeps]
-Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
-GraphMakie = "1ecd5474-83a3-4783-bb4f-06765db800d2"
-
-[extensions]
-MangoPlotVisualization = ["Makie"]
-MangoGraphVisualization = ["Makie", "GraphMakie"]
-
 [extras]
 CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
-Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
 test = ["Test", "Documenter", "CairoMakie", "Makie", "GraphMakie"]

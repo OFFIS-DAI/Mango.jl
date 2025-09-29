@@ -2,7 +2,8 @@ export complete_topology, star_topology, cycle_topology, graph_topology, per_nod
     topology_neighbors, create_topology, add_node!, add_edge!, Topology, modify_topology,
     choose_agents!, assign_agents!, NORMAL, BROKEN, INACTIVE, set_edge_state!, remove_edge!, remove_node!,
     auto_assign!, topology_node_id, topology_to_aid_graph, set_as_connector!, connect_topologies!, mark_as_connector!,
-    topology_connectors, topology_connection_types, NORMAL, INACTIVE, BROKEN, UNKNOWN, EXT_CONNECTION, State, topology_service
+    topology_connectors, topology_connection_types, NORMAL, INACTIVE, BROKEN, UNKNOWN, EXT_CONNECTION, State, topology_service,
+    set_characteristic!, topology_characteristic
 
 using MetaGraphsNext
 using Graphs
@@ -11,11 +12,21 @@ import Graphs.add_edge!
 @kwdef struct Node
     id::Int
     agents::Vector{Agent} = Vector()
+    characteristics::Dict{Agent,Symbol} = Dict() # special agents having specific roles, e.g. :lead for coalition leaders
+end
+
+function set_characteristic!(node::Node, agent::Agent, characteristic::Symbol)
+    node.characteristics[agent] = characteristic
 end
 
 struct TopologyNeighbor
     address::AgentAddress
     description::AgentDescription
+    characteristic::Symbol
+
+    function TopologyNeighbor(address::AgentAddress, description::AgentDescription, characteristic::Symbol=:nothing)
+        new(address, description, characteristic)
+    end
 end
 
 @kwdef struct Topology
@@ -23,6 +34,11 @@ end
     graph::MetaGraph
     connectors::Vector{Tuple{Symbol,TopologyNeighbor}} = Vector() # connection type to connector
     connections::Vector{Tuple{Symbol,Topology}} = Vector() # tid to connection type
+end
+
+function set_characteristic!(topology::Topology, nid::Int64, agent::Agent, characteristic::Symbol)
+    node = topology.graph[nid]
+    node.characteristics[agent] = characteristic
 end
 
 @enum State begin
@@ -38,6 +54,7 @@ end
     tid_to_connectors::Dict{Symbol,Vector{Tuple{Symbol, TopologyNeighbor}}} = Dict() # tid to (connection type to connected agents)
     tid_to_node_id::Dict{Symbol,Int} = Dict() # tid to id of the node
     marked_connector_for::Vector{Symbol} = Vector()
+    tid_to_characteristic::Dict{Symbol,Symbol} = Dict()
 end
 
 function service_node_id(service::TopologyService, tid::Symbol=:default)
@@ -47,9 +64,15 @@ function service_node_id(service::TopologyService, tid::Symbol=:default)
     return service.tid_to_node_id[tid]
 end
 
-function neighbors(service::TopologyService, tid::Symbol=:default, state::State=NORMAL; include_connectors::Vector{Symbol}=Vector{Symbol}(), match_func::Function=(desc)->true)
+function _has_characteristic(characteristic::Symbol, has_characteristic::Union{Symbol,Vector{Symbol}})
+    # no characteristic was demanded or the characteristic is included in the demanded ones
+    return characteristic == has_characteristic || isa(has_characteristic, Vector) && 
+        (length(has_characteristic) == 0 || characteristic ∈ has_characteristic)
+end
+
+function neighbors(service::TopologyService, tid::Symbol=:default, state::State=NORMAL; has_characteristic::Union{Symbol,Vector{Symbol}}=Vector{Symbol}(), include_connectors::Vector{Symbol}=Vector{Symbol}(), match_func::Function=(desc)->true)
     if haskey(service.tid_to_state_to_neighbors, tid)
-        return vcat([n.address for n in get(service.tid_to_state_to_neighbors[tid], state, Vector()) if match_func(n)], 
+        return vcat([n.address for n in get(service.tid_to_state_to_neighbors[tid], state, Vector()) if _has_characteristic(n.characteristic, has_characteristic) && match_func(n)], 
                     [t[2].address for t in service.tid_to_connectors[tid] if t[1] in include_connectors && match_func(t)])
     end
     throw(ArgumentError("No neighbors found for tid=$tid"))
@@ -67,6 +90,13 @@ function connection_types(service::TopologyService, tid::Symbol=:default)
         return [t[1] for t in service.tid_to_connectors[tid]]
     end
     throw(ArgumentError("No neighbors found for tid=$tid"))
+end
+
+function characteristic(service::TopologyService, tid::Symbol=:default)
+    if haskey(service.tid_to_characteristic, tid)
+        return service.tid_to_characteristic[tid]
+    end
+    return :nothing
 end
 
 function _create_meta_graph_with(graph::AbstractGraph)
@@ -155,7 +185,7 @@ Add a node to the topology with a list (or a single) of agents attached.
 """
 function add_node!(topology::Topology, agents::Agent...; id::Union{Int,Nothing}=nothing)::Int
     vid = isnothing(id) ? nv(topology.graph) + 1 : id
-    topology.graph[vid] = Node(vid, [a for a in agents])
+    topology.graph[vid] = Node(id=vid, agents=[a for a in agents])
     return vid
 end
 
@@ -225,6 +255,10 @@ function _build_connectors_list_for(topology, agent)
     return connectors_for_agent
 end
 
+function _characteristic_for(node::Node, agent::Agent)
+    return get!(node.characteristics, agent, :nothing)
+end
+
 function _build_neighborhoods_and_inject(topology::Topology; build_connected=true)
     # 2nd pass, build the neighborhoods and add it to agents
     for label in labels(topology.graph)
@@ -234,7 +268,7 @@ function _build_neighborhoods_and_inject(topology::Topology; build_connected=tru
             n_node = topology.graph[n_label]
             state = topology.graph[node.id, n_node.id]
             neighbor_addresses = get!(state_to_neighbors, state, Vector())
-            append!(neighbor_addresses, [TopologyNeighbor(address(agent), description(agent)) for agent in n_node.agents])
+            append!(neighbor_addresses, [TopologyNeighbor(address(agent), description(agent), _characteristic_for(n_node, agent)) for agent in n_node.agents])
         end
         for agent in node.agents
             # also include agents from your own node (not you!)
@@ -242,12 +276,13 @@ function _build_neighborhoods_and_inject(topology::Topology; build_connected=tru
             for other_agent in node.agents
                 if aid(agent) != aid(other_agent)
                     neighbors = get!(state_to_same, NORMAL, Vector())
-                    push!(neighbors, TopologyNeighbor(address(other_agent), description(agent)))
+                    push!(neighbors, TopologyNeighbor(address(other_agent), description(other_agent), _characteristic_for(node, other_agent)))
                 end
             end
             topology_service = service_of_type(agent, TopologyService, TopologyService())
             topology_service.tid_to_state_to_neighbors[topology.tid] = state_to_same
             topology_service.tid_to_node_id[topology.tid] = node.id
+            topology_service.tid_to_characteristic[topology.tid] = _characteristic_for(node, agent)
 
             # look for marks and transfer to topology 
             for type in topology_service.marked_connector_for
@@ -412,12 +447,12 @@ end
 Retrieve the neighbors of the `agent`, represented by their addresses. These vaues will be
 updated when a topology is applied using `per_node` or `create_topology`.
 """
-function topology_neighbors(agent::Agent; tid::Symbol=:default, state::State=NORMAL, include_connectors::Vector{Symbol}=Vector{Symbol}(), match_func::Function=(desc)->true)::Vector{AgentAddress}
-    return neighbors(service_of_type(agent, TopologyService, TopologyService()), tid, state, include_connectors=include_connectors, match_func=match_func)
+function topology_neighbors(agent::Agent; tid::Symbol=:default, state::State=NORMAL, has_characteristic::Union{Symbol,Vector{Symbol}}=Vector{Symbol}(), include_connectors::Vector{Symbol}=Vector{Symbol}(), match_func::Function=(desc)->true)::Vector{AgentAddress}
+    return neighbors(service_of_type(agent, TopologyService, TopologyService()), tid, state, has_characteristic=has_characteristic, include_connectors=include_connectors, match_func=match_func)
 end
 
-function topology_neighbors(role::Role; tid::Symbol=:default, state::State=NORMAL, include_connectors::Vector{Symbol}=Vector{Symbol}(), match_func::Function=(desc)->true)::Vector{AgentAddress}
-    return neighbors(service_of_type(role.context.agent, TopologyService, TopologyService()), tid, state, include_connectors=include_connectors, match_func=match_func)
+function topology_neighbors(role::Role; tid::Symbol=:default, state::State=NORMAL, has_characteristic::Union{Symbol,Vector{Symbol}}=Vector{Symbol}(), include_connectors::Vector{Symbol}=Vector{Symbol}(), match_func::Function=(desc)->true)::Vector{AgentAddress}
+    return neighbors(service_of_type(role.context.agent, TopologyService, TopologyService()), tid, state, has_characteristic=has_characteristic, include_connectors=include_connectors, match_func=match_func)
 end
 
 function topology_service(role::Role)
@@ -465,6 +500,15 @@ end
 function topology_connection_types(role::Role; tid::Symbol=:default)::Vector{Symbol}
     return connection_types(service_of_type(role.context.agent, TopologyService, TopologyService()), tid)
 end
+
+function topology_characteristic(agent::Agent; tid::Symbol=:default)::Symbol
+    return characteristic(service_of_type(agent, TopologyService, TopologyService()), tid)
+end
+
+function topology_characteristic(role::Role; tid::Symbol=:default)::Symbol
+    return characteristic(service_of_type(role.context.agent, TopologyService, TopologyService()), tid)
+end
+
 
 # Graphs API calls forwarded to Topology
 function Graphs.edges(topology::Topology)

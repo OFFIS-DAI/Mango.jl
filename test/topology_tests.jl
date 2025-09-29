@@ -253,12 +253,34 @@ end
     
     agents_1 = [marked_A, TopologyAgent(), TopologyAgent()]
     agents_2 = [marked_B, TopologyAgent(), TopologyAgent()]
-    
-    @warn marked_A
-    
+        
     auto_assign!(topologyA, agents_1)
     auto_assign!(topologyB, agents_2)
 
     @test length(topology_neighbors(marked_A, tid=:A)) == 2
     @test length(topology_connectors(marked_A, tid=:A)) == 1
+end
+
+@testset "TestAgentCharacteristicSymbol" begin
+    container = create_tcp_container("127.0.0.1", 3333)
+    agent = nothing
+    agent2 = nothing
+
+    create_topology() do topology
+        agent = register(container, TopologyAgent())
+        agent2 = register(container, TopologyAgent())
+        agent3 = register(container, TopologyAgent())
+        n1 = add_node!(topology, agent)
+        n2 = add_node!(topology, agent2)
+        n3 = add_node!(topology, agent3)
+        add_edge!(topology, n2, n1)
+        add_edge!(topology, n2, n3)
+        set_characteristic!(topology, n1, agent, :lead)
+    end
+
+    @test topology_characteristic(agent) == :lead
+    @test length(topology_neighbors(agent, has_characteristic=:lead)) == 0
+    @test length(topology_neighbors(agent2, has_characteristic=:lead)) == 1
+    @test length(topology_neighbors(agent2)) == 2
+    @test length(topology_neighbors(agent2, has_characteristic=[:lead])) == 1
 end

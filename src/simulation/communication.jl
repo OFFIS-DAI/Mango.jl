@@ -108,9 +108,9 @@ end
 
 function create_distribution_based_com_sim(aid_graph::MetaGraph, 
                                         agents::Vector{Agent};
-                                        default_delay_per_edge::Real=1, 
-                                        base_delay_per_message::Real=20, 
-                                        max_edge_delay::Real=100,
+                                        default_delay_per_edge_ms::Real=1, 
+                                        base_delay_per_message_ms::Real=20, 
+                                        max_edge_delay_ms::Real=100,
                                         distribution_provider::Function=(delay) -> Poisson(delay),
                                         label_replacer::Function=(label) -> label)::DelayProviderCommunicationSimulation
 
@@ -118,10 +118,10 @@ function create_distribution_based_com_sim(aid_graph::MetaGraph,
     for edge in edges(aid_graph)
         from = src(edge)
         to = dst(edge)
-        distmatrix[from, to] = default_delay_per_edge
-        distmatrix[to, from] = default_delay_per_edge
+        distmatrix[from, to] = default_delay_per_edge_ms
+        distmatrix[to, from] = default_delay_per_edge_ms
     end
-    default_distr = distribution_provider(base_delay_per_message)
+    default_distr = distribution_provider(base_delay_per_message_ms)
     provider_com = DelayProviderCommunicationSimulation(default_delay_s_provider=() -> abs(rand(default_distr)) / 1000)
     for agent in agents
         label = aid(agent)
@@ -136,7 +136,7 @@ function create_distribution_based_com_sim(aid_graph::MetaGraph,
             if distance == typemax(Int)
                 distance = 100
             end
-            specific_distr = distribution_provider(base_delay_per_message + distance)
+            specific_distr = distribution_provider(base_delay_per_message_ms + distance)
             provider_com.delay_s_directed_edge_dict[(aid(agent), label_other)] = () -> abs(rand(specific_distr)) / 1000
             provider_com.delay_s_directed_edge_dict[(label_other, aid(agent))] = provider_com.delay_s_directed_edge_dict[(label, label_other)]
         end
