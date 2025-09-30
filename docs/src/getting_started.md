@@ -4,7 +4,7 @@ In this getting started guide, we will explore the essential features of Mango.j
 
 You can also find working examples of the following code in [examples.jl](../../test/examples.jl).
 
-## 0. Quickstart
+## Quickstart
 
 In Mango.jl, you can define agents using a number of roles using [`@role`](@ref) and [`agent_composed_of`](@ref), or directly using [`@agent`](@ref). To define the behavior of the agents, [`handle_message`](@ref) can be defined, and messages can be send using [`send_message`](@ref). To run the agents with a specific protocol in real time the fastest way is to use [`run_with_tcp`](@ref), which will distribute the agents to tcp-containers and accepts a function in which some agent intializiation and/or trigger-code could be put. The following example illustrates the basic usage of the functions.
 

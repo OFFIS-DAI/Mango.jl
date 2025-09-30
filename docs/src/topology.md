@@ -80,12 +80,13 @@ vertices(topology) # [1, 2, 3, 4, 5]
 
 # Using the topology
 
-At this point we know how to create topologies and how to populate them. To actually use them, the function [`topology_neighbors`](@ref) exists. The function returns a vector of AgentAddress objects, which represent all other agents in the neighborhood of `agent`.
+At this point, we know how to create topologies and how to populate them. To actually use them, the function [`topology_neighbors`](@ref) exists. The function returns a vector of AgentAddress objects, which represent all other agents in the neighborhood of `agent`.
 
 # Connecting topologies together
 
-Sometimes systems become so complex that creating multiple simple topologies is easier than creating one complex topology. If you use more than only one topology, you can connect your topologies together to be linked on so-called `connectors`.
+Sometimes, systems become so complex that creating multiple simple topologies is easier than creating a single complex topology. If you use more than one topology, you can connect your topologies using so-called `connectors`.
 
-`Connectors` are single agents, which act as connection points between topologies. A connector can accept specific `connection types`. A connection type is a `Symbol` (e.g. :default), which specifies the type of connection a connector can establish. To mark an agent as connector you can use [`mark_as_connector!`](@ref).
+`Connectors` are single agents that act as connection points between topologies. A connector can accept specific `connection types`. A connection type is a `Symbol` (e.g. :default), which specifies the type of connection a connector can establish. To mark an agent as a connector, you can use [`mark_as_connector!`](@ref).
 
-If you connect two topologies, say topology A and topology B, using a specific connection type c, all connectors of A and B will be linked if they are connectors for the connection type c. Imagine there is one connector in A and one in B that are defined for the same connection type. This would result in an extended neighborhood for the connector in A, which now includes the connector from B and vice versa. To access the extended neighborhood you can use the `include
+If you connect two topologies, such as topology A and topology B, using a specific connection type c, all connectors of A and B will be linked if they are connectors for the same connection type c. Imagine there is one connector in A and one in B that are defined for the same connection type. This would result in an extended neighborhood for the connector in A, which now includes the connector from B and vice versa. To access the extended neighborhood, you can use the `include
+

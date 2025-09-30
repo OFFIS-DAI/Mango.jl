@@ -2,7 +2,7 @@ name = "Mango"
 uuid = "5e49fdec-d473-4d14-b295-7bff2fcf1925"
 authors = ["OFFIS e.V."]
 repo = "https://github.com/OFFIS-DAI/Mango.jl"
-version = "0.4.0"
+version = "0.5.0"
 
 [deps]
 Colors = "5ae59095-9a9b-59fe-a467-6f913c188581"
