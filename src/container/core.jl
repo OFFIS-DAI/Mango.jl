@@ -96,6 +96,7 @@ function register(
     container::Container,
     agent::Agent,
     suggested_aid::Union{String,Nothing}=nothing;
+    env::Environment=NoEnv(),
     kwargs...,
 )
     actual_aid::String = "$AGENT_PREFIX$(container.agent_counter)"
@@ -103,8 +104,8 @@ function register(
         actual_aid = suggested_aid
     end
     container.agents[actual_aid] = agent
-    agent.aid = actual_aid
-    agent.context = AgentContext(container)
+    description(agent).aid = actual_aid
+    agent.context = AgentContext(container, env)
     container.agent_counter += 1
 
     if !isnothing(container.protocol)

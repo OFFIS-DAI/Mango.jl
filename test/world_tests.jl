@@ -2,6 +2,7 @@ using Mango
 using Test
 using Logging
 using Dates
+using Random
 
 import Mango.handle_message
 
@@ -25,7 +26,7 @@ end
     register(world, agent1)
     register(world, agent2)
 
-    send_message(world.container, "Hello Friends, this is RSc!", AgentAddress(aid=agent1.aid), test=2)
+    send_message(world.container, "Hello Friends, this is RSc!", AgentAddress(aid=aid(agent1)), test=2)
 
     stepping_result = step_simulation(world, 1)
 
@@ -49,7 +50,7 @@ end
 
     send_message(world.container, "Hello Friends, this is RSd!", AgentAddress(aid="abc"))
 
-    @test_logs (:warn, "Container $(keys(world.container.agents)) has no agent with id: abc") min_level = Logging.Warn begin
+    @test_logs (:warn, "The container has no agent with id: abc (from AgentAddress(nothing, nothing, nothing) with String)") min_level = Logging.Warn begin
         stepping_result = step_simulation(world, 1)
     end
 
@@ -66,8 +67,8 @@ end
     register(world, agent1)
     register(world, agent2)
 
-    send_message(world.container, "Hello Friends, this is RSc!", AgentAddress(aid=agent1.aid))
-    send_message(world.container, "Hello Friends, this is RSd!", AgentAddress(aid=agent2.aid))
+    send_message(world.container, "Hello Friends, this is RSc!", AgentAddress(aid=aid(agent1)))
+    send_message(world.container, "Hello Friends, this is RSd!", AgentAddress(aid=aid(agent2)))
 
     stepping_result = step_simulation(world, 1)
 
@@ -87,8 +88,8 @@ end
     register(world, agent1)
     register(world, agent2)
 
-    send_message(world.container, "Hello Friends, this is RSc!", AgentAddress(aid=agent1.aid))
-    send_message(world.container, "Hello Friends, this is RSd!", AgentAddress(aid=agent2.aid))
+    send_message(world.container, "Hello Friends, this is RSc!", AgentAddress(aid=aid(agent1)))
+    send_message(world.container, "Hello Friends, this is RSd!", AgentAddress(aid=aid(agent2)))
 
     stepping_result = step_simulation(world, 1)
 
@@ -109,16 +110,16 @@ end
     register(world, agent1)
     register(world, agent2)
 
-    send_message(world.container, "Hello Friends, this is RSc!", AgentAddress(aid=agent1.aid))
-    send_message(world.container, "Hello Friends, this is RSd!", AgentAddress(aid=agent2.aid))
+    send_message(world.container, "Hello Friends, this is RSc!", AgentAddress(aid=aid(agent1)))
+    send_message(world.container, "Hello Friends, this is RSd!", AgentAddress(aid=aid(agent2)))
 
     stepping_result = step_simulation(world, 1)
 
     @test agent1.counter == 0
     @test agent2.counter == 0
 
-    send_message(world.container, "Hello Friends, this is RSc!", AgentAddress(aid=agent1.aid))
-    send_message(world.container, "Hello Friends, this is RSd!", AgentAddress(aid=agent2.aid))
+    send_message(world.container, "Hello Friends, this is RSc!", AgentAddress(aid=aid(agent1)))
+    send_message(world.container, "Hello Friends, this is RSd!", AgentAddress(aid=aid(agent2)))
 
     stepping_result = step_simulation(world, 1)
 
@@ -142,8 +143,8 @@ end
     com_sim.delay_s_directed_edge_dict[(nothing, aid(agent1))] = 1
     com_sim.delay_s_directed_edge_dict[(nothing, aid(agent2))] = 2
 
-    send_message(world.container, "Hello Friends, this is RSc!", AgentAddress(aid=agent1.aid))
-    send_message(world.container, "Hello Friends, this is RSd!", AgentAddress(aid=agent2.aid))
+    send_message(world.container, "Hello Friends, this is RSc!", AgentAddress(aid=aid(agent1)))
+    send_message(world.container, "Hello Friends, this is RSd!", AgentAddress(aid=aid(agent2)))
 
     stepping_result = step_simulation(world, 1)
 
@@ -183,8 +184,8 @@ end
     schedule(agent1, InstantTaskData()) do
         agent1.scheduled_counter += 100
     end
-    send_message(world.container, "Hello Friends, this is RSc!", AgentAddress(aid=agent1.aid))
-    send_message(world.container, "Hello Friends, this is RSd!", AgentAddress(aid=agent2.aid))
+    send_message(world.container, "Hello Friends, this is RSc!", AgentAddress(aid=aid(agent1)))
+    send_message(world.container, "Hello Friends, this is RSd!", AgentAddress(aid=aid(agent2)))
 
     stepping_result = step_simulation(world, 1)
 
@@ -196,6 +197,66 @@ end
 
     @test agent1.counter == 1
     @test agent1.scheduled_counter == 121
+    @test agent2.counter == 1
+end
+
+@testset "SimulationWithSpecificDelaysAndScheduledTasksPeriodicTaskDelayGrDelay" begin
+
+    com_sim = SimpleCommunicationSimulation(default_delay_s=0)
+    world = create_world(DateTime(0), communication_sim=com_sim)
+    agent1 = SimSchedulingAgent(0, 0)
+    agent2 = SimSchedulingAgent(0, 0)
+    register(world, agent1)
+    register(world, agent2)
+    com_sim.delay_s_directed_edge_dict[(nothing, aid(agent1))] = 1
+    com_sim.delay_s_directed_edge_dict[(nothing, aid(agent2))] = 2
+
+    schedule(agent1, PeriodicTaskData(3)) do
+        agent1.scheduled_counter += 1
+    end
+    schedule(agent1, InstantTaskData()) do
+        agent1.scheduled_counter += 100
+    end
+    send_message(world.container, "Hello Friends, this is RSc!", AgentAddress(aid=aid(agent1)))
+    send_message(world.container, "Hello Friends, this is RSd!", AgentAddress(aid=aid(agent2)))
+
+    stepping_result = step_simulation(world, 1)
+
+    @test agent1.counter == 1
+    @test agent1.scheduled_counter == 101
+    @test agent2.counter == 0
+
+    stepping_result = step_simulation(world, 3)
+
+    @test agent1.counter == 1
+    @test agent1.scheduled_counter == 102
+    @test agent2.counter == 1
+end
+
+@testset "SimulationWithSpecificDelaysAndScheduledTasksPeriodicTaskDelayGrDelayDiscreteUntil" begin
+
+    com_sim = SimpleCommunicationSimulation(default_delay_s=0)
+    world = create_world(DateTime(0), communication_sim=com_sim)
+    agent1 = SimSchedulingAgent(0, 0)
+    agent2 = SimSchedulingAgent(0, 0)
+    register(world, agent1)
+    register(world, agent2)
+    com_sim.delay_s_directed_edge_dict[(nothing, aid(agent1))] = 1
+    com_sim.delay_s_directed_edge_dict[(nothing, aid(agent2))] = 2
+
+    schedule(agent1, PeriodicTaskData(3)) do
+        agent1.scheduled_counter += 1
+    end
+    schedule(agent1, InstantTaskData()) do
+        agent1.scheduled_counter += 100
+    end
+    send_message(world.container, "Hello Friends, this is RSc!", AgentAddress(aid=aid(agent1)))
+    send_message(world.container, "Hello Friends, this is RSd!", AgentAddress(aid=aid(agent2)))
+
+    discrete_step_until(world, 4)
+
+    @test agent1.counter == 1
+    @test agent1.scheduled_counter == 102 
     @test agent2.counter == 1
 end
 
@@ -225,8 +286,8 @@ end
     schedule(agent1, PeriodicTaskData(0.1)) do
         agent1.scheduled_counter += 1
     end
-    send_message(world.container, "Hello Friends, this is RSc!", AgentAddress(aid=agent1.aid))
-    send_message(world.container, "Hello Friends, this is RSd!", AgentAddress(aid=agent2.aid))
+    send_message(world.container, "Hello Friends, this is RSc!", AgentAddress(aid=aid(agent1)))
+    send_message(world.container, "Hello Friends, this is RSd!", AgentAddress(aid=aid(agent2)))
 
     stepping_result = step_simulation(world, 1)
 
@@ -272,8 +333,8 @@ end
     schedule(agent1, PeriodicTaskData(0.1)) do
         agent1.scheduled_counter += 1
     end
-    send_message(world.container, "Hello Friends, this is RSc!", AgentAddress(aid=agent1.aid), agent2.aid)
-    send_message(world.container, "Hello Friends, this is RSd!", AgentAddress(aid=agent2.aid))
+    send_message(world.container, "Hello Friends, this is RSc!", AgentAddress(aid=aid(agent1)), aid(agent2))
+    send_message(world.container, "Hello Friends, this is RSd!", AgentAddress(aid=aid(agent2)))
 
     stepping_result = step_simulation(world, 1)
 
@@ -307,8 +368,8 @@ end
     schedule(agent1, InstantTaskData()) do
         agent1.scheduled_counter += 1
     end
-    send_message(world.container, "Hello Friends, this is RSc!", AgentAddress(aid=agent1.aid), agent2.aid)
-    send_message(world.container, "Hello Friends, this is RSd!", AgentAddress(aid=agent2.aid))
+    send_message(world.container, "Hello Friends, this is RSc!", AgentAddress(aid=aid(agent1)), aid(agent2))
+    send_message(world.container, "Hello Friends, this is RSd!", AgentAddress(aid=aid(agent2)))
 
     stepping_result = step_simulation(world)
 
@@ -423,5 +484,37 @@ end
     activate(world) do 
         send_message(a1, "1", address(a2))
         @test_throws CompositeException step_simulation(world) # schedule task = 1
+    end
+end
+
+@testset "WorldWithPoisson" begin
+    Random.seed!(1)
+
+    world = create_world(DateTime(0))
+
+    a1 = register(world, SimAgent(0))
+    a2 = register(world, SimAgent(1))
+    a3 = register(world, SimAgent(2))
+
+    topo = complete_topology(3)
+    auto_assign!(topo, world)
+
+    aid_graph = topology_to_aid_graph(topo)
+    poisson_com_provider = create_distribution_based_com_sim(aid_graph, agents(world), base_delay_per_message_ms=15)
+    world.communication_sim = poisson_com_provider
+
+    activate(world) do 
+        send_message(a1, "Hello Friends, this is RSd!", AgentAddress(aid=aid(a2)))
+        send_message(a1, "Hello Friends, this is RSd!", AgentAddress(aid=aid(a3)))
+
+        stepping_result = step_simulation(world)
+
+        @test Mango.time(world) == DateTime("0000-01-01T00:01:40")
+
+        send_message(a1, "Hello Friends, this is RSd!", AgentAddress(aid=aid(a3)))
+
+        stepping_result = step_simulation(world)
+
+        @test Mango.time(world) == DateTime("0000-01-01T00:03:20")
     end
 end

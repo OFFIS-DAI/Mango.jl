@@ -1,7 +1,7 @@
 export World, register, send_message, shutdown, protocol_addr,
     create_world, step_simulation, SimulationResult, CommunicationSimulationResult,
     TaskSimulationResult, on_step, discrete_step_until, env, space, time, clock,
-    record_world!, record_agent!
+    record_world!, record_agent!, record_agent_having!, MessageTransaction, data_collection, data_agent_collection
 
 using Base.Threads
 using Dates
@@ -36,9 +36,7 @@ function create_world(start_time::DateTime;
     space::Union{Nothing,Space}=nothing,
     behavior::Union{Nothing,Behavior}=nothing)
 
-    world = World()
-    world.clock.simulation_time = start_time
-    world.initial_time = start_time
+    world = World(clock=Clock(start_time))
     if !isnothing(communication_sim)
         world.communication_sim = communication_sim
     end
@@ -73,6 +71,7 @@ A WorldRecording is a container to record data in the world.
     timeseries::Vector{Any} = Vector()
     time::Vector{Real} = Vector()
     data::Any = nothing
+    no_plot = false
 end
 
 """
@@ -82,6 +81,8 @@ An AgentsRecording is a container to record data of the agents.
     timeseries::Dict{String,Vector{Any}} = Dict()
     time::Vector{Real} = Vector()
     data::Any = nothing
+    dedicated_plots = false
+    no_plot = false
 end
 
 struct MessageTransaction
@@ -97,14 +98,13 @@ The World used as a base struct to enable simulations in Mango.jl. Always create
 """
 @kwdef mutable struct World <: ContainerInterface
     clock::Clock = Clock(DateTime(0))
-    initial_time::DateTime = DateTime(0)
-    container::SimulationContainer = SimulationContainer(clock=clock)
-    env::Environment = Environment(scheduler=SimulationScheduler(clock=clock))
+    env::Environment = DefaultEnvironment(scheduler=SimulationScheduler(clock=clock))
+    container::SimulationContainer = SimulationContainer(clock=clock, env=env)
     task_sim::TaskSimulation = SimpleTaskSimulation(clock=clock)
     communication_sim::CommunicationSimulation = SimpleCommunicationSimulation()
     world_observer::WorldObserver = DispatchToAgentWorldObserver(container.agents)
-    data_collections::Dict{String,WorldRecording} = Dict()
-    data_agent_collections::Dict{String,AgentsRecording} = Dict()
+    data_collections::OrderedDict{String,WorldRecording} = OrderedDict()
+    data_agent_collections::OrderedDict{String,AgentsRecording} = OrderedDict()
     data_collectors::Vector{Function} = Vector()
     recorded_messages::Vector{MessageTransaction} = Vector()
 end
@@ -238,8 +238,7 @@ function cs_step_iteration(world::World,
                 Threads.@spawn try
                     process_message(world.container, mp.content[1], mp.content[2])
                 catch ex
-                    bt = stacktrace(catch_backtrace())
-                    showerror(stderr, ex, bt)
+                    log_exception(ex)
                     rethrow(ex)
                 end
             else
@@ -257,7 +256,7 @@ Internal
 function determine_time_step(world::World)
     message_packages = to_cs_input(messages(world.container))
     communication_result = calculate_communication(world.communication_sim, clock(world), message_packages)
-
+    
     # earliest message or -1 if no message arrives
     message_arrival_times = [add_seconds(t[1].sent_date, t[2].delay_s) for t in zip(message_packages, communication_result.package_results)]
     time_to_next_message_s = nothing
@@ -290,7 +289,7 @@ end
 Record data `data` at time `time` in the `recording`.
 """
 function insert_world_recording!(recording::WorldRecording, world::World, data::Any)
-    push!(recording.time, (time(world) - world.initial_time).value / 1000)
+    push!(recording.time, seconds_elapsed(clock(world)))
     push!(recording.timeseries, data)
 end
 
@@ -301,7 +300,7 @@ end
 
 function do_recordings(world::World)
     for collector in world.data_collectors
-        collector()
+        collector(world)
     end
 end
 
@@ -315,15 +314,21 @@ function step_all_entities(world::World, time_step_s::Real)
     end
 end
 
+elapsed_det::Real = 0
+elapsed_step::Real = 0
+elapsed_sim::Real = 0
+elapsed_rec::Real = 0
+
 """
-    step_simulation(world::World, step_size_s::Real=DISCRETE_EVENT)::Union{SimulationResult,Nothing}
+    step_simulation(world::World, step_size_s::Real=DISCRETE_EVENT; max_advance_time_s::Real=-1)::Union{SimulationResult,Nothing}
 
 Step the simulation using a continous time-span or until the next event happens. 
 
 For the continous simulation a `step_size_s` can be freely chosen, for the discrete event type 
-DISCRETE_EVENT has to be set for the `step_size_s`.
+DISCRETE_EVENT has to be set for the `step_size_s`. If you choose DISCRETE_EVENT, you can also specify 
+a max_advance_time_s, which will abort the step if the determined step_size exceeds the max_advance_time_s.
 """
-function step_simulation(world::World, step_size_s::Real=DISCRETE_EVENT)::Union{SimulationResult,Nothing}
+function step_simulation(world::World, step_size_s::Real=DISCRETE_EVENT; max_advance_time_s::Real=-1)::Union{SimulationResult,Nothing}
     # Init world if uninitialized
     if !initialized(world.env)
         initialize(world.env, [v for v in values(agents(world))])
@@ -339,22 +344,34 @@ function step_simulation(world::World, step_size_s::Real=DISCRETE_EVENT)::Union{
     first_step = true
     time_step_s = step_size_s
 
-    # We are in discrete event mode, so we need to determine
-    # the time until the next event occurs, this time will
-    # be used to execute the time-based simulation
-    comm_result = nothing
-    if time_step_s == DISCRETE_EVENT
-        time_step_s, comm_result = determine_time_step(world)
-        @debug "Determined the size to be $time_step_s"
-        if isnothing(time_step_s)
-            # only step guaranteed entities
-            step_all_entities(world, 0)
-            return nothing
+    elapsed = @elapsed begin
+        # We are in discrete event mode, so we need to determine
+        # the time until the next event occurs, this time will
+        # be used to execute the time-based simulation
+        comm_result = nothing
+        if time_step_s == DISCRETE_EVENT
+            time_step_s, comm_result = determine_time_step(world)
+            @debug "Determined the size to be $time_step_s"
+            if isnothing(time_step_s) || (max_advance_time_s != -1 && time_step_s > max_advance_time_s)
+                # only step guaranteed entities
+                step_all_entities(world, 0)
+                return nothing
+            end
         end
+        world.container.step_size_s = time_step_s
     end
-    world.container.step_size_s = time_step_s
 
-    step_all_entities(world, time_step_s)
+    global elapsed_det
+    elapsed_det += elapsed
+    @debug "The determine step needed $elapsed seconds"
+
+    elapsed = @elapsed begin
+        step_all_entities(world, time_step_s)
+    end
+
+    global elapsed_step
+    elapsed_step += elapsed
+    @debug "The steps enti step needed $elapsed seconds"
 
     elapsed = @elapsed begin
         # now we process everything which happened in the steps,
@@ -368,16 +385,14 @@ function step_simulation(world::World, step_size_s::Real=DISCRETE_EVENT)::Union{
                 Threads.@spawn try
                     comm_iter_result = cs_step_iteration(world, time_step_s, first_step ? comm_result : nothing)
                 catch ex
-                    bt = stacktrace(catch_backtrace())
-                    showerror(stderr, ex, bt)
+                    log_exception(ex)
                     rethrow(ex)
                 end
 
                 Threads.@spawn try
                     task_iter_result = step_iteration(world.task_sim, time_step_s, first_step)
                 catch ex
-                    bt = stacktrace(catch_backtrace())
-                    showerror(stderr, ex, bt)
+                    log_exception(ex)
                     rethrow(ex)
                 end
             end
@@ -388,14 +403,23 @@ function step_simulation(world::World, step_size_s::Real=DISCRETE_EVENT)::Union{
             @debug "Finish simulation iteration" state_changed
         end
     end
+
+    global elapsed_sim
+    elapsed_sim += elapsed
     @debug "The simulation step needed $elapsed seconds"
+    
+    elapsed = @elapsed begin
+        world.clock.simulation_time = add_seconds(time(world), time_step_s)
+        world.container.step_size_s = 0
 
-    world.clock.simulation_time = add_seconds(time(world), time_step_s)
-    world.container.step_size_s = 0
+        @debug "New time" time(world)
 
-    @debug "New time" time(world)
+        do_recordings(world)
+    end
 
-    do_recordings(world)
+    global elapsed_rec
+    elapsed_rec += elapsed
+    @debug "The recording update step needed $elapsed seconds"
 
     return SimulationResult(elapsed, messaging_sim_result, task_sim_result, time_step_s)
 end
@@ -410,20 +434,26 @@ This function will step the world until the clock has advanced to the initial_ti
 or if the time of the world does not advance anymore (which would mean no events are scheduled).
 """
 function discrete_step_until(world::World, max_advance_time_s::Real)
+    global elapsed_det, elapsed_step, elapsed_sim, elapsed_rec
+    elapsed_det = elapsed_rec = elapsed_sim = elapsed_step = 0
+
     initial_time = time(world)
     prev_time = nothing
     results = []
+    max_time = add_seconds(initial_time, max_advance_time_s)
 
     elapsed = @elapsed begin
         while isnothing(prev_time) || ((prev_time < time(world) || length(results) == 1)
                                        &&
-                                       add_seconds(initial_time, max_advance_time_s) > time(world))
+                                       max_time > time(world))
 
             prev_time = time(world)
-            push!(results, step_simulation(world))
+            push!(results, step_simulation(world, max_advance_time_s=(max_time - prev_time).value / 1000))
         end
     end
     @info "The discrete event simulation needed $elapsed seconds"
+    @info "The different parts needed" elapsed_det elapsed_step elapsed_sim elapsed_rec
+
     return results
 end
 
@@ -452,10 +482,10 @@ function register(
     suggested_aid::Union{String,Nothing}=nothing;
     kwargs...,
 )
-    agent = register(world.container, agent, suggested_aid, kwargs...)
     if !isnothing(world.task_sim)
         agent.scheduler = create_agent_scheduler(world.task_sim)
     end
+    agent = register(world.container, agent, suggested_aid, kwargs...)
     return agent
 end
 
@@ -464,8 +494,8 @@ end
 
 Return the data collection with the `key` from the world.
 """
-function data_collection(world::World, key::String)
-    return get!(world.data_collections, key, WorldRecording())
+function data_collection(world::World, key::String; no_plot::Bool=false)
+    return get!(world.data_collections, key, WorldRecording(no_plot=no_plot))
 end
 
 """
@@ -473,8 +503,8 @@ end
 
 Return the data collection with the `key` from the world.
 """
-function data_agent_collection(world::World, key::String)
-    return get!(world.data_agent_collections, key, AgentsRecording())
+function data_agent_collection(world::World, key::String; dedicated_plots::Bool=false, no_plot::Bool=false)
+    return get!(world.data_agent_collections, key, AgentsRecording(dedicated_plots=dedicated_plots, no_plot=no_plot))
 end
 
 """
@@ -483,8 +513,8 @@ end
 Collect data from the world using the `collector` function and 
 store it in the data collection with the `key`.
 """
-function collect_data(collector::Function, world::World, key::String)
-    push!(world.data_collectors, () -> collector(world, data_collection(world, key)))
+function collect_data(collector::Function, world::World, key::String; no_plot::Bool=false)
+    push!(world.data_collectors, (world) -> collector(world, data_collection(world, key, no_plot=no_plot)))
 end
 
 """
@@ -495,12 +525,12 @@ store it in the data collection with the `key`.
 
 The data can be plotted using plot_agents.
 """
-function collect_agent_data(collector::Function, world::World, key::String)
-    dac = data_agent_collection(world, key)
+function collect_agent_data(collector::Function, world::World, key::String; dedicated_plots::Bool=false, no_plot::Bool=false) 
+    dac = data_agent_collection(world, key, dedicated_plots=dedicated_plots, no_plot=no_plot)
     for agent in values(agents(world))
-        push!(world.data_collectors, () -> collector(world, agent, dac))
+        push!(world.data_collectors, (world) -> collector(world, agent, dac))
     end
-    push!(world.data_collectors, () -> push!(dac.time, (time(world) - world.initial_time).value / 1000))
+    push!(world.data_collectors, (world) -> push!(dac.time, seconds_elapsed(clock(world))))
 end
 
 """
@@ -510,8 +540,8 @@ Record the world using the `world_recorder` function and store it in the data co
 
 The data can be plotted using plot_world.
 """
-function record_world!(world_recorder::Function, world::World, key::String)
-    collect_data(world, key) do w, dc
+function record_world!(world_recorder::Function, world::World, key::String; no_plot::Bool=false)
+    collect_data(world, key, no_plot=no_plot) do w, dc
         insert_world_recording!(dc, w, world_recorder())
     end
 end
@@ -523,9 +553,27 @@ Record the agents in the world using the `agent_recorder` function and store
 it in the data collection with the `key`. The data can be plotted using plot_agents.
 
 """
-function record_agent!(agent_recorder::Function, world::World, key::String)
-    collect_agent_data(world, key) do w, a, dc
+function record_agent!(agent_recorder::Function, world::World, key::String; dedicated_plots::Bool=false, no_plot::Bool=false)
+    collect_agent_data(world, key, dedicated_plots=dedicated_plots, no_plot=no_plot) do w, a, dc
         insert_agent_recording!(dc, w, a, agent_recorder(a))
+    end
+end
+
+function record_agent_having!(agent_recorder::Function, 
+    world::World, 
+    key::String, 
+    role_type::DataType; 
+    agent_color::Union{Nothing,Symbol}=nothing, 
+    aid_contains::Union{Nothing,String}=nothing,
+    dedicated_plots::Bool=false)
+
+    collect_agent_data(world, key, dedicated_plots=dedicated_plots) do w, a, dc
+        if has_role(a, role_type) &&
+           (isnothing(agent_color) || agent_color == color(a)) && 
+           (isnothing(aid_contains) || occursin(aid_contains, aid(a)))
+
+            insert_agent_recording!(dc, w, a, agent_recorder(a))
+        end
     end
 end
 

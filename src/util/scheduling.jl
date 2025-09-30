@@ -11,32 +11,55 @@ export TaskData,
     stop_and_wait_for_all_tasks,
     schedule,
     Clock,
+    DateTimeClock,
     Scheduler,
     SimulationScheduler,
     AbstractScheduler,
-    sleep_until
+    AbstractClock,
+    sleep_until, 
+    seconds_elapsed,
+    tasks, 
+    clock
 
 using Dates
 using ConcurrentCollections
 
-import Base.schedule, Base.sleep, Base.wait
+import Base.schedule, Base.sleep, Base.wait, Base.notify
 
 """
 Abstract type of a clock, which holds the time of a simulation
 """
 abstract type AbstractClock end
 
+function time(clock::AbstractClock)
+    throw("Not defined!")
+end
+function seconds_elapsed(clock::AbstractClock)
+    throw("Not defined!")
+end
+
 """
 Default clock implementation, in which a static DateTime field is used.
 """
 @kwdef mutable struct Clock <: AbstractClock
     simulation_time::DateTime
+    initial_time::DateTime
+    function Clock(simulation_time)
+        return new(simulation_time, simulation_time)
+    end
 end
 
 """
 Clock implmentation using the real time and therefore not holding any time information
 """
 struct DateTimeClock <: AbstractClock
+end
+
+function time(clock::Clock)
+    return clock.simulation_time
+end
+function seconds_elapsed(clock::Clock)
+    return (time(clock) - clock.initial_time).value / 1000
 end
 
 struct Stop end
@@ -91,13 +114,27 @@ function wait(scheduler::AbstractScheduler, timer::Timer, delay_s::Real)
     return wait(timer)
 end
 
+
+"""
+    wait(scheduler::AbstractScheduler, awaitable::Any)
+
+Wait on awaitable based on its schedulers policy.
+"""
+function wait(scheduler::AbstractScheduler, awaitable::Any)
+    return wait(awaitable)
+end
+
+function notify(scheduler::AbstractScheduler, event::Threads.Event)
+    return notify(event)
+end
+
 """
     clock(scheduler::AbstractScheduler)
 
 Return the internal time representation, the `clock`.
 """
 function clock(scheduler::AbstractScheduler)::AbstractClock
-    throw("unimplemented")
+    throw(InvalidStateException("unimplemented", :NotImplemented))
 end
 """
     tasks(scheduler::AbstractScheduler)
@@ -105,7 +142,7 @@ end
 Return the tasks currently on schedule and managed by the scheduler.
 """
 function tasks(scheduler::AbstractScheduler)
-    throw("unimplemented")
+    throw(InvalidStateException("unimplemented", :NotImplemented))
 end
 
 """
@@ -329,7 +366,8 @@ events fulfilling the purpose to step the tasks only for a given step_size.
 """
 @kwdef struct SimulationScheduler <: AbstractScheduler
     clock::Clock
-    events::ConcurrentDict{Task,Tuple{Base.Event,DateTime}} = ConcurrentDict{Task,Tuple{Base.Event,DateTime}}()
+    events::ConcurrentDict{Task,Base.Event} = ConcurrentDict{Task,Base.Event}()
+    task_time::ConcurrentDict{Task,DateTime} = ConcurrentDict{Task,DateTime}()
     tasks::ConcurrentDict{Task,Tuple{TaskData,Base.Event}} = ConcurrentDict{Task,Tuple{TaskData,Base.Event}}()
     queue::ConcurrentQueue{Union{Tuple{Function,TaskData,Base.Event},Task}} = ConcurrentQueue{Union{Tuple{Function,TaskData,Base.Event},Task}}()
     wait_queue::ConcurrentQueue{Task} = ConcurrentQueue{Task}()
@@ -341,6 +379,10 @@ Internal struct, signaling the state of the tasks which has been waited on.
 struct WaitResult
     cont::Bool
     result::Any
+end
+
+function stop_and_wait_for_all_tasks(scheduler::SimulationScheduler)
+    # do nothing, as task simulation will handle that part.
 end
 
 function determine_next_event_time_with(scheduler::SimulationScheduler, simulation_time::DateTime)
@@ -360,7 +402,7 @@ function determine_next_event_time_with(scheduler::SimulationScheduler, simulati
     # wait queue
     next = scheduler.wait_queue.head.next
     while !isnothing(next)
-        t = scheduler.events[next.value][2]
+        t = scheduler.task_time[next.value]
         if isnothing(lowest) || t < lowest
             lowest = t
         end
@@ -375,13 +417,11 @@ end
 function wait_for_finish_or_sleeping(scheduler::SimulationScheduler, task::Task, step_size_s::Real, timeout_s::Real=10, check_delay_s=0.001)::WaitResult
     remaining = timeout_s
     while remaining > 0
-        sleep(check_delay_s)
-        remaining -= check_delay_s
         if !istaskdone(task)
             if haskey(scheduler.events, task)
-                event_time = scheduler.events[task]
-                @debug "not done, found event" event_time[2] add_seconds(scheduler.clock.simulation_time, step_size_s)
-                if event_time[2] <= add_seconds(scheduler.clock.simulation_time, step_size_s)
+                event_time = scheduler.task_time[task]
+                @debug "not done, found event" event_time add_seconds(scheduler.clock.simulation_time, step_size_s)
+                if event_time <= add_seconds(scheduler.clock.simulation_time, step_size_s)
                     return WaitResult(true, nothing)
                 else
                     return WaitResult(false, nothing)
@@ -390,6 +430,8 @@ function wait_for_finish_or_sleeping(scheduler::SimulationScheduler, task::Task,
         else
             return WaitResult(false, Some(task.result))
         end
+        sleep(check_delay_s)
+        remaining -= check_delay_s
     end
     throw("Simulation encountered a task timeout!")
 end
@@ -401,10 +443,11 @@ end
 function sleep(scheduler::SimulationScheduler, time_s::Real)
     event = Base.Event()
     ctime = scheduler.clock.simulation_time
-    if haskey(scheduler.events, current_task())
-        ctime = scheduler.events[current_task()][2]
+    if haskey(scheduler.task_time, current_task())
+        ctime = scheduler.task_time[current_task()]
     end
-    scheduler.events[current_task()] = (event, add_seconds(ctime, time_s))
+    scheduler.events[current_task()] = event
+    scheduler.task_time[current_task()] = add_seconds(ctime, time_s)
     @debug "Sleep task with" current_task() event ctime time_s
     wait(event)
 end
@@ -418,9 +461,27 @@ function wait(scheduler::SimulationScheduler, awaitable_task_data::AwaitableTask
     sleep(scheduler, elapsed)
 end
 
+function wait(scheduler::SimulationScheduler, event::Threads.Event)
+    ctime = scheduler.clock.simulation_time
+    if haskey(scheduler.task_time, current_task())
+        ctime = scheduler.task_time[current_task()]
+    end
+    scheduler.events[current_task()] = event
+    scheduler.task_time[current_task()] = DateTime(9999)
+    return wait(event)
+end
+
+function notify(scheduler::SimulationScheduler, event::Threads.Event)
+    maybepop!(scheduler.events, current_task())
+    scheduler.task_time[current_task()] = DateTime(0)
+    return Base.notify(event)
+end
+
 function tasks(scheduler::SimulationScheduler)
     return scheduler.tasks
 end
+
+clock(scheduler::SimulationScheduler) = scheduler.clock
 
 function schedule(f::Function, scheduler::SimulationScheduler, data::TaskData)
     event = Base.Event()
@@ -429,7 +490,7 @@ function schedule(f::Function, scheduler::SimulationScheduler, data::TaskData)
 end
 
 function do_schedule(f::Function, scheduler::SimulationScheduler, data::TaskData, event::Base.Event)
-    task = @spawnlog execute_task(f, scheduler, data)
+    task = Threads.@spawn execute_task(f, scheduler, data)
     tasks(scheduler)[task] = (data, event)
     return task
 end

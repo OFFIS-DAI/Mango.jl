@@ -1,17 +1,47 @@
-export Environment, Space, Position, Position2D, Area2D, location,
-    move, initialize, initialized, Behavior, schedule, WorldObserver,
-    emit_global_event, behavior
-
-abstract type Position end
-abstract type Space{P<:Position} end
-abstract type WorldObserver end
-abstract type Behavior end
-
-function dispatch_global_event(observer::WorldObserver, event::Any)
-    # default no reaction
-end
+export DefaultEnvironment, Position2D, Area2D, location,
+    move, initialize, initialized, schedule,
+    emit_global_event, behavior, space, install
 
 struct NoBehavior <: Behavior end
+
+abstract type Space{P<:Position} end
+
+"""
+    move(space::Space{P}, agent::Agent, position::P) where {P<:Position}
+
+Move the `agent` to `position` in `space`. 
+"""
+function move(space::Space{P}, agent::Agent, position::P) where {P<:Position}
+    throw("Move on the space $space not defined!")
+end
+
+
+"""
+    initialize(space::Space, agents::Vector{A}) where {A<:Agent}
+
+Initializes the space.
+"""
+function initialize(space::Space, agents::Vector{A}) where {A<:Agent}
+    throw("Initialization for $space is not defined!")
+end
+
+"""
+    install(space::Space{P}, agent::Agent; additional_information...) where {P<:Position}
+
+Install the agent on the space.
+"""
+function install(space::Space{P}, agent::Agent; additional_information...) where {P<:Position}
+    # do nothing by default
+end
+
+"""
+    location(space::Area2D, agent::Agent)::Position2D
+
+Return the location of the `agent`.
+"""
+function location(space::Space{P}, agent::Agent)::P where {P<:Position}
+    throw("Position on the space $space not defined!")
+end
 
 struct Position2D <: Position
     x::Real
@@ -25,13 +55,13 @@ end
 end
 
 """
-Struct Environment. The environment provides a description of everything which exists outside of the agents.
+Struct DefaultEnvironment. The environment provides a description of everything which exists outside of the agents.
 
 The environment is a separate entity, which describes some type of environment, this can be anything which exists in
 any type of space, this can be some model/evironment, which is observed by the agents. The agents can interact
 with the environment and exist in the defined space.  
 """
-@kwdef mutable struct Environment{S<:Space}
+@kwdef mutable struct DefaultEnvironment{S<:Space} <: Environment
     scheduler::SimulationScheduler
     space::S = Area2D(width=10, height=10)
     behavior::Behavior = NoBehavior()
@@ -39,50 +69,36 @@ with the environment and exist in the defined space.
     initialized::Bool = false
 end
 
-schedule(f::Function, environment::Environment, data::TaskData) = schedule(f, environment.scheduler, data)
-
+schedule(f::Function, environment::DefaultEnvironment, data::TaskData) = schedule(f, environment.scheduler, data)
 
 """
-    on_step(behavior::Behavior, environment::Environment, clock::Clock, step_size_s::Real)
+    on_step(behavior::Behavior, environment::DefaultEnvironment, clock::Clock, step_size_s::Real)
 
 Called on stepping the container.
 """
-function on_step(behavior::Behavior, environment::Environment, clock::Clock, step_size_s::Real)
+function on_step(behavior::Behavior, environment::DefaultEnvironment, clock::Clock, step_size_s::Real)
     # default do nothing
 end
 
-function step(env::Environment, clock::Clock, step_size_s::Real)
-    on_step(behavior(env), env, clock, step_size_s)
+"""
+    install(behavior::Behavior, agent::Agent; additional_information...)
+
+Install the agent using the behavior data.
+"""
+function install(behavior::Behavior, agent::Agent; additional_information...)
+    # do nothing by default
 end
 
-"""
-    location(space::Area2D, agent::Agent)::Position2D
-
-Return the location of the `agent`.
-"""
-function location(space::Space{P}, agent::Agent)::P where {P<:Position}
-    throw("Position on the space $space not defined!")
+function step(env::DefaultEnvironment, clock::Clock, step_size_s::Real)
+    on_step(behavior(env), env, clock, step_size_s)
 end
 
 function location(space::Area2D, agent::Agent)::Position2D
     return space.to_position[aid(agent)]
 end
 
-"""
-    move(space::Space{P}, agent::Agent, position::P) where {P<:Position}
-
-Move the `agent` to `position` in `space`. 
-"""
-function move(space::Space{P}, agent::Agent, position::P) where {P<:Position}
-    throw("Move on the space $space not defined!")
-end
-
 function move(space::Area2D, agent::Agent, position::Position2D)
     space.to_position[aid(agent)] = position
-end
-
-function initialize(space::Space, agents::Vector{A}) where {A<:Agent}
-    throw("Initialization for $space is not defined!")
 end
 
 function initialize(space::Area2D, agents::Vector{A}) where {A<:Agent}
@@ -95,50 +111,64 @@ function initialize(behavior::Behavior)
     # default no initialization
 end
 
-function initialize(environment::Environment{S}, agents::Vector{A}) where {S<:Space} where {A<:Agent}
+function initialize(environment::DefaultEnvironment{S}, agents::Vector{A}) where {S<:Space} where {A<:Agent}
     initialize(environment.space, agents)
     initialize(behavior(environment))
     environment.initialized = true
 end
 
 """
-    initialized(environment::Environment)
+    initialized(environment::DefaultEnvironment)
 
 Return whether the environment is intialized.
 """
-function initialized(environment::Environment)
+function initialized(environment::DefaultEnvironment)
     return environment.initialized
 end
 
 """
-    add_observer!(environment::Environment, observer::WorldObserver)
+    add_observer!(environment::DefaultEnvironment, observer::WorldObserver)
 
 Add an observer to the environment, which is able to handle 
 global event emitted by the environment.
 """
-function add_observer!(environment::Environment, observer::WorldObserver)
+function add_observer!(environment::DefaultEnvironment, observer::WorldObserver)
     push!(environment.observers, observer)
 end
 
 """
-    behavior(env::Environment)
+    behavior(env::DefaultEnvironment)
 
 Return the behavior of the environment.
 """
-function behavior(env::Environment)
+function behavior(env::DefaultEnvironment)
     return env.behavior
 end
 
 """
-    emit_global_event(environment::Environment, event::Any)
+    space(env::DefaultEnvironment)
+
+The space of the environment
+"""
+function space(env::DefaultEnvironment)
+    return env.space
+end
+
+"""
+    emit_global_event(environment::DefaultEnvironment, event::Any)
 
 Emit a global event. This types of events can be handled by any agent
 living in the environment (resp. living in the world, the environment exists in).
 Therefore, any of those agents (and roles) can handle events emitted with
 this function by defining [`on_global_event`](@ref).
 """
-function emit_global_event(environment::Environment, event::Any)
+function emit_global_event(environment::DefaultEnvironment, event::Any)
     for observer in environment.observers
         dispatch_global_event(observer, event)
     end
+end
+
+function install(environment::DefaultEnvironment, agent::A; additional_information...) where {A<:Agent}
+    install(space(environment), agent; additional_information...)
+    install(behavior(environment), agent; additional_information...)
 end

@@ -1,7 +1,9 @@
 export @agent,
     AgentContext,
     AgentRoleHandler,
+    SystemHandler,
     handle_message,
+    handle_unanswered,
     add,
     schedule,
     stop_and_wait_for_all_tasks,
@@ -17,7 +19,19 @@ export @agent,
     add_service!,
     services,
     on_global_event,
-    sender_address
+    sender_address,
+    send_and_handle_answers,
+    send_tracked_messages,
+    send_messages,
+    has_role,
+    description,
+    name,
+    color,
+    category,
+    update_description,
+    AgentDescription,
+    uid,
+    uuid4
 
 using UUIDs
 
@@ -33,6 +47,7 @@ for the agent.
 """
 struct AgentContext
     container::ContainerInterface
+    evironment::Environment
 end
 
 """
@@ -40,7 +55,7 @@ Internal data regarding the roles.
 """
 struct AgentRoleHandler
     roles::Vector{Role}
-    handle_message_subs::Vector{Tuple{Role,Function,Function}}
+    handle_message_subs::Vector{Tuple{Role,Function,Function,Union{Nothing,MessagePreprocessor}}}
     send_message_subs::Vector{Tuple{Role,Function}}
     event_subs::Dict{Any,Vector{Tuple{Role,Function,Function}}}
     models::Dict{DataType,Any}
@@ -52,6 +67,20 @@ struct ForwardingRule
     forward_replies::Bool
 end
 
+mutable struct AgentDescription
+    aid::Union{Nothing,String}
+    name::String
+    category::Symbol
+    color::Symbol
+    uid::UUID
+end
+
+struct SystemHandler
+    message_subs::Vector{Tuple{Function,Function,Union{Nothing,MessagePreprocessor},Any}}
+    event_subs::Dict{Any,Vector{Tuple{Function,Function,Any}}}
+    global_event_subs::Vector{Tuple{Function,Function,Any}}
+end
+
 """
 All baseline fields added by the @agent macro are listed in this vector.
 They are added in the same order defined here.
@@ -59,11 +88,13 @@ They are added in the same order defined here.
 AGENT_BASELINE_FIELDS::Vector = [
     :(lock::ReentrantLock = ReentrantLock()),
     :(context::Union{Nothing,AgentContext} = nothing),
-    :(role_handler::Union{AgentRoleHandler} = AgentRoleHandler(Vector(), Vector(), Vector(), Dict(), Dict())),
+    :(role_handler::AgentRoleHandler = AgentRoleHandler(Vector(), Vector(), Vector(), Dict(), Dict())),
+    :(system_handler::SystemHandler = SystemHandler(Vector(), Dict(), Vector())),
     :(scheduler::AbstractScheduler = Scheduler()),
-    :(aid::Union{Nothing,String} = nothing),
     :(transaction_handler::Dict{String,Tuple} = Dict{String,Tuple}()),
     :(forwarding_rules::Vector{ForwardingRule} = Vector{ForwardingRule}()),
+    :(outgoing::Vector{Tuple} = Vector{Tuple}()),
+    :(description::AgentDescription = AgentDescription(nothing, "", :agent, :gray, uuid4())),
     :(services::Dict{DataType,Any} = Dict{DataType,Any}())
 ]
 
@@ -122,9 +153,61 @@ macro agent(struct_def)
     esc(Expr(:block, new_struct_def))
 end
 
+Base.show(io::IO, p::Agent) = print(io, "Agent $(aid(p))")
 
 function build_forwarded_address_from_meta(meta::AbstractDict)
     return AgentAddress(aid=meta["reply_to_forwarded_from_id"], address=meta["reply_to_forwarded_from_address"], tracking_id=get(meta, TRACKING_ID, nothing))
+end
+
+function handle_transaction_message(agent::Agent, message::Any, meta::AbstractDict)
+    caller, response_handler, addrs, msgs, metas = agent.transaction_handler[meta[TRACKING_ID]]
+    sender = sender_address_tracked(meta)
+    if length(addrs) == 1
+        if addrs[1] == sender
+            push!(msgs, message)
+            push!(metas, meta)
+            delete!(agent.transaction_handler, meta[TRACKING_ID])
+            if length(msgs) == 1
+                response_handler(caller, msgs[1], metas[1])
+            else
+                response_handler(caller, msgs, metas)   
+            end
+        else
+            @warn "The transaction $(meta[TRACKING_ID]) seems to be polluted, no incoming message from $sender expected!" aid(agent) addrs message msgs
+        end
+    else
+        # length(addrs) always > 0 -> otherwise sending the message would fail in first place.
+        deleting = findall(x->x==sender, addrs)
+        if length(deleting) != 0
+            push!(msgs, message)
+            push!(metas, meta)
+            deleteat!(addrs, deleting)
+        else
+            @warn "The transaction $(meta[TRACKING_ID]) seems to be polluted, no incoming message from $sender expected!" aid(agent) addrs message msgs
+        end
+    end
+end
+
+@kwdef struct WaitingMessagePreprocessor <: MessagePreprocessor
+    waiting_for_func::Function
+    waiting::Dict{AgentAddress,Bool} = Dict() 
+end
+
+function init(preprocessor::WaitingMessagePreprocessor, role_or_agent::Union{Role, Agent})
+    for addr in preprocessor.waiting_for_func()
+        preprocessor.waiting[addr] = true
+    end
+end
+
+function handle(preprocessor::WaitingMessagePreprocessor, role_or_agent::Union{Role, Agent}, handler::Function, message::Any, meta::AbstractDict)
+    sender = sender_address(meta)
+    if sender in keys(preprocessor.waiting)
+        preprocessor.waiting[sender] = false
+    end
+    if !any(values(preprocessor.waiting))
+        init(preprocessor, role_or_agent)
+        handler(role_or_agent, message, meta)
+    end
 end
 
 """
@@ -149,26 +232,52 @@ function dispatch_message(agent::Agent, message::Any, meta::AbstractDict)
         end
     end
     if forwarded
+        agent.outgoing = []
         return
     end
 
     lock(agent.lock) do
         # check if part of a transaction
-        if haskey(meta, TRACKING_ID) && haskey(agent.transaction_handler, meta[TRACKING_ID])
-            caller, response_handler = agent.transaction_handler[meta[TRACKING_ID]]
-            delete!(agent.transaction_handler, meta[TRACKING_ID])
-            response_handler(caller, message, meta)
+        if haskey(meta, TRACKING_ID) && 
+            haskey(agent.transaction_handler, meta[TRACKING_ID]) && 
+            haskey(meta, "reply")
+            
+            handle_transaction_message(agent, message, meta)
         else
             for role in agent.role_handler.roles
                 handle_message(role, message, meta)
             end
-            for (role, call, condition) in agent.role_handler.handle_message_subs
-                if condition(message, meta)
-                    call(role, message, meta)
+            for (role, call, condition, preprocessor) in agent.role_handler.handle_message_subs
+                if isnothing(preprocessor)
+                    if condition(message, meta)
+                        call(role, message, meta)
+                    end
+                else 
+                    if condition(message, meta)
+                        handle(preprocessor, role, call, message, meta)
+                    end
                 end
             end
             handle_message(agent, message, meta)
+            for (condition, call, preprocessor, caller) in agent.system_handler.message_subs
+                if isnothing(preprocessor)
+                    if condition(message, meta)
+                        call(caller, message, meta)
+                    end
+                else 
+                    if condition(message, meta)
+                        handle(preprocessor, agent, call, message, meta)
+                    end
+                end
+            end
         end
+        if length(agent.outgoing) < 1
+            for role in agent.role_handler.roles
+                handle_unanswered(role, message, meta)
+            end
+            handle_unanswered(agent, message, meta)
+        end
+        agent.outgoing = []
     end
 end
 
@@ -182,6 +291,15 @@ function sender_address(meta::AbstractDict)
 end
 
 """
+    sender_address(meta::Any)
+
+Extract the sender address from the meta data of a message and return it as `AgentAddress`.
+"""
+function sender_address_tracked(meta::AbstractDict)
+    return AgentAddress(aid=meta[SENDER_ID], address=meta[SENDER_ADDR], tracking_id=haskey(meta, TRACKING_ID) ? meta[TRACKING_ID] : nothing)
+end
+
+"""
     handle_message(agent::Agent, message::Any, meta::Any)
 
 Defines a function for an agent, which will be called when a message is dispatched
@@ -189,6 +307,17 @@ to the agent. This methods will be called with any arriving message (according t
 the multiple dispatch of julia).
 """
 function handle_message(agent::Agent, message::Any, meta::Any)
+    # do nothing by default
+end
+
+"""
+    handle_unanswered(agent::Agent, message::Any, meta::Any)
+
+Defines a function for an agent, which will be called when after a message has been handled 
+    without any messages sent while handling. Useful to do something when a incoming message is
+    unknown/ensure there is always an answer.
+"""
+function handle_unanswered(agent::Agent, message::Any, meta::Any)
     # do nothing by default
 end
 
@@ -228,8 +357,40 @@ function on_ready(agent::Agent)
     # do nothing by default
 end
 
+function description(agent::Agent)
+    return agent.description
+end
+
 function aid(agent::Agent)
-    return agent.aid
+    return description(agent).aid
+end
+
+function name(agent::Agent)
+    return description(agent).name
+end
+
+function category(agent::Agent)
+    return description(agent).category
+end
+
+function color(agent::Agent)
+    return description(agent).color
+end
+
+function uid(agent::Agent)
+    return description(agent).uid
+end
+
+function update_description(agent::Agent; color::Union{Nothing, Symbol}=nothing, name::Union{Nothing, String}=nothing, category::Union{Nothing, Symbol}=nothing)
+    if !isnothing(name)
+        description(agent).name = name
+    end
+    if !isnothing(color)
+        description(agent).color = color
+    end
+    if !isnothing(category)
+        description(agent).category = category
+    end
 end
 
 """
@@ -254,6 +415,15 @@ function roles(agent::Agent)
     return agent.role_handler.roles
 end
 
+function has_role(agent::Agent, role_type::DataType)
+    for role in roles(agent)
+        if role_type == typeof(role)
+            return true
+        end
+    end
+    return false
+end
+
 """
     shutdown(agent)
 
@@ -272,9 +442,25 @@ function subscribe_message_handle(
     agent::Agent,
     role::Role,
     condition::Function,
-    handler::Function,
+    handler::Function;
+    preprocessor::Union{Nothing,MessagePreprocessor}=nothing,
 )
-    push!(agent.role_handler.handle_message_subs, (role, condition, handler))
+    if !isnothing(preprocessor)
+        init(preprocessor, role)
+    end
+    push!(agent.role_handler.handle_message_subs, (role, condition, handler, preprocessor))
+end
+
+function subscribe_message(
+    agent::Agent,
+    condition::Function,
+    handler::Function;
+    preprocessor::Union{Nothing,MessagePreprocessor}=nothing,
+)
+    if !isnothing(preprocessor)
+        init(preprocessor, agent)
+    end
+    _add_system_handle_message_sub(agent, agent, condition, handler; preprocessor=preprocessor)
 end
 
 function subscribe_send_handle(agent::Agent, role::Role, handler::Function)
@@ -299,6 +485,13 @@ function emit_event_handle(agent::Agent, src::Role, event::Any; event_type::Any=
     end
     for role in roles(agent)
         handle_event(role, src, event, event_type=event_type)
+    end
+    if haskey(agent.system_handler.event_subs, key)
+        for (condition, func, caller) in agent.system_handler.event_subs[key]
+            if condition(src, event)
+                func(caller, src, event, event_type)
+            end
+        end
     end
 end
 
@@ -347,6 +540,15 @@ function schedule(f::Function, agent::Agent, data::TaskData)
 end
 
 """
+    clock(agent::Agent)
+
+Return clock of the agent.
+"""
+function clock(agent::Agent)
+    return clock(agent.scheduler)
+end
+
+"""
     stop_and_wait_for_all_tasks(agent::Agent)
 
 Delegates to the scheduler `Scheduler`
@@ -390,22 +592,39 @@ function address(agent::Agent)
     return AgentAddress(aid=aid(agent), address=addr)
 end
 
+function send_messages(
+    agent::Agent,
+    content::Any,
+    agent_addresses::Vector{AgentAddress};
+    kwargs...,
+)
+    push!(agent.outgoing, (content, kwargs))
+
+    for (role, handler) in agent.role_handler.send_message_subs
+        for agent_address in agent_addresses
+            handler(role, content, agent_address; kwargs...)
+        end
+    end
+    tasks = []
+    for agent_address in agent_addresses
+        push!(tasks, send_message(
+            agent.context.container,
+            content,
+            agent_address,
+            aid(agent);
+            kwargs...,
+        ))
+    end
+    return tasks
+end
+
 function send_message(
     agent::Agent,
     content::Any,
-    agent_adress::AgentAddress;
+    agent_address::AgentAddress;
     kwargs...,
 )
-    for (role, handler) in agent.role_handler.send_message_subs
-        handler(role, content, agent_adress; kwargs...)
-    end
-    return send_message(
-        agent.context.container,
-        content,
-        agent_adress,
-        agent.aid;
-        kwargs...,
-    )
+    return send_messages(agent, content, [agent_address]; kwargs...)[1]
 end
 
 function send_message(
@@ -425,6 +644,29 @@ function send_message(
     )
 end
 
+function send_tracked_messages(
+    agent::Agent,
+    content::Any,
+    agent_addresses::Vector{AgentAddress};
+    response_handler::Union{Function,Nothing}=nothing,
+    calling_object::Any=nothing,
+    kwargs...,
+)
+    tracking_id = string(uuid4())
+    if !isnothing(agent_addresses[1].tracking_id)
+        tracking_id = agent_addresses[1].tracking_id
+    end
+    addrs = [AgentAddress(addr.aid, addr.address, tracking_id) for addr in agent_addresses]
+    if !isnothing(response_handler)
+        caller = agent
+        if !isnothing(calling_object)
+            caller = calling_object
+        end
+        agent.transaction_handler[tracking_id] = (caller, response_handler, addrs, [], [])
+    end
+    return send_messages(agent, content, addrs; kwargs...)
+end
+
 function send_tracked_message(
     agent::Agent,
     content::Any,
@@ -433,18 +675,18 @@ function send_tracked_message(
     calling_object::Any=nothing,
     kwargs...,
 )
-    tracking_id = string(uuid1())
-    if !isnothing(agent_address.tracking_id)
-        tracking_id = agent_address.tracking_id
-    end
-    if !isnothing(response_handler)
-        caller = agent
-        if !isnothing(calling_object)
-            caller = calling_object
-        end
-        agent.transaction_handler[tracking_id] = (caller, response_handler)
-    end
-    return send_message(agent, content, AgentAddress(agent_address.aid, agent_address.address, tracking_id); kwargs...)
+    return send_tracked_messages(agent, content, [agent_address]; response_handler=response_handler, calling_object=calling_object, kwargs...)[1]
+end
+
+function send_and_handle_answers(
+    response_handler::Function,
+    agent::Agent,
+    content::Any,
+    agent_addresses::Vector{AgentAddress};
+    calling_object::Any=nothing,
+    kwargs...)
+    return send_tracked_messages(agent, content, agent_addresses; response_handler=response_handler,
+        calling_object=calling_object, kwargs...)
 end
 
 function send_and_handle_answer(
@@ -454,8 +696,7 @@ function send_and_handle_answer(
     agent_address::AgentAddress;
     calling_object::Any=nothing,
     kwargs...)
-    return send_tracked_message(agent, content, agent_address; response_handler=response_handler,
-        calling_object=calling_object, kwargs...)
+    return send_and_handle_answers(response_handler, agent, content, [agent_address]; calling_object=calling_object, kwargs...)[1]
 end
 
 function reply_to(agent::Agent,
@@ -558,4 +799,22 @@ function dispatch_global_event(agent::Agent, event::Any)
     for role in roles(agent)
         on_global_event(role, event)
     end
+    for (condition, call, caller) in agent.system_handler.global_event_subs
+        if condition(event)
+            call(caller, event)
+        end
+    end
+end
+
+function _add_system_handle_message_sub(agent::Agent, caller::Any, filter::Function, handle::Function; preprocessor::Union{Nothing,<:MessagePreprocessor}=nothing)
+    push!(agent.system_handler.message_subs, (filter, handle, preprocessor, caller))
+end
+
+function _add_system_event_sub(agent::Agent, caller::Any, event_type::Any, filter::Function, handle::Function)
+    event_type_subs = get!(agent.system_handler.event_subs, event_type, Vector())
+    push!(event_type_subs, (filter, handle, caller))
+end
+
+function _add_system_global_event_sub(agent::Agent, caller::Any, filter::Function, handle::Function)
+    push!(agent.system_handler.global_event_subs, (filter, handle, caller))
 end

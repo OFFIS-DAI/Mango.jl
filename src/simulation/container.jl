@@ -11,6 +11,7 @@ end
 
 @kwdef mutable struct SimulationContainer <: ContainerInterface
     clock::Clock
+    env::Environment
     step_size_s::Real = 0
     agents::OrderedDict{String,Agent} = OrderedDict{String,Agent}()
     agent_counter::Integer = 0
@@ -37,8 +38,8 @@ function register(
         actual_aid = suggested_aid
     end
     container.agents[actual_aid] = agent
-    agent.aid = actual_aid
-    agent.context = AgentContext(container)
+    description(agent).aid = actual_aid
+    agent.context = AgentContext(container, container.env)
     container.agent_counter += 1
 
     return agent
@@ -84,7 +85,7 @@ function process_message(container::SimulationContainer, msg::Any, meta::Abstrac
     receiver_id = meta[RECEIVER_ID]
 
     if !haskey(container.agents, meta[RECEIVER_ID])
-        @warn "Container $(keys(container.agents)) has no agent with id: $receiver_id" msg meta
+        @warn "The container has no agent with id: $receiver_id (from $(sender_address(meta)) with $(typeof(msg)))" keys(container.agents) msg meta
     else
         agent = container.agents[receiver_id]
         return dispatch_message(agent, msg, meta)

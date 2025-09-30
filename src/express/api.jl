@@ -1,4 +1,4 @@
-export create_tcp_container, create_mqtt_container, GeneralAgent, add_agent_composed_of, agent_composed_of, activate, run_in_real_time, run_in_simulation, run_with_mqtt, run_with_tcp, PrintingAgent
+export create_tcp_container, create_mqtt_container, GeneralAgent, add_agent_composed_of, agent_composed_of, activate, run_in_real_time, run_in_simulation, run_with_mqtt, run_with_tcp, PrintingAgent, behavior_in
 
 function _set_codec(container::Container, codec::Union{Nothing,Tuple{Function,Function}})
     if !isnothing(codec)
@@ -338,4 +338,88 @@ Simple agent just printing every message to @info.
 
 function handle_message(agent::PrintingAgent, message::Any, meta::Any)
     @info "Got" message, meta
+end
+
+function _has_any_role(agent::Agent, role_types::Vector{DataType})
+    return any([has_role(agent, role_type) for role_type in role_types])
+end
+
+
+"""
+    behavior_in(func::Function, world::World; 
+    on_event::Union{Nothing,DataType}=nothing, 
+    on_global_event::Union{Nothing,DataType}=nothing, 
+    on_message::Union{Nothing,DataType}=nothing,
+    agent_types::Union{Vector{DataType},DataType}=Vector(), 
+    has_roles::Union{Vector{DataType},DataType}=Vector(), 
+    match_names::Union{Vector{String},String}=Vector(),
+    match_colors::Union{Vector{String},String}=Vector())
+
+Create a behavior for the matching agents. The agent is matched to the agent types, its roles, names, and colors. 
+This attributes are only checked if provided. If no matching is provided the behavior will be valid for all agents.
+The behavior unifies the handling of global_events, agent events and message handles. Each type can be matched using the
+event/message type.
+"""
+function behavior_in(func::Function, world::World; 
+    on_event::Union{Nothing,DataType}=nothing, 
+    on_global_event::Union{Nothing,DataType}=nothing, 
+    on_message::Union{Nothing,DataType}=nothing,
+    agent_types::Union{Vector{DataType},DataType}=Vector{DataType}(), 
+    role_types::Union{Vector{DataType},DataType}=Vector{DataType}(), 
+    has_roles::Union{Vector{DataType},DataType}=Vector{DataType}(), 
+    match_names::Union{Vector{String},String}=Vector{String}(),
+    match_colors::Union{Vector{String},String}=Vector{String}(),
+    preprocessor::Union{Nothing,MessagePreprocessor}=nothing)
+    
+    if !(agent_types isa Vector)
+        agent_types = [agent_types]
+    end
+    if !(role_types isa Vector)
+        role_types = [role_types]
+    end
+    if !(has_roles isa Vector)
+        has_roles = [has_roles]
+    end
+    if !(match_names isa Vector)
+        match_names = [match_names]
+    end
+    if !(match_colors isa Vector)
+        match_colors = [match_colors]
+    end
+
+    filtered_agents = [agent for agent in agents(world) if (length(agent_types) > 0 && typeof(agent) in agent_types) || 
+                                                           (length(has_roles) > 0 && _has_any_role(agent, has_roles)) ||
+                                                           (length(match_names) > 0 && name(agent) in match_names) ||
+                                                           (length(match_colors) > 0 && color(agent) in match_colors) ||
+                                                           (length(agent_types) == 0 && length(has_roles) == 0 && length(match_names) == 0 && length(match_colors) == 0)]
+    
+    selected_roles = [] 
+    for agent in filtered_agents 
+        agent_roles = roles(agent)
+        for role in agent_roles
+            if length(role_types) > 0 && typeof(role) in role_types
+                push!(selected_roles, (agent, role))
+            end
+        end
+    end
+
+    # found agents + roles
+    found_agents_caller = [[(a,a) for a in filtered_agents ]; selected_roles]
+
+    # if only role type is provided only use the found roles
+    if length(agent_types) == 0 && length(role_types) > 0
+        found_agents_caller = selected_roles
+    end
+    
+    for (agent, caller) in found_agents_caller
+        if !isnothing(on_message)
+            _add_system_handle_message_sub(agent, caller, (msg, meta) -> typeof(msg) == on_message, func, preprocessor=preprocessor)
+        end
+        if !isnothing(on_event)
+            _add_system_event_sub(agent, caller, on_event, (src, event) -> typeof(event) == on_event, func)
+        end
+        if !isnothing(on_global_event)
+            _add_system_global_event_sub(agent, caller, (event) -> typeof(event) == on_global_event, func)
+        end
+    end
 end
