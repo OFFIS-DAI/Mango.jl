@@ -80,3 +80,32 @@ end
 
     @test result == 10
 end
+
+struct NoClock <: AbstractClock end
+struct NoScheduler <: AbstractScheduler end
+
+function Base.wait(str::String)
+end
+
+@testset "SchedulerExceptionTests" begin
+    scheduler = Scheduler()
+    c = NoClock()
+    @test_throws "Not defined!" Mango.time(c)
+    @test_throws "Not defined!" seconds_elapsed(c)
+    
+    no_scheduler = NoScheduler()
+    e = Threads.Event()
+
+    wait(no_scheduler, "")
+    notify(no_scheduler, e)
+
+    @test_throws InvalidStateException clock(no_scheduler)
+    @test_throws InvalidStateException tasks(no_scheduler)
+
+    e = Threads.Event()
+    scheduler = SimulationScheduler(clock=Clock(Dates.DateTime(0)))
+    @async begin
+        wait(scheduler, e)
+    end
+    notify(scheduler, e)
+end

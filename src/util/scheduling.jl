@@ -11,11 +11,15 @@ export TaskData,
     stop_and_wait_for_all_tasks,
     schedule,
     Clock,
+    DateTimeClock,
     Scheduler,
     SimulationScheduler,
     AbstractScheduler,
+    AbstractClock,
     sleep_until, 
-    seconds_elapsed
+    seconds_elapsed,
+    tasks, 
+    clock
 
 using Dates
 using ConcurrentCollections

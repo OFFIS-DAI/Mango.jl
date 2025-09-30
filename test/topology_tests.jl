@@ -247,6 +247,8 @@ end
     connect_topologies!(topologyA, topologyB)
     
     marked_A = TopologyAgent()
+    tr = TopologyRole()
+    add(marked_A, tr)
     mark_as_connector!(marked_A)
     marked_B = TopologyAgent()
     mark_as_connector!(marked_B)
@@ -260,6 +262,13 @@ end
     @test length(topology_neighbors(marked_A, tid=:A)) == 2
     @test length(topology_connectors(marked_A, tid=:A)) == 1
     @test length(topology_connection_types(marked_A, tid=:A)) == 1
+    @test length(topology_neighbors(tr, tid=:A)) == 2
+    @test length(topology_connectors(tr, tid=:A)) == 1
+    @test length(topology_connection_types(tr, tid=:A)) == 1
+
+    @test_throws ArgumentError topology_neighbors(tr, tid=:B)
+    @test_throws ArgumentError topology_connectors(tr, tid=:B)
+    @test_throws ArgumentError topology_connection_types(tr, tid=:B)
 end
 
 @testset "TestSetAsConnector" begin
