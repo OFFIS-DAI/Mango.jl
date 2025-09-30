@@ -445,3 +445,24 @@ end
 
     @test !agent1.triggered
 end
+
+
+
+@testset "AgentDescriptionUpdate" begin
+    container = Container()
+    agent1 = MyAgent(0)
+    role1 = MyRole(0)
+    add(agent1, role1)
+    register(container, agent1)
+
+    update_description(agent1, color=:a, name="a", category=:b)
+
+    @test name(agent1) == "a"
+    @test category(agent1) == :b
+    @test color(agent1) == :a
+    @test name(role1) == "a"
+    @test category(role1) == :b
+    @test color(role1) == :a
+    @test !isnothing(description(role1))
+    @test has_role(agent1, MyRole)
+end

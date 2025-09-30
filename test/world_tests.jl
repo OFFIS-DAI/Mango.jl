@@ -2,6 +2,7 @@ using Mango
 using Test
 using Logging
 using Dates
+using Random
 
 import Mango.handle_message
 
@@ -483,5 +484,37 @@ end
     activate(world) do 
         send_message(a1, "1", address(a2))
         @test_throws CompositeException step_simulation(world) # schedule task = 1
+    end
+end
+
+@testset "WorldWithPoisson" begin
+    Random.seed!(1)
+
+    world = create_world(DateTime(0))
+
+    a1 = register(world, SimAgent(0))
+    a2 = register(world, SimAgent(1))
+    a3 = register(world, SimAgent(2))
+
+    topo = complete_topology(3)
+    auto_assign!(topo, world)
+
+    aid_graph = topology_to_aid_graph(topo)
+    poisson_com_provider = create_distribution_based_com_sim(aid_graph, agents(world), base_delay_per_message_ms=15)
+    world.communication_sim = poisson_com_provider
+
+    activate(world) do 
+        send_message(a1, "Hello Friends, this is RSd!", AgentAddress(aid=aid(a2)))
+        send_message(a1, "Hello Friends, this is RSd!", AgentAddress(aid=aid(a3)))
+
+        stepping_result = step_simulation(world)
+
+        @test Mango.time(world) == DateTime("0000-01-01T00:01:40")
+
+        send_message(a1, "Hello Friends, this is RSd!", AgentAddress(aid=aid(a3)))
+
+        stepping_result = step_simulation(world)
+
+        @test Mango.time(world) == DateTime("0000-01-01T00:03:20")
     end
 end

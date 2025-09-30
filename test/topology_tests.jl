@@ -259,6 +259,7 @@ end
 
     @test length(topology_neighbors(marked_A, tid=:A)) == 2
     @test length(topology_connectors(marked_A, tid=:A)) == 1
+    @test length(topology_connection_types(marked_A, tid=:A)) == 1
 end
 
 @testset "TestAgentCharacteristicSymbol" begin
@@ -283,4 +284,5 @@ end
     @test length(topology_neighbors(agent2, has_characteristic=:lead)) == 1
     @test length(topology_neighbors(agent2)) == 2
     @test length(topology_neighbors(agent2, has_characteristic=[:lead])) == 1
+    @test topology_node_id(agent) == 1
 end

@@ -15,10 +15,6 @@ import Graphs.add_edge!
     characteristics::Dict{Agent,Symbol} = Dict() # special agents having specific roles, e.g. :lead for coalition leaders
 end
 
-function set_characteristic!(node::Node, agent::Agent, characteristic::Symbol)
-    node.characteristics[agent] = characteristic
-end
-
 struct TopologyNeighbor
     address::AgentAddress
     description::AgentDescription
