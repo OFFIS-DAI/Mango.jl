@@ -1,4 +1,4 @@
-export Position, Space, WorldObserver, Behavior, Environment, install, dispatch_global_event, initialize, initialized, add_observer!
+export Position, Space, WorldObserver, Behavior, Environment, NoEnv, install, dispatch_global_event, initialize, initialized, add_observer!
 
 abstract type Position end
 abstract type WorldObserver end

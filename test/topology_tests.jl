@@ -262,6 +262,27 @@ end
     @test length(topology_connection_types(marked_A, tid=:A)) == 1
 end
 
+@testset "TestSetAsConnector" begin
+    topologyA = complete_topology(3, tid=:A)
+    topologyB = cycle_topology(3, tid=:B)
+    connect_topologies!(topologyA, topologyB)
+    
+    marked_A = TopologyAgent()
+    set_as_connector!(topologyA, marked_A)
+    marked_B = TopologyAgent()
+    set_as_connector!(topologyB, marked_A)
+    
+    agents_1 = [marked_A, TopologyAgent(), TopologyAgent()]
+    agents_2 = [marked_B, TopologyAgent(), TopologyAgent()]
+        
+    auto_assign!(topologyA, agents_1)
+    auto_assign!(topologyB, agents_2)
+
+    @test length(topology_neighbors(marked_A, tid=:A)) == 2
+    @test length(topology_connectors(marked_A, tid=:A)) == 1
+    @test length(topology_connection_types(marked_A, tid=:A)) == 1
+end
+
 @testset "TestAgentCharacteristicSymbol" begin
     container = create_tcp_container("127.0.0.1", 3333)
     agent = nothing

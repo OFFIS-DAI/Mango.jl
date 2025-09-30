@@ -466,3 +466,20 @@ end
     @test !isnothing(description(role1))
     @test has_role(agent1, MyRole)
 end
+
+@testset "AgentServicesBasics" begin
+    agent = MyAgent(0)
+    role = MyRole(0)
+    add(agent, role)
+    install_observer(agent, :def) do 
+        return ""
+    end
+    install_action(agent, :def) do 
+        return ""
+    end
+
+    @test action(agent, :def)() == ""
+    @test observation(agent, :def) == ""
+    @test action(role, :def)() == ""
+    @test observation(role, :def) == ""
+end
