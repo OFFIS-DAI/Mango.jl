@@ -4,7 +4,10 @@ The simulation container has the same role as the real-time container and theref
 
 ## Create and stepping a simulation container
 
-To create a simulation container, it is advised to use `create_simulation_container`. This method will create a clock with the given simulation time and set default for the communication simulation and the general task simulation. In most cases the default task simulation will be what you desire. The communication simulation object (based on the abstract type `CommunicationSimulation`) is used to determine the delays of the messages in the simulation, while the task simulation determines the way the tasks are scheduled (within a time step, using parallelization etc.) in the simulation. 
+To create a simulation container, it is advised to use `create_world`. 
+This method will create a clock with the given simulation time and set default for the communication simulation and the general task simulation. 
+In most cases the default task simulation will be what you desire. 
+The communication simulation object (based on the abstract type `CommunicationSimulation`) is used to determine the delays of the messages in the simulation, while the task simulation determines the way the tasks are scheduled (within a time step, using parallelization etc.) in the simulation. 
 
 In the following example a simple simulation is executed.
 
@@ -18,14 +21,14 @@ end
 # Create a communication simulator, the simple communication simulator works with static delays between specific agents and a global default, here 0
 comm_sim = SimpleCommunicationSimulation(default_delay_s=0)
 # Set the simulation time to an initial value
-container = create_simulation_container(DateTime(Millisecond(10)), communication_sim=comm_sim)
+container = create_world(DateTime(Millisecond(10)), communication_sim=comm_sim)
 
 # Creating agents and registering, no difference here to the real time container
 agent1 = register(container, SimAgent())
 agent2 = register(container, SimAgent())
 
 # Send a message from agent2 to agent1, the message will be written to a queue instead of processed by some protocol
-send_message(agent2, "Hello Friends, this is RSc!", AgentAddress(aid=agent1.aid))
+send_message(agent2, "Hello Friends, this is RSc!", AgentAddress(aid=aid(agent1)))
 
 # in this stepping call the message will be delivered and handled to/by the agent1  
 # step_size=1, if no size is specified the simulation will work as discrete event simulation, executing all tasks occurring on the next event time.

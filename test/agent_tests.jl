@@ -36,7 +36,7 @@ end
     register(container, agent1)
     register(container, agent2)
 
-    wait(send_message(container, "Hello Roles, this is RSc!", AgentAddress(aid=agent2.aid)))
+    wait(send_message(container, "Hello Roles, this is RSc!", AgentAddress(aid=aid(agent2))))
 
     @test agent2.role_handler.roles[1] === role1
     @test agent2.counter == 10
@@ -57,7 +57,7 @@ end
     register(container, agent1)
     register(container, agent2)
 
-    wait(send_message(container, "Hello Roles, this is RSc!", AgentAddress(aid=agent2.aid)))
+    wait(send_message(container, "Hello Roles, this is RSc!", AgentAddress(aid=aid(agent2))))
 
     @test agent2.role_handler.roles[1] === role1
     @test agent2.role_handler.roles[1].counter == 15
@@ -82,7 +82,7 @@ end
     register(container, agent1)
     register(container, agent2)
 
-    wait(send_message(agent2, "Hello Roles, this is RSc!", AgentAddress(aid=agent1.aid)))
+    wait(send_message(agent2, "Hello Roles, this is RSc!", AgentAddress(aid=aid(agent1))))
 
     @test agent2.role_handler.roles[1] === role1
     @test agent2.role_handler.roles[1].invoked
@@ -95,7 +95,7 @@ end
     register(container, agent1)
     register(container, agent2)
 
-    wait(send_message(agent1, "Hello Agents, this is RSc!", AgentAddress(aid=agent2.aid)))
+    wait(send_message(agent1, "Hello Agents, this is RSc!", AgentAddress(aid=aid(agent2))))
 
     @test agent2.counter == 10
 end
@@ -107,7 +107,7 @@ end
     register(container, agent1)
     register(container, agent2)
 
-    wait(send_message(agent1, "Hello Agents, this is RSc!", AgentAddress(aid=agent2.aid); kw=1, kw2=2))
+    wait(send_message(agent1, "Hello Agents, this is RSc!", AgentAddress(aid=aid(agent2)); kw=1, kw2=2))
 
     @test agent2.counter == 10
 end
@@ -123,7 +123,7 @@ end
     register(container, agent1)
     register(container, agent2)
 
-    wait(send_message(role2, "Hello Roles, this is RSc!", AgentAddress(aid=agent2.aid)))
+    wait(send_message(role2, "Hello Roles, this is RSc!", AgentAddress(aid=aid(agent2))))
 
     @test agent2.role_handler.roles[1] === role1
     @test agent2.counter == 10
@@ -165,11 +165,11 @@ end
 
     container = Container()
     agent1 = MyTrackedAgent(0)
-    agent2 = MyRespondingAgent(0, AgentAddress(aid=agent1.aid))
+    agent2 = MyRespondingAgent(0, AgentAddress(aid=aid(agent1)))
     register(container, agent1)
     register(container, agent2)
 
-    wait(send_tracked_message(agent1, "Hello Agent, this is DialogRico", AgentAddress(aid=agent2.aid); response_handler=handle_response))
+    wait(send_tracked_message(agent1, "Hello Agent, this is DialogRico", AgentAddress(aid=aid(agent2)); response_handler=handle_response))
 
     @test agent2.counter == 10
     @test agent1.counter == 1337
@@ -228,6 +228,31 @@ end
     @test role1.counter == 1111
 end
 
+@testset "RoleAgentDialogWithDoSyntaxMultiMsg" begin
+    container = Container()
+    agent1 = MyAgent(0)
+    agent2 = MyAgent(0)
+    agent3 = MyAgent(0)
+    role1 = MyTrackedRole(0)
+    role2 = MyRespondingRole(0)
+    role3 = MyRespondingRole(0)
+    add(agent2, role1)
+    add(agent1, role2)
+    add(agent3, role3)
+    register(container, agent1)
+    register(container, agent2)
+    register(container, agent3)
+
+    tasks = send_and_handle_answers(role1, "Hello Agent, this is DialogRico", [address(agent1), address(agent3)]) do role, message, meta
+        role.counter = 1111
+    end
+    for t in tasks
+        wait(t)
+    end
+
+    @test role2.counter == 10
+    @test role1.counter == 1111
+end
 
 @testset "AgentMQTTMessaging" begin
     broker_addr = InetAddr(ip"127.0.0.1", 1883)
@@ -333,4 +358,128 @@ end
 
     @test agent_var_var.other == 2
     @test agent_var_var.the_float == 3.3
+end
+
+@testset "TestSenderAddr" begin
+    meta = Dict("sender_addr" => "sender_addr", "sender_id" => "sender_id", "tracking_id" => "tracking_id")
+    sa = sender_address(meta)
+
+    @test sa == AgentAddress(aid="sender_id", address="sender_addr")
+end
+
+@agent struct MyExpectingPrepAgent 
+    triggered::Bool = false
+end
+
+@agent struct MySendingPrepAgent end
+
+function handle_trigger_cp(a::MyExpectingPrepAgent, msg::Any, meta::Any)
+    a.triggered = true
+end
+
+struct ExpectedMessage end
+
+@testset "AgentWaitingMessagePreprocessor" begin
+
+    container = Container()
+    agent1 = MyExpectingPrepAgent()
+    agent2 = MySendingPrepAgent()
+    register(container, agent1)
+    register(container, agent2)
+    wmp = WaitingMessagePreprocessor(waiting_for_func=() -> [address(agent2)])
+    subscribe_message(agent1, (msg, meta) -> typeof(msg) == ExpectedMessage, handle_trigger_cp, preprocessor=wmp)
+    wait(send_message(agent2, ExpectedMessage(), address(agent1)))
+    sleep(0.01)
+
+    @test agent1.triggered
+end
+
+@testset "AgentWaitingMessagePreprocessorNoTrig" begin
+
+    container = Container()
+    agent1 = MyExpectingPrepAgent()
+    agent2 = MySendingPrepAgent()
+    agent3 = MySendingPrepAgent()
+    register(container, agent1)
+    register(container, agent2)
+    register(container, agent3)
+    wmp = WaitingMessagePreprocessor(waiting_for_func=() -> [address(agent2),address(agent3)])
+    subscribe_message(agent1, (msg, meta) -> typeof(msg) == ExpectedMessage, handle_trigger_cp, preprocessor=wmp)
+    wait(send_message(agent2, ExpectedMessage(), address(agent1)))
+    sleep(0.01)
+
+    @test !agent1.triggered
+end
+@testset "AgentWaitingMessagePreprocessorMultiTrig" begin
+
+    container = Container()
+    agent1 = MyExpectingPrepAgent()
+    agent2 = MySendingPrepAgent()
+    agent3 = MySendingPrepAgent()
+    register(container, agent1)
+    register(container, agent2)
+    register(container, agent3)
+    wmp = WaitingMessagePreprocessor(waiting_for_func=() -> [address(agent2),address(agent3)])
+    subscribe_message(agent1, (msg, meta) -> typeof(msg) == ExpectedMessage, handle_trigger_cp, preprocessor=wmp)
+    wait(send_message(agent2, ExpectedMessage(), address(agent1)))
+    wait(send_message(agent3, ExpectedMessage(), address(agent1)))
+    sleep(0.01)
+
+    @test agent1.triggered
+end
+
+@testset "AgentWaitingMessagePreprocessorWrongTrig" begin
+
+    container = Container()
+    agent1 = MyExpectingPrepAgent()
+    agent2 = MySendingPrepAgent()
+    agent3 = MySendingPrepAgent()
+    register(container, agent1)
+    register(container, agent2)
+    register(container, agent3)
+    wmp = WaitingMessagePreprocessor(waiting_for_func=() -> [address(agent2),address(agent3)])
+    subscribe_message(agent1, (msg, meta) -> typeof(msg) == ExpectedMessage, handle_trigger_cp, preprocessor=wmp)
+    wait(send_message(agent2, ExpectedMessage(), address(agent1)))
+    wait(send_message(agent2, ExpectedMessage(), address(agent1)))
+    sleep(0.01)
+
+    @test !agent1.triggered
+end
+
+
+
+@testset "AgentDescriptionUpdate" begin
+    container = Container()
+    agent1 = MyAgent(0)
+    role1 = MyRole(0)
+    add(agent1, role1)
+    register(container, agent1)
+
+    update_description(agent1, color=:a, name="a", category=:b)
+
+    @test name(agent1) == "a"
+    @test category(agent1) == :b
+    @test color(agent1) == :a
+    @test name(role1) == "a"
+    @test category(role1) == :b
+    @test color(role1) == :a
+    @test !isnothing(description(role1))
+    @test has_role(agent1, MyRole)
+end
+
+@testset "AgentServicesBasics" begin
+    agent = MyAgent(0)
+    role = MyRole(0)
+    add(agent, role)
+    install_observer(agent, :def) do 
+        return ""
+    end
+    install_action(agent, :def) do 
+        return ""
+    end
+
+    @test action(agent, :def)() == ""
+    @test observation(agent, :def) == ""
+    @test action(role, :def)() == ""
+    @test observation(role, :def) == ""
 end

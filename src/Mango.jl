@@ -9,22 +9,26 @@ include("util/scheduling.jl")
 include("util/encode_decode.jl")
 include("agent/api.jl")
 include("container/api.jl")
+include("environment/api.jl")
 
 include("agent/role.jl")
 include("agent/core.jl")
-include("world/core.jl")
+include("agent/services.jl")
 
+include("environment/core.jl")
 include("container/protocol.jl")
 include("container/tcp.jl")
 include("container/mqtt.jl")
 
 include("simulation/communication.jl")
 include("simulation/tasks.jl")
-include("container/simulation.jl")
 include("container/core.jl")
 
-include("world/topology.jl")
+include("simulation/container.jl")
+include("simulation/world.jl")
+include("util/topology.jl")
 
 include("express/api.jl")
+include("visualization.jl")
 
 end # module

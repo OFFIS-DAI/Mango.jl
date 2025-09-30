@@ -9,7 +9,8 @@ export Role,
     emit_event,
     get_model,
     subscribe_event,
-    setup
+    setup,
+    on_global_event
 
 
 """
@@ -154,6 +155,10 @@ function handle_message(role::Role, message::Any, meta::Any)
     # do nothing by default
 end
 
+function handle_unanswered(role::Role, message::Any, meta::Any)
+    # do nothing by default
+end
+
 """
     handle_event(role::Role, src::Role, event::Any; event_type::Any)
 
@@ -204,8 +209,8 @@ to the message dispatching. This handler function will be called everytime the g
 condition function ((message, meta) -> boolean) evaluates to true when a message arrives
 at the roles agent.
 """
-function subscribe_message(role::Role, handler::Function, condition::Function)
-    subscribe_message_handle(role.context.agent, role, handler, condition)
+function subscribe_message(role::Role, handler::Function, condition::Function; preprocessor::Union{Nothing,MessagePreprocessor}=nothing)
+    subscribe_message_handle(role.context.agent, role, handler, condition, preprocessor=preprocessor)
 end
 
 """
@@ -274,8 +279,28 @@ function schedule(f::Function, role::Role, data::TaskData)
     schedule(f, role.context.agent, data)
 end
 
+function clock(role::Role)
+    clock(role.context.agent)
+end
+
 function aid(role::Role)
     return address(role.context.agent).aid
+end
+
+function description(role::Role)
+    return description(role.context.agent)
+end
+
+function name(role::Role)
+    return name(role.context.agent)
+end
+
+function category(role::Role)
+    return category(role.context.agent)
+end
+
+function color(role::Role)
+    return color(role.context.agent)
 end
 
 function address(role::Role)
@@ -299,6 +324,14 @@ function send_message(
     return send_message(role.context.agent, content, agent_adress; kwargs...)
 end
 
+function send_messages(
+    role::Role,
+    content::Any,
+    agent_adresses::Vector{AgentAddress};
+    kwargs...,
+)
+    return send_message(role.context.agent, content, agent_adresses; kwargs...)
+end
 
 function send_tracked_message(
     role::Role,
@@ -308,6 +341,16 @@ function send_tracked_message(
     kwargs...,
 )
     return send_tracked_message(role.context.agent, content, agent_adress; response_handler=response_handler, calling_object=role, kwargs...)
+end
+
+function send_tracked_messages(
+    role::Role,
+    content::Any,
+    agent_adresses::Vector{AgentAddress};
+    response_handler::Function=(role, message, meta) -> nothing,
+    kwargs...,
+)
+    return send_tracked_messages(role.context.agent, content, agent_adresses; response_handler=response_handler, calling_object=role, kwargs...)
 end
 
 function send_and_handle_answer(
@@ -320,10 +363,20 @@ function send_and_handle_answer(
         calling_object=role, kwargs...)
 end
 
+function send_and_handle_answers(
+    response_handler::Function,
+    role::Role,
+    content::Any,
+    agent_addresses::Vector{AgentAddress};
+    kwargs...)
+    return send_and_handle_answers(response_handler, role.context.agent, content, agent_addresses;
+        calling_object=role, kwargs...)
+end
+
 function reply_to(role::Role,
     content::Any,
     received_meta::AbstractDict;
-    response_handler::Function=(agent, message, meta) -> nothing,
+    response_handler::Union{Nothing,Function}=nothing,
     kwargs...)
     return reply_to(role.context.agent, content, received_meta; response_handler=response_handler, calling_object=role, kwargs...)
 end
@@ -334,4 +387,13 @@ function forward_to(role::Role,
     received_meta::AbstractDict;
     kwargs...)
     return forward_to(role.context.agent, content, forward_to_address, received_meta; kwargs...)
+end
+
+"""
+    on_global_event(role::Role, event::Any)
+
+Handle global event. See [`emit_global_event`](@ref).
+"""
+function on_global_event(role::Role, event::Any)
+    # to be overridden
 end

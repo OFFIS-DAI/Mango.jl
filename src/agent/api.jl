@@ -1,4 +1,4 @@
-export Agent, send_message, send_tracked_message, reply_to, address, aid, send_and_handle_answer
+export Agent, send_message, send_tracked_message, reply_to, address, aid, send_and_handle_answer, MessagePreprocessor, WaitingMessagePreprocessor
 
 
 """
@@ -19,7 +19,13 @@ implementations across all agents.
 """
 abstract type Agent <: AgentInterface end
 
-function subscribe_message_handle(agent::AgentInterface, role::Any, condition::Any, handler::Any) end
+abstract type MessagePreprocessor end
+
+function init(preprocessor::MessagePreprocessor, role::Any) end
+function handle(preprocessor::MessagePreprocessor, message::Any, meta::AbstractDict) end
+function process(preprocessor::MessagePreprocessor, message::Any, meta::AbstractDict) end
+
+function subscribe_message_handle(agent::AgentInterface, role::Any, condition::Any, handler::Any, preprocessor::Union{Nothing,MessagePreprocessor}=nothing) end
 
 """
     subscribe_send_handle(agent::AgentInterface, role::Any, handler::Any)

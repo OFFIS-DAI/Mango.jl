@@ -44,6 +44,23 @@ end
     @test topology_neighbors(agents(container)[3]) == [address(agents(container)[1])]
 end
 
+@testset "TestCreateTopologyMultiAgentNode" begin
+    container = create_tcp_container("127.0.0.1", 3333)
+    agent = nothing
+
+    create_topology() do topology
+        agent = register(container, TopologyAgent())
+        agent2 = register(container, TopologyAgent())
+        agent3 = register(container, TopologyAgent())
+        n1 = add_node!(topology, agent, agent2)
+        n3 = add_node!(topology, agent3)
+        add_edge!(topology, n1, n3)
+    end
+
+    @test topology_neighbors(agent) == [address(agents(container)[3]),
+        address(agents(container)[2])]
+end
+
 @testset "TestModifyTopology" begin
     container = create_tcp_container("127.0.0.1", 3333)
     agent = nothing
@@ -142,7 +159,7 @@ end
     topology = cycle_topology(4)
     container = create_tcp_container("127.0.0.1", 3333)
 
-    choose_agent(topology) do node
+    choose_agents!(topology) do node
         return register(container, TopologyAgent())
     end
 
@@ -160,7 +177,7 @@ end
     register(container, TopologyAgent())
     register(container, TopologyAgent())
 
-    assign_agent(topology, container) do agent, node
+    assign_agents!(topology, container) do agent, node
         return aid(agent) == "agent" * string(node.id - 1)
     end
 
@@ -206,4 +223,96 @@ end
     end
 
     @test length(topology_neighbors(container["agent0"])) == 2
+end
+
+@testset "TestTopologyGraphAPI" begin
+    n_nodes = 5
+    topology = complete_topology(n_nodes)
+    @test length(collect(edges(topology))) == (n_nodes^2 - n_nodes) / 2
+    @test collect(edges(topology))[1] ∈ collect(edges(topology))
+    @test edgetype(topology) == Graphs.SimpleGraphs.SimpleEdge{Int64}
+    @test has_edge(topology, 1, 2)
+    @test has_vertex(topology, 1)
+    @test inneighbors(topology, 2) == [1, 3, 4, 5]
+    @test outneighbors(topology, 2) == [1, 3, 4, 5]
+    @test !is_directed(topology)
+    @test ne(topology) == (n_nodes^2 - n_nodes) / 2
+    @test nv(topology) == 5
+    @test collect(vertices(topology)) == [1, 2, 3, 4, 5]
+end
+
+@testset "TestMarkForConnector" begin
+    topologyA = complete_topology(3, tid=:A)
+    topologyB = cycle_topology(3, tid=:B)
+    connect_topologies!(topologyA, topologyB)
+    
+    marked_A = TopologyAgent()
+    tr = TopologyRole()
+    add(marked_A, tr)
+    mark_as_connector!(marked_A)
+    marked_B = TopologyAgent()
+    mark_as_connector!(marked_B)
+    
+    agents_1 = [marked_A, TopologyAgent(), TopologyAgent()]
+    agents_2 = [marked_B, TopologyAgent(), TopologyAgent()]
+        
+    auto_assign!(topologyA, agents_1)
+    auto_assign!(topologyB, agents_2)
+
+    @test length(topology_neighbors(marked_A, tid=:A)) == 2
+    @test length(topology_connectors(marked_A, tid=:A)) == 1
+    @test length(topology_connection_types(marked_A, tid=:A)) == 1
+    @test length(topology_neighbors(tr, tid=:A)) == 2
+    @test length(topology_connectors(tr, tid=:A)) == 1
+    @test length(topology_connection_types(tr, tid=:A)) == 1
+
+    @test_throws ArgumentError topology_neighbors(tr, tid=:B)
+    @test_throws ArgumentError topology_connectors(tr, tid=:B)
+    @test_throws ArgumentError topology_connection_types(tr, tid=:B)
+end
+
+@testset "TestSetAsConnector" begin
+    topologyA = complete_topology(3, tid=:A)
+    topologyB = cycle_topology(3, tid=:B)
+    connect_topologies!(topologyA, topologyB)
+    
+    marked_A = TopologyAgent()
+    set_as_connector!(topologyA, marked_A)
+    marked_B = TopologyAgent()
+    set_as_connector!(topologyB, marked_A)
+    
+    agents_1 = [marked_A, TopologyAgent(), TopologyAgent()]
+    agents_2 = [marked_B, TopologyAgent(), TopologyAgent()]
+        
+    auto_assign!(topologyA, agents_1)
+    auto_assign!(topologyB, agents_2)
+
+    @test length(topology_neighbors(marked_A, tid=:A)) == 2
+    @test length(topology_connectors(marked_A, tid=:A)) == 1
+    @test length(topology_connection_types(marked_A, tid=:A)) == 1
+end
+
+@testset "TestAgentCharacteristicSymbol" begin
+    container = create_tcp_container("127.0.0.1", 3333)
+    agent = nothing
+    agent2 = nothing
+
+    create_topology() do topology
+        agent = register(container, TopologyAgent())
+        agent2 = register(container, TopologyAgent())
+        agent3 = register(container, TopologyAgent())
+        n1 = add_node!(topology, agent)
+        n2 = add_node!(topology, agent2)
+        n3 = add_node!(topology, agent3)
+        add_edge!(topology, n2, n1)
+        add_edge!(topology, n2, n3)
+        set_characteristic!(topology, n1, agent, :lead)
+    end
+
+    @test topology_characteristic(agent) == :lead
+    @test length(topology_neighbors(agent, has_characteristic=:lead)) == 0
+    @test length(topology_neighbors(agent2, has_characteristic=:lead)) == 1
+    @test length(topology_neighbors(agent2)) == 2
+    @test length(topology_neighbors(agent2, has_characteristic=[:lead])) == 1
+    @test topology_node_id(agent) == 1
 end

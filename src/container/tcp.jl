@@ -60,7 +60,7 @@ function close(pool::TCPConnectionPool)
     pool.closed = true
 
     # Waiting until all acquired connections are released
-    wait(Threads.@spawn begin
+    wait(@spawnlog begin
         while pool.acquired_connections.counter > 0
             sleep(0.0001)
         end
@@ -229,7 +229,7 @@ function init(protocol::TCPProtocol, stop_check::Function, data_handler::Functio
     protocol.server = server
     tasks = []
     listen_task = errormonitor(
-        Threads.@spawn begin
+        @spawnlog begin
             try
                 while isopen(server)
                     connection = accept(server)

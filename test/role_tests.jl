@@ -270,3 +270,23 @@ end
     role_var = MyRoleVar(1)
     @test role_var.counter == 1
 end
+
+
+@testset "GetRoleByType" begin
+    agent = RoleTestAgent(0)
+    role1 = RoleTestRole(0, nothing)
+    role2 = MyRoleVar(1)
+    add(agent, role1)
+    add(agent, role2)
+
+    @test agent[RoleTestRole] == role1
+    @test agent[MyRoleVar{Int64}] == role2
+end
+
+@testset "GetRoleByTypeRoleNotFound" begin
+    agent = RoleTestAgent(0)
+    role1 = RoleTestRole(0, nothing)
+    add(agent, role1)
+
+    @test_throws ArgumentError agent[MyRoleVar]
+end

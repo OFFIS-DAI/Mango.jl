@@ -2,13 +2,16 @@ name = "Mango"
 uuid = "5e49fdec-d473-4d14-b295-7bff2fcf1925"
 authors = ["OFFIS e.V."]
 repo = "https://github.com/OFFIS-DAI/Mango.jl"
-version = "0.4.0"
+version = "0.5.0"
 
 [deps]
+Colors = "5ae59095-9a9b-59fe-a467-6f913c188581"
 ConcurrentCollections = "5060bff5-0b44-40c5-b522-fcd3ca5cecdd"
 ConcurrentUtilities = "f0e56b4a-5159-44fe-b623-3e5288b988bb"
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
+Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 Graphs = "86223c79-3864-5bf0-83f7-82e725a168b6"
 JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 LightBSON = "a4a7f996-b3a6-4de6-b9db-2fa5f350df41"
@@ -17,24 +20,40 @@ MetaGraphsNext = "fa8bd995-216d-47f1-8a91-f3b68fbeb377"
 Mosquitto = "db317de6-444b-4dfa-9d0e-fbf3d8dd78ea"
 OrderedCollections = "bac558e1-5e72-5ebc-8fee-abe8a469f55d"
 Parameters = "d96e819e-fc66-5662-9728-84c9c7592b0a"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Sockets = "6462fe0b-24de-5631-8697-dd941f90decc"
 UUIDs = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
 
+[weakdeps]
+GraphMakie = "1ecd5474-83a3-4783-bb4f-06765db800d2"
+Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
+
+[extensions]
+MangoGraphVisualization = ["Makie", "GraphMakie"]
+MangoPlotVisualization = ["Makie"]
+
 [compat]
+CairoMakie = "0.13.1"
+Colors = "~0.12"
 ConcurrentCollections = "~0.1"
 ConcurrentUtilities = "~2.2"
+Distributions = "~0.25"
+GraphMakie = "0.5.13"
+Graphs = "~1.10"
 JSON = "~0.21"
 LightBSON = "~0.2"
+Makie = "0.22.1"
+MetaGraphsNext = "~0.7"
 Mosquitto = "~0.10"
 OrderedCollections = "~1.6"
 Parameters = "~0.12"
-Graphs = "~1.11"
-MetaGraphsNext = "~0.7"
 julia = "^1.9"
 
 [extras]
-Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Test", "Documenter"]
+test = ["Test", "Documenter", "CairoMakie", "Makie", "GraphMakie"]
