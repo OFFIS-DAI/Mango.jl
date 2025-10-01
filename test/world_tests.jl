@@ -502,19 +502,19 @@ end
     aid_graph = topology_to_aid_graph(topo)
     poisson_com_provider = create_distribution_based_com_sim(aid_graph, agents(world), base_delay_per_message_ms=15)
     world.communication_sim = poisson_com_provider
-
+    
     activate(world) do 
         send_message(a1, "Hello Friends, this is RSd!", AgentAddress(aid=aid(a2)))
         send_message(a1, "Hello Friends, this is RSd!", AgentAddress(aid=aid(a3)))
 
         stepping_result = step_simulation(world)
 
-        @test Mango.time(world) == DateTime("0000-01-01T00:01:40")
+        @test Mango.time(world) == DateTime("0000-01-01T00:00:00.012")
 
         send_message(a1, "Hello Friends, this is RSd!", AgentAddress(aid=aid(a3)))
 
         stepping_result = step_simulation(world)
 
-        @test Mango.time(world) == DateTime("0000-01-01T00:03:20")
+        @test Mango.time(world) == DateTime("0000-01-01T00:00:00.014")
     end
 end

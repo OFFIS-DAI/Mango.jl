@@ -136,8 +136,8 @@ function create_distribution_based_com_sim(aid_graph::MetaGraph,
             if distance == typemax(Int)
                 distance = 100
             end
-            specific_distr = distribution_provider(base_delay_per_message_ms + distance/(2*10^5))
-            provider_com.delay_s_directed_edge_dict[(aid(agent), label_other)] = () -> min(max_edge_delay_ms/1000, abs(rand(specific_distr)) / 1000)
+            specific_distr = distribution_provider(base_delay_per_message_ms + distance)
+            provider_com.delay_s_directed_edge_dict[(aid(agent), label_other)] = () -> min(max_edge_delay_ms, abs(rand(specific_distr)))/1000
             provider_com.delay_s_directed_edge_dict[(label_other, aid(agent))] = provider_com.delay_s_directed_edge_dict[(label, label_other)]
         end
     end
