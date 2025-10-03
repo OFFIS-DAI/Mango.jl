@@ -99,7 +99,7 @@ function calculate_communication(communication_sim::DelayProviderCommunicationSi
         if haskey(communication_sim.delay_s_directed_edge_dict, key)
             delay_s = communication_sim.delay_s_directed_edge_dict[key]()
         end
-        pr = PackageResult(true, delay_s)
+        pr = PackageResult(true, max(0,delay_s))
         communication_sim.message_cache[message] = pr
         push!(results, pr)
     end
