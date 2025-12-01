@@ -330,7 +330,7 @@ function send_messages(
     agent_adresses::Vector{AgentAddress};
     kwargs...,
 )
-    return send_message(role.context.agent, content, agent_adresses; kwargs...)
+    return send_messages(role.context.agent, content, agent_adresses; kwargs...)
 end
 
 function send_tracked_message(

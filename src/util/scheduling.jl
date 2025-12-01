@@ -5,6 +5,7 @@ export TaskData,
     DateTimeTaskData,
     AwaitableTaskData,
     ConditionalTaskData,
+    TimeseriesTaskData,
     stop_task,
     stop_all_tasks,
     wait_for_all_tasks,
@@ -237,6 +238,21 @@ struct ConditionalTaskData <: TaskData
     check_interval_s::Float64
 end
 
+"""
+Task data to schedule a whole timeseries, f(date) will be called for every date in
+the `dates` list (with date as an argument).
+"""
+struct TimeseriesTaskData <: TaskData 
+    dates::Vector{Dates.DateTime}
+end
+
+function execute_task(f::Function, scheduler::AbstractScheduler, data::TimeseriesTaskData)
+    for date in data.dates
+        sleep(scheduler, (date - now(scheduler)).value / 1000)
+        f(date)
+    end
+end
+
 function execute_task(f::Function, scheduler::AbstractScheduler, data::PeriodicTaskData)
     while data.condition()
         f()
@@ -437,7 +453,11 @@ function wait_for_finish_or_sleeping(scheduler::SimulationScheduler, task::Task,
 end
 
 function now(scheduler::SimulationScheduler)
-    return scheduler.clock.simulation_time
+    ctime = scheduler.clock.simulation_time
+    if haskey(scheduler.task_time, current_task())
+        ctime = scheduler.task_time[current_task()]
+    end
+    return ctime
 end
 
 function sleep(scheduler::SimulationScheduler, time_s::Real)

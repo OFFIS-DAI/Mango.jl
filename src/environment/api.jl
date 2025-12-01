@@ -35,7 +35,7 @@ end
 
 Initialize the environment. Should be called once per instantiated Environment.
 """
-function initialize(environment::Environment, agents::Vector{A}) where {A<:Agent}
+function initialize(environment::Environment, agents::Vector{A}, clock::Clock) where {A<:Agent}
     # default do nothing
 end
 

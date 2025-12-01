@@ -21,7 +21,7 @@ end
 
 Initializes the space.
 """
-function initialize(space::Space, agents::Vector{A}) where {A<:Agent}
+function initialize(space::Space, agents::Vector{A}, clock::Clock) where {A<:Agent}
     throw("Initialization for $space is not defined!")
 end
 
@@ -101,19 +101,19 @@ function move(space::Area2D, agent::Agent, position::Position2D)
     space.to_position[aid(agent)] = position
 end
 
-function initialize(space::Area2D, agents::Vector{A}) where {A<:Agent}
+function initialize(space::Area2D, agents::Vector{A}, clock::Clock) where {A<:Agent}
     for agent in agents
         space.to_position[aid(agent)] = Position2D(rand() * space.width, rand() * space.height)
     end
 end
 
-function initialize(behavior::Behavior)
+function initialize(behavior::Behavior, env::Environment, clock::Clock)
     # default no initialization
 end
 
-function initialize(environment::DefaultEnvironment{S}, agents::Vector{A}) where {S<:Space} where {A<:Agent}
-    initialize(environment.space, agents)
-    initialize(behavior(environment))
+function initialize(environment::DefaultEnvironment{S}, agents::Vector{A}, clock::Clock) where {S<:Space} where {A<:Agent}
+    initialize(environment.space, agents, clock)
+    initialize(behavior(environment), environment, clock)
     environment.initialized = true
 end
 

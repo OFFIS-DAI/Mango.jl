@@ -331,7 +331,7 @@ a max_advance_time_s, which will abort the step if the determined step_size exce
 function step_simulation(world::World, step_size_s::Real=DISCRETE_EVENT; max_advance_time_s::Real=-1)::Union{SimulationResult,Nothing}
     # Init world if uninitialized
     if !initialized(world.env)
-        initialize(world.env, [v for v in values(agents(world))])
+        initialize(world.env, [v for v in values(agents(world))], world.clock)
         do_recordings(world)
     end
 
