@@ -50,6 +50,10 @@ Default clock implementation, in which a static DateTime field is used.
     end
 end
 
+function zero_clock()
+    return Clock(DateTime(0))
+end
+
 """
 Clock implmentation using the real time and therefore not holding any time information
 """
