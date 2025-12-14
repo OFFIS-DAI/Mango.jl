@@ -394,6 +394,16 @@ end
 
 Handle global event. See [`emit_global_event`](@ref).
 """
-function on_global_event(role::Role, event::Any)
+function on_global_event(role::Role, clock::Clock, event::Any)
+    # to be overridden
+end
+
+
+"""
+    on_agent_event(role::Role, event::Any)
+
+Handle agent event. See [`emit_agent_event`](@ref).
+"""
+function on_agent_event(role::Role, clock::Clock, event::Any)
     # to be overridden
 end

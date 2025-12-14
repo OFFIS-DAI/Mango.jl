@@ -1,4 +1,4 @@
-export Position, Space, WorldObserver, Behavior, Environment, NoEnv, install, dispatch_global_event, initialize, initialized, add_observer!
+export Position, Space, WorldObserver, Behavior, Environment, NoEnv, install, dispatch_global_event, initialize, initialized, add_observer!, emit_agent_event
 
 abstract type Position end
 abstract type WorldObserver end
@@ -7,7 +7,7 @@ abstract type Environment end
 
 struct NoEnv <: Environment end
 
-function dispatch_global_event(observer::WorldObserver, event::Any)
+function dispatch_global_event(observer::WorldObserver, clock::Clock, event::Any)
     # default no reaction
 end
 
@@ -71,11 +71,20 @@ function emit_global_event(environment::Environment, event::Any)
 end
 
 """
-    install(environment::Environment, agent::A; kwargs...) where {A<:Agent}
+    install(environment::Environment, agent::A; id::Any, additional_information...) where {A<:Agent}
 
 Install the agent to the environment using optional additional information. This method can
 be used to 
 """
-function install(environment::Environment, agent::A; additional_information...) where {A<:Agent}
+function install(environment::Environment, agent::A; id::Any, additional_information...) where {A<:Agent}
     throw("Install is not implemented for $environment")
+end
+
+"""
+    emit_agent_event(environment::Environment, event::Any, id::Any)
+
+Emits an agent event sent to all agentsm which are installed on `id`.
+"""
+function emit_agent_event(environment::Environment, clock::Clock, event::Any, id::Any)
+    throw("Emit agent event not implemented for $environment")
 end

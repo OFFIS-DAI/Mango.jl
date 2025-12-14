@@ -26,7 +26,7 @@ end
     register(container, agent1)
     register(container, agent2)
 
-    wait(Threads.@spawn send_message(container, "Hello Friends, this is RSc!", AgentAddress(aid=aid(agent1))))
+    wait(send_message(container, "Hello Friends, this is RSc!", AgentAddress(aid=aid(agent1))))
 
     @test agent1.counter == 10
 end

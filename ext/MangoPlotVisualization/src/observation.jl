@@ -79,26 +79,32 @@ function Mango.plot_recordings(world::World;
     main_fig = Figure(size=size)
     all_layout = main_fig[1, 1] = GridLayout()
 
-    _create_label(all_layout, "W", 1)
-    for (i, key) in enumerate(keys(dc))
-        layout_fig = all_layout[((i - 1) ÷ row_length) + 1, ((i - 1) % row_length) + 1]
-        plot_world(world, key, write_to=nothing, fig=layout_fig, color=color, colormap=colormap)
+    if length(dc) > 0
+        _create_label(all_layout, "W", 1)
+        for (i, key) in enumerate(keys(dc))
+            layout_fig = all_layout[((i - 1) ÷ row_length) + 1, ((i - 1) % row_length) + 1]
+            plot_world(world, key, write_to=nothing, fig=layout_fig, color=color, colormap=colormap)
+        end
     end
 
-    y_start_agents = (((length(dc) - 1) ÷ row_length) + 2)
-    shift = (y_start_agents-1) * row_length
+    y_start_agents = length(dc) ÷ row_length
+    @info y_start_agents length(dc)
+    shift = y_start_agents * row_length + 1
 
     _create_label(all_layout, "A", y_start_agents)
     for (i, key) in enumerate(keys(dac))
-        layout_fig = all_layout[(((i+shift) - 1) ÷ row_length) + 1, (((i+shift) - 1) % row_length) + 1]
         current_dac = dac[key]
+        
         if current_dac.dedicated_plots
-            layouts = [all_layout[(((i+shift+j-1) - 1) ÷ row_length) + 1, (((i+shift+j-1) - 1) % row_length) + 1] 
-                        for j in 1:length(current_dac.timeseries)]
+            # [y, x], y needs to start at zero, 012 123
+            layouts = [all_layout[((shift+j-2) ÷ row_length), ((shift+j-2) % row_length) + 1] 
+            for j in 1:length(current_dac.timeseries)]
             plot_agents(world, key, write_to=nothing, fig=layouts, color=colormap)
-            shift += length(current_dac.timeseries) - 1
+            shift += length(current_dac.timeseries)
         else
+            layout_fig = all_layout[((shift - 1) ÷ row_length), ((shift - 1) % row_length) + 1]
             plot_agents(world, key, write_to=nothing, fig=layout_fig, color=colormap)
+            shift += 1
         end
     end
 

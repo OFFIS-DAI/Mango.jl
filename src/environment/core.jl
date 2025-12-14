@@ -1,6 +1,6 @@
 export DefaultEnvironment, Position2D, Area2D, location,
     move, initialize, initialized, schedule,
-    emit_global_event, behavior, space, install
+    emit_global_event, behavior, space, install, emit_agent_event
 
 struct NoBehavior <: Behavior end
 
@@ -30,7 +30,7 @@ end
 
 Install the agent on the space.
 """
-function install(space::Space{P}, agent::Agent; additional_information...) where {P<:Position}
+function install(space::Space{P}, agent::Agent; id::Any,  additional_information...) where {P<:Position}
     # do nothing by default
 end
 
@@ -66,6 +66,7 @@ with the environment and exist in the defined space.
     space::S = Area2D(width=10, height=10)
     behavior::Behavior = NoBehavior()
     observers::Vector{WorldObserver} = Vector{WorldObserver}()
+    installed_id_to_agent::Dict{Any, Agent} = Dict{Any, Agent}()
     initialized::Bool = false
 end
 
@@ -85,7 +86,7 @@ end
 
 Install the agent using the behavior data.
 """
-function install(behavior::Behavior, agent::Agent; additional_information...)
+function install(behavior::Behavior, agent::Agent; id::Any, additional_information...)
     # do nothing by default
 end
 
@@ -164,11 +165,24 @@ this function by defining [`on_global_event`](@ref).
 """
 function emit_global_event(environment::DefaultEnvironment, event::Any)
     for observer in environment.observers
-        dispatch_global_event(observer, event)
+        dispatch_global_event(observer, environment.scheduler.clock, event)
     end
 end
 
-function install(environment::DefaultEnvironment, agent::A; additional_information...) where {A<:Agent}
-    install(space(environment), agent; additional_information...)
-    install(behavior(environment), agent; additional_information...)
+function install(environment::DefaultEnvironment, agent::A; id::Any, additional_information...) where {A<:Agent}
+    install(space(environment), agent; id=id, additional_information...)
+    install(behavior(environment), agent; id=id, additional_information...)
+    environment.installed_id_to_agent[id] = agent
+end
+
+function emit_agent_event(environment::DefaultEnvironment, event::Any, id::Any)
+    if haskey(environment.installed_id_to_agent, id)
+        agent = environment.installed_id_to_agent[id]
+        on_agent_event(agent, environment.scheduler.clock, event)
+        for role in roles(agent)
+            on_agent_event(role, environment.scheduler.clock, event)
+        end
+    else 
+        @debug "You are calling emit_agent_event although no agent is installed on the ID" id
+    end
 end

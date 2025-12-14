@@ -68,8 +68,8 @@ end
 
 function neighbors(service::TopologyService, tid::Symbol=:default, state::State=NORMAL; has_characteristic::Union{Symbol,Vector{Symbol}}=Vector{Symbol}(), include_connectors::Vector{Symbol}=Vector{Symbol}(), match_func::Function=(desc)->true)
     if haskey(service.tid_to_state_to_neighbors, tid)
-        return vcat([n.address for n in get(service.tid_to_state_to_neighbors[tid], state, Vector()) if _has_characteristic(n.characteristic, has_characteristic) && match_func(n)], 
-                    [t[2].address for t in service.tid_to_connectors[tid] if t[1] in include_connectors && match_func(t)])
+        return vcat([n.address for n in get(service.tid_to_state_to_neighbors[tid], state, Vector()) if _has_characteristic(n.characteristic, has_characteristic) && match_func(n.description)], 
+                    [t[2].address for t in service.tid_to_connectors[tid] if t[1] in include_connectors && match_func(t.description)])
     end
     throw(ArgumentError("No neighbors found for tid=$tid"))
 end 

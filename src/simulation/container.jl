@@ -46,6 +46,7 @@ function register(
 end
 
 function forward_message(container::SimulationContainer, msg::Any, meta::AbstractDict)
+    
     push!(container.message_queue,
         MessageData(msg,
             meta,
@@ -62,6 +63,10 @@ function send_message(
     sender_id::Union{Nothing,String}=nothing;
     kwargs...,
 )
+    if isnothing(agent_adress) || isnothing(agent_adress.aid) 
+        throw("$agent_adress or its aid is nothing")
+    end
+
     receiver_id = agent_adress.aid
     tracking_id = agent_adress.tracking_id
 

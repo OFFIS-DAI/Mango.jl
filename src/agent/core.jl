@@ -19,6 +19,7 @@ export @agent,
     add_service!,
     services,
     on_global_event,
+    on_agent_event,
     sender_address,
     send_and_handle_answers,
     send_tracked_messages,
@@ -411,7 +412,7 @@ end
 
 Return all roles of the given agent
 """
-function roles(agent::Agent)
+function roles(agent::Agent)::Vector{Role}
     return agent.role_handler.roles
 end
 
@@ -790,18 +791,27 @@ end
 
 Handle global event. See [`emit_global_event`](@ref).
 """
-function on_global_event(agent::Agent, event::Any)
+function on_global_event(agent::Agent, clock::Clock, event::Any)
     # to be overridden
 end
 
-function dispatch_global_event(agent::Agent, event::Any)
-    on_global_event(agent, event)
+"""
+    on_agent_event(agent::Agent, event::Any)
+
+Handles an agent event. See [`emit_agent_event`](@ref).
+"""
+function on_agent_event(agent::Agent, clock::Clock, event::Any)
+    # to be overridden
+end
+
+function dispatch_global_event(agent::Agent, clock::Clock, event::Any)
+    on_global_event(agent, clock, event)
     for role in roles(agent)
-        on_global_event(role, event)
+        on_global_event(role, clock, event)
     end
     for (condition, call, caller) in agent.system_handler.global_event_subs
         if condition(event)
-            call(caller, event)
+            call(caller, clock, event)
         end
     end
 end

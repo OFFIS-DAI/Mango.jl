@@ -8,10 +8,10 @@ end
 @role struct WorldEventRole
     counter::Real
 end
-function Mango.on_global_event(role::WorldEventRole, event::String)
+function Mango.on_global_event(role::WorldEventRole, clock::Clock, event::String)
     role.counter += 7
 end
-function Mango.on_global_event(agent::WorldEventAgent, event::String)
+function Mango.on_global_event(agent::WorldEventAgent, clock::Clock, event::String)
     agent.counter += 7
 end
 
@@ -45,7 +45,7 @@ struct TestSpace <: Space{TestPosition} end
 
 @testset "TestAgentSpaceApiNotImplemented" begin
     test_space = TestSpace()
-    agent = WorldEventAgent(12)
+    agent = WorldEventAgent(12)  
     @test_throws "Initialization for TestSpace is not defined!" initialize(test_space, [agent], Mango.zero_clock())
     @test_throws "Move on the space TestSpace not defined!" move(test_space, agent, TestPosition())
     @test_throws "Position on the space TestSpace not defined!" location(test_space, agent)

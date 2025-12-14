@@ -1,7 +1,8 @@
 export World, register, send_message, shutdown, protocol_addr,
     create_world, step_simulation, SimulationResult, CommunicationSimulationResult,
     TaskSimulationResult, on_step, discrete_step_until, env, space, time, clock,
-    record_world!, record_agent!, record_agent_having!, MessageTransaction, data_collection, data_agent_collection
+    record_world!, record_agent!, record_agent_having!, MessageTransaction, data_collection, data_agent_collection, 
+    agent_recording_as_plottable
 
 using Base.Threads
 using Dates
@@ -58,9 +59,9 @@ struct DispatchToAgentWorldObserver <: WorldObserver
     agents_ref::OrderedDict{String,Agent}
 end
 
-function dispatch_global_event(observer::DispatchToAgentWorldObserver, event::Any)
+function dispatch_global_event(observer::DispatchToAgentWorldObserver, clock::Clock, event::Any)
     for agent in values(observer.agents_ref)
-        dispatch_global_event(agent, event)
+        dispatch_global_event(agent, clock, event)
     end
 end
 
@@ -83,6 +84,23 @@ An AgentsRecording is a container to record data of the agents.
     data::Any = nothing
     dedicated_plots = false
     no_plot = false
+end
+
+function get_x(agents_recording::AgentsRecording)
+    return agents_recording.time
+end
+
+function get_labels_and_ys(agents_recording::AgentsRecording)
+    pairs = collect(agents_recording.timeseries)
+    labels = first.(pairs)
+    ys_last = last.(pairs)
+    ys = nothing
+    if length(ys_last) == 1
+        ys = Float64.(ys_last[1]) 
+    else 
+        ys = Float64.(hcat(ys_last...)) 
+    end
+    return labels, ys
 end
 
 struct MessageTransaction
@@ -220,7 +238,7 @@ function cs_step_iteration(world::World,
     pre_communication_result::Union{Nothing,CommunicationSimulationResult})::MessagingIterationResult
     message_packages = to_cs_input!(messages(world.container))
     communication_result = pre_communication_result
-    if isnothing(communication_result)
+    if isnothing(communication_result) || length(message_packages) != length(communication_result.package_results)
         communication_result = calculate_communication(world.communication_sim,
             clock(world),
             message_packages)
@@ -228,7 +246,10 @@ function cs_step_iteration(world::World,
     state_changed = false
     @sync begin
         for (mp, pr) in sort([z for z in zip(message_packages, communication_result.package_results)], by=t -> add_seconds(t[1].sent_date, t[2].delay_s))
-            if add_seconds(mp.sent_date, pr.delay_s) <= add_seconds(time(world), step_size_s) && pr.reached
+            if !pr.reached
+                continue
+            end
+            if add_seconds(mp.sent_date, pr.delay_s) <= add_seconds(time(world), step_size_s)
                 state_changed = true
                 push!(world.recorded_messages, MessageTransaction(mp.sender_id,
                     mp.receiver_id,
@@ -457,6 +478,10 @@ function discrete_step_until(world::World, max_advance_time_s::Real)
     return results
 end
 
+function discrete_step_until(world::World, max_advance::Dates.Period)
+    return discrete_step_until(world, Second(max_advance).value)
+end
+
 struct NonWaitable end
 function Base.wait(waitable::NonWaitable) end
 
@@ -505,6 +530,18 @@ Return the data collection with the `key` from the world.
 """
 function data_agent_collection(world::World, key::String; dedicated_plots::Bool=false, no_plot::Bool=false)
     return get!(world.data_agent_collections, key, AgentsRecording(dedicated_plots=dedicated_plots, no_plot=no_plot))
+end
+
+
+"""
+    agent_recording_as_plottable(world::World, key::String)
+
+Recording of agents as plottables values, Returns: x, ys, labels
+"""
+function agent_recording_as_plottable(world::World, key::String)
+    agents_recording = data_agent_collection(world, key)
+    labels, ys = get_labels_and_ys(agents_recording)
+    return get_x(agents_recording), ys, labels
 end
 
 """

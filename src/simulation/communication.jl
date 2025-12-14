@@ -57,19 +57,27 @@ Implements a default delay which determines the delay of all messages if not spe
 such that the delay is specified for every link between agents.
 """
 @kwdef struct SimpleCommunicationSimulation <: CommunicationSimulation
+    loss_percent::Real = 0
     default_delay_s::Real = 0
     delay_s_directed_edge_dict::Dict{Tuple{Union{String,Nothing},String},Real} = Dict()
+    message_cache::Dict{MessagePackage,PackageResult} = Dict()
 end
 
 function calculate_communication(communication_sim::SimpleCommunicationSimulation, clock::Clock, messages::Vector{MessagePackage})::CommunicationSimulationResult
     results::Vector{PackageResult} = Vector()
     for message in messages
+        # if doubly invoked random values would be calculated again if no cache is used
+        if haskey(communication_sim.message_cache, message)
+            push!(results, communication_sim.message_cache[message])
+            continue
+        end
+
         key = (message.sender_id, message.receiver_id)
         delay_s = communication_sim.default_delay_s
         if haskey(communication_sim.delay_s_directed_edge_dict, key)
             delay_s = communication_sim.delay_s_directed_edge_dict[key]
         end
-        push!(results, PackageResult(true, delay_s))
+        push!(results, PackageResult(rand() > communication_sim.loss_percent, delay_s))
     end
     return CommunicationSimulationResult(results)
 end
