@@ -63,7 +63,7 @@ end
     spa = register(world, SystemProgrammingAgent())
     sia = register(world, SystemInitAgent())
     
-    behavior_in(world, on_global_event=MessageSystemProgramming, agent_types=SystemProgrammingAgent) do agent, global_event
+    behavior_in(world, on_global_event=MessageSystemProgramming, agent_types=SystemProgrammingAgent) do agent, clock, global_event
         agent.got_it = true
     end
     
