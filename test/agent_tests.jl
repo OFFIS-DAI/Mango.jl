@@ -308,20 +308,26 @@ end
     timedwait(() -> a1.got_msg, 0.5)
     timedwait(() -> a2.got_msg, 0.5)
     reset_events()
-    @test (a1.counter == a1.counter == 10) && (b1.counter == b2.counter == 0)
+    @test a1.counter == 10
+    @test b1.counter == 0 
+    @test b2.counter == 0
 
     # check SET_A message on c2
     wait(send_message(b1, "Test", MQTTAddress(broker_addr, SET_A)))
     timedwait(() -> a1.got_msg, 0.5)
     timedwait(() -> a2.got_msg, 0.5)
     reset_events()
-    @test (a1.counter == a1.counter == 20) && (b1.counter == b2.counter == 0)
+    @test a1.counter == 20
+    @test b1.counter == 0
+    @test b2.counter == 0
 
     # check SET_B message
     wait(send_message(a1, "Test", MQTTAddress(broker_addr, SET_B)))
     timedwait(() -> b1.got_msg, 0.5)
     reset_events()
-    @test (a1.counter == a1.counter == 20) && b1.counter == 10 && b2.counter == 0
+    @test a1.counter == 20
+    @test b1.counter == 10
+    @test b2.counter == 0
 
     # check ALL_AGENTS message
     wait(send_message(a1, "Test", MQTTAddress(broker_addr, NO_AGENTS)))
@@ -334,7 +340,9 @@ end
     timedwait(() -> a2.got_msg, 0.5)
     timedwait(() -> b1.got_msg, 0.5)
     reset_events()
-    @test (a1.counter == a1.counter == 30) && b1.counter == 20 && b2.counter == 0
+    @test a1.counter == 30
+    @test b1.counter == 20
+    @test b2.counter == 0
 
     # shutdown
     wait(Threads.@spawn shutdown(c1))
