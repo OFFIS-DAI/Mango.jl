@@ -160,10 +160,8 @@ Disconnect the client from the broker and stop the message loop.
 function close(protocol::MQTTProtocol)
     if protocol.connected
         disconnect(protocol.client)
+        Mosquitto.loop_stop(protocol.client)
     end
-    Mosquitto.loop_stop(protocol.client)
-    close(protocol.msg_channel)
-    close(protocol.conn_channel)
 
     protocol.active = false
 end
