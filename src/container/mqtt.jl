@@ -85,7 +85,6 @@ function run_mosquitto_loop(protocol::MQTTProtocol, data_handler::Function)
     while protocol.active
         handle_msg_channel(protocol, data_handler)
         handle_conn_channel(protocol)
-        yield()
     end
 end
 
@@ -96,14 +95,12 @@ Check `protocol.msg_channel`` for new messages and forward their contents to the
 """
 function handle_msg_channel(protocol::MQTTProtocol, data_handler::Function)
     # handle incoming content messages
-    while !isempty(protocol.msg_channel)
-        msg = take!(protocol.msg_channel)
-        topic = msg.topic
-        message = msg.payload
+    msg = take!(protocol.msg_channel)
+    topic = msg.topic
+    message = msg.payload
 
-        # guaranteed to be a key in the dict unless something went seriously wrong on registration
-        @spawnlog data_handler(message, topic; receivers=protocol.topic_to_aid[topic])
-    end
+    # guaranteed to be a key in the dict unless something went seriously wrong on registration
+    data_handler(message, topic; receivers=protocol.topic_to_aid[topic])
 end
 
 """
@@ -113,14 +110,12 @@ Check `protocol.conn_chnnel` for new messages and update the protocols connectio
 """
 function handle_conn_channel(protocol::MQTTProtocol)
     # handle incoming connection status updates
-    while !isempty(protocol.conn_channel)
-        conncb = take!(protocol.conn_channel)
+    conncb = take!(protocol.conn_channel)
 
-        if conncb.val == 1
-            protocol.connected = true
-        elseif conncb.val == 0
-            protocol.connected = false
-        end
+    if conncb.val == 1
+        protocol.connected = true
+    elseif conncb.val == 0
+        protocol.connected = false
     end
 end
 
@@ -165,8 +160,8 @@ Disconnect the client from the broker and stop the message loop.
 function close(protocol::MQTTProtocol)
     if protocol.connected
         disconnect(protocol.client)
-        Mosquitto.loop_stop(protocol.client)
     end
+    Mosquitto.loop_stop(protocol.client)
 
     protocol.active = false
 end
