@@ -162,6 +162,8 @@ function close(protocol::MQTTProtocol)
         disconnect(protocol.client)
     end
     Mosquitto.loop_stop(protocol.client)
+    close(protocol.msg_channel)
+    close(protocol.conn_channel)
 
     protocol.active = false
 end
