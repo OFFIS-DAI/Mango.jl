@@ -36,7 +36,7 @@ mutable struct MQTTProtocol <: Protocol{String}
 
     function MQTTProtocol(client_id::String, broker_addr::InetAddr)
         # Have to cast types for the MQTT client constructor.
-        c = Client(string(broker_addr.host), Int64(broker_addr.port); id=client_id)
+        c = Client(string(broker_addr.host), Int64(broker_addr.port))
         msg_channel = get_messages_channel(c)
         conn_channel = get_connect_channel(c)
         return new(c, broker_addr, false, false, msg_channel, conn_channel, Dict{String,Vector{String}}())
@@ -80,11 +80,14 @@ Loop is stopped by setting the `protocol.active` flag to false.
 function run_mosquitto_loop(protocol::MQTTProtocol, data_handler::Function)
     Mosquitto.loop_start(protocol.client)
     protocol.active = true
-
+    
     # listen for incoming messages and run callback
     while protocol.active
-        handle_msg_channel(protocol, data_handler)
+        
         handle_conn_channel(protocol)
+        handle_msg_channel(protocol, data_handler)
+
+        yield()
     end
 end
 
@@ -94,13 +97,16 @@ end
 Check `protocol.msg_channel`` for new messages and forward their contents to the `data_handler`.
 """
 function handle_msg_channel(protocol::MQTTProtocol, data_handler::Function)
-    # handle incoming content messages
-    msg = take!(protocol.msg_channel)
-    topic = msg.topic
-    message = msg.payload
-
-    # guaranteed to be a key in the dict unless something went seriously wrong on registration
-    data_handler(message, topic; receivers=protocol.topic_to_aid[topic])
+    nmessages = Base.n_avail(get_messages_channel(protocol.client))
+    
+    for _ =1:nmessages
+        # handle incoming content messages
+        msg = take!(get_messages_channel(protocol.client))
+        topic = msg.topic
+        message = msg.payload
+        # guaranteed to be a key in the dict unless something went seriously wrong on registration
+        @spawnlog data_handler(message, topic; receivers=protocol.topic_to_aid[topic])
+    end
 end
 
 """
@@ -109,13 +115,17 @@ end
 Check `protocol.conn_chnnel` for new messages and update the protocols connection status accordingly.
 """
 function handle_conn_channel(protocol::MQTTProtocol)
-    # handle incoming connection status updates
-    conncb = take!(protocol.conn_channel)
+    nmessages = Base.n_avail(get_connect_channel(protocol.client))
 
-    if conncb.val == 1
-        protocol.connected = true
-    elseif conncb.val == 0
-        protocol.connected = false
+    for _ =1:nmessages
+        # handle incoming connection status updates
+        conncb = take!(get_connect_channel(protocol.client))
+
+        if conncb.val == 1
+            protocol.connected = true
+        elseif conncb.val == 0
+            protocol.connected = false
+        end
     end
 end
 
