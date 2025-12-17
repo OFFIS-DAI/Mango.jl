@@ -305,8 +305,9 @@ end
     # loopback shortcut for MQTT messages like there is for TCP.
     # This means we have to wait for the message to return to us from the broker.
     wait(send_message(a1, "Test", MQTTAddress(broker_addr, SET_A)))
-    timedwait(() -> a1.got_msg, 0.5)
-    timedwait(() -> a2.got_msg, 0.5)
+    sleep(0.5)
+    timedwait(() -> a1.got_msg, 2)
+    timedwait(() -> a2.got_msg, 2)
     reset_events()
     @test a1.counter == 10
     @test b1.counter == 0 
