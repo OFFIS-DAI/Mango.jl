@@ -297,6 +297,8 @@ end
 
     sleep(0.5)
     if !c1.protocol.connected
+        close(c1.protocol)
+        close(c2.protocol)
         return
     end
 
