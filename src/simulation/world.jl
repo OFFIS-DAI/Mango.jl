@@ -2,7 +2,7 @@ export World, register, send_message, shutdown, protocol_addr,
     create_world, step_simulation, SimulationResult, CommunicationSimulationResult,
     TaskSimulationResult, on_step, discrete_step_until, env, space, time, clock,
     record_world!, record_agent!, record_agent_having!, MessageTransaction, data_collection, data_agent_collection, 
-    agent_recording_as_plottable
+    agent_recording_as_plottable, agent_recordings_as_dict
 
 using Base.Threads
 using Dates
@@ -542,6 +542,18 @@ function agent_recording_as_plottable(world::World, key::String)
     agents_recording = data_agent_collection(world, key)
     labels, ys = get_labels_and_ys(agents_recording)
     return get_x(agents_recording), ys, labels
+end
+
+function agent_recordings_as_dict(world::World)
+    d::OrderedDict{String, AgentsRecording} = world.data_agent_collections
+    pairs::Vector{Pair} = []
+    for (key, value) in d
+        for (var, series) in value.timeseries
+            push!(pairs, "$key-$var" => series)
+        end
+    end
+    push!(pairs, "time" => collect(values(d))[1].time)
+    return Dict(pairs)
 end
 
 """
