@@ -39,20 +39,18 @@ end
 
 sleep(0.18)
 stop_task(agent, t)
-wait_for_all_tasks(agent)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">┌ Error: Exception occurred in thread 1
+wait_for_all_tasks(agent)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">┌ Error: Exception occurred in thread 2
 │ EOFError: read end of file
 │
 │ Stacktrace:
 │  [1] wait
-│    @ ./asyncevent.jl:155 [inlined]
+│    @ ./asyncevent.jl:202 [inlined]
 │  [2] wait
 │    @ ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:119 [inlined]
-│  [3] execute_task(f::Main.var&quot;#3#4&quot;, scheduler::Scheduler, data::PeriodicTaskData)
+│  [3] execute_task(f::Main.var&quot;#4#5&quot;, scheduler::Scheduler, data::PeriodicTaskData)
 │    @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:263
-│  [4] macro expansion
-│    @ ~/work/Mango.jl/Mango.jl/src/util/error_handling.jl:19 [inlined]
-│  [5] (::Mango.var&quot;#9#10&quot;{Main.var&quot;#3#4&quot;, Scheduler, PeriodicTaskData})()
-│    @ Mango ./threadingconstructs.jl:416
+│  [4] (::Mango.var&quot;#schedule##0#schedule##1&quot;{Main.var&quot;#4#5&quot;, Scheduler, PeriodicTaskData})()
+│    @ Mango ~/work/Mango.jl/Mango.jl/src/util/error_handling.jl:19
 └ @ Mango ~/work/Mango.jl/Mango.jl/src/util/error_handling.jl:13</code></pre><div class="admonition is-warning"><header class="admonition-header">Waiting on periodic tasks blocks forever</header><div class="admonition-body"><p>Calling <code>wait(t)</code> on a periodic task will block indefinitely because it never finishes. Always call <code>stop_task</code> first, then <code>wait_for_all_tasks</code>.</p></div></div><h3 id="Stop-all-tasks-at-once"><a class="docs-heading-anchor" href="#Stop-all-tasks-at-once">Stop all tasks at once</a><a id="Stop-all-tasks-at-once-1"></a><a class="docs-heading-anchor-permalink" href="#Stop-all-tasks-at-once" title="Permalink"></a></h3><pre><code class="language-julia hljs">using Mango
 
 @agent struct MultiTaskAgent
@@ -69,50 +67,44 @@ end
 
 sleep(0.1)
 stop_all_tasks(agent)
-wait_for_all_tasks(agent)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">┌ Error: Exception occurred in thread 1
+wait_for_all_tasks(agent)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">┌ Error: Exception occurred in thread 2
 │ EOFError: read end of file
 │
 │ Stacktrace:
 │  [1] wait
-│    @ ./asyncevent.jl:155 [inlined]
+│    @ ./asyncevent.jl:202 [inlined]
 │  [2] wait
 │    @ ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:119 [inlined]
-│  [3] execute_task(f::Main.var&quot;#3#4&quot;, scheduler::Scheduler, data::PeriodicTaskData)
+│  [3] execute_task(f::Main.var&quot;#4#5&quot;, scheduler::Scheduler, data::PeriodicTaskData)
 │    @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:263
-│  [4] macro expansion
-│    @ ~/work/Mango.jl/Mango.jl/src/util/error_handling.jl:19 [inlined]
-│  [5] (::Mango.var&quot;#9#10&quot;{Main.var&quot;#3#4&quot;, Scheduler, PeriodicTaskData})()
-│    @ Mango ./threadingconstructs.jl:416
+│  [4] (::Mango.var&quot;#schedule##0#schedule##1&quot;{Main.var&quot;#4#5&quot;, Scheduler, PeriodicTaskData})()
+│    @ Mango ~/work/Mango.jl/Mango.jl/src/util/error_handling.jl:19
 └ @ Mango ~/work/Mango.jl/Mango.jl/src/util/error_handling.jl:13
-┌ Error: Exception occurred in thread 1
+┌ Error: Exception occurred in thread 2
 │ EOFError: read end of file
 │
 │ Stacktrace:
 │  [1] wait
-│    @ ./asyncevent.jl:155 [inlined]
+│    @ ./asyncevent.jl:202 [inlined]
 │  [2] wait
 │    @ ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:119 [inlined]
-│  [3] execute_task(f::Main.var&quot;#3#4&quot;, scheduler::Scheduler, data::PeriodicTaskData)
+│  [3] execute_task(f::Main.var&quot;#4#5&quot;, scheduler::Scheduler, data::PeriodicTaskData)
 │    @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:263
-│  [4] macro expansion
-│    @ ~/work/Mango.jl/Mango.jl/src/util/error_handling.jl:19 [inlined]
-│  [5] (::Mango.var&quot;#9#10&quot;{Main.var&quot;#3#4&quot;, Scheduler, PeriodicTaskData})()
-│    @ Mango ./threadingconstructs.jl:416
+│  [4] (::Mango.var&quot;#schedule##0#schedule##1&quot;{Main.var&quot;#4#5&quot;, Scheduler, PeriodicTaskData})()
+│    @ Mango ~/work/Mango.jl/Mango.jl/src/util/error_handling.jl:19
 └ @ Mango ~/work/Mango.jl/Mango.jl/src/util/error_handling.jl:13
-┌ Error: Exception occurred in thread 1
+┌ Error: Exception occurred in thread 2
 │ EOFError: read end of file
 │
 │ Stacktrace:
 │  [1] wait
-│    @ ./asyncevent.jl:155 [inlined]
+│    @ ./asyncevent.jl:202 [inlined]
 │  [2] wait
 │    @ ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:119 [inlined]
-│  [3] execute_task(f::Main.var&quot;#3#4&quot;, scheduler::Scheduler, data::PeriodicTaskData)
+│  [3] execute_task(f::Main.var&quot;#4#5&quot;, scheduler::Scheduler, data::PeriodicTaskData)
 │    @ Mango ~/work/Mango.jl/Mango.jl/src/util/scheduling.jl:263
-│  [4] macro expansion
-│    @ ~/work/Mango.jl/Mango.jl/src/util/error_handling.jl:19 [inlined]
-│  [5] (::Mango.var&quot;#9#10&quot;{Main.var&quot;#3#4&quot;, Scheduler, PeriodicTaskData})()
-│    @ Mango ./threadingconstructs.jl:416
+│  [4] (::Mango.var&quot;#schedule##0#schedule##1&quot;{Main.var&quot;#4#5&quot;, Scheduler, PeriodicTaskData})()
+│    @ Mango ~/work/Mango.jl/Mango.jl/src/util/error_handling.jl:19
 └ @ Mango ~/work/Mango.jl/Mango.jl/src/util/error_handling.jl:13</code></pre><p><code>stop_and_wait_for_all_tasks(agent)</code> combines the last two calls.</p><hr/><h2 id="Scheduling-from-a-Role"><a class="docs-heading-anchor" href="#Scheduling-from-a-Role">Scheduling from a Role</a><a id="Scheduling-from-a-Role-1"></a><a class="docs-heading-anchor-permalink" href="#Scheduling-from-a-Role" title="Permalink"></a></h2><p>All task functions work identically on roles:</p><pre><code class="language-julia hljs">function Mango.setup(role::HeartbeatRole)
     schedule(role, PeriodicTaskData(5.0)) do
         send_message(role, &quot;heartbeat&quot;, address(coordinator))
@@ -129,4 +121,4 @@ schedule(agent, DateTimeTaskData(target)) do
     @info &quot;Market opens&quot; now()
 end</code></pre><p>In simulation mode, the task fires when the virtual clock reaches <code>target</code>.</p><h3 id="ConditionalTaskData-—-run-when-a-predicate-is-true"><a class="docs-heading-anchor" href="#ConditionalTaskData-—-run-when-a-predicate-is-true">ConditionalTaskData — run when a predicate is true</a><a id="ConditionalTaskData-—-run-when-a-predicate-is-true-1"></a><a class="docs-heading-anchor-permalink" href="#ConditionalTaskData-—-run-when-a-predicate-is-true" title="Permalink"></a></h3><pre><code class="language-julia hljs">schedule(agent, ConditionalTaskData(() -&gt; agent.inbox_size &gt; 0, 0.1)) do
     process_inbox(agent)
-end</code></pre><p>The scheduler re-evaluates the condition every <code>0.1</code> seconds (real time) or simulation steps.</p><hr/><h2 id="Task-Control-Reference"><a class="docs-heading-anchor" href="#Task-Control-Reference">Task Control Reference</a><a id="Task-Control-Reference-1"></a><a class="docs-heading-anchor-permalink" href="#Task-Control-Reference" title="Permalink"></a></h2><table><tr><th style="text-align: right">Function</th><th style="text-align: right">Description</th></tr><tr><td style="text-align: right"><code>schedule(f, agent, data)</code></td><td style="text-align: right">Schedule <code>f</code> with the given <code>TaskData</code></td></tr><tr><td style="text-align: right"><code>stop_task(agent, t)</code></td><td style="text-align: right">Signal a task to stop after its current iteration</td></tr><tr><td style="text-align: right"><code>stop_all_tasks(agent)</code></td><td style="text-align: right">Signal all stoppable tasks to stop</td></tr><tr><td style="text-align: right"><code>wait_for_all_tasks(agent)</code></td><td style="text-align: right">Wait until all scheduled tasks have finished</td></tr><tr><td style="text-align: right"><code>stop_and_wait_for_all_tasks(agent)</code></td><td style="text-align: right">Stop all tasks and wait</td></tr></table></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../container/">« Container</a><a class="docs-footer-nextpage" href="../simulation/">Simulation »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Saturday 21 February 2026 18:45">Saturday 21 February 2026</span>. Using Julia version 1.9.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+end</code></pre><p>The scheduler re-evaluates the condition every <code>0.1</code> seconds (real time) or simulation steps.</p><hr/><h2 id="Task-Control-Reference"><a class="docs-heading-anchor" href="#Task-Control-Reference">Task Control Reference</a><a id="Task-Control-Reference-1"></a><a class="docs-heading-anchor-permalink" href="#Task-Control-Reference" title="Permalink"></a></h2><table><tr><th style="text-align: right">Function</th><th style="text-align: right">Description</th></tr><tr><td style="text-align: right"><code>schedule(f, agent, data)</code></td><td style="text-align: right">Schedule <code>f</code> with the given <code>TaskData</code></td></tr><tr><td style="text-align: right"><code>stop_task(agent, t)</code></td><td style="text-align: right">Signal a task to stop after its current iteration</td></tr><tr><td style="text-align: right"><code>stop_all_tasks(agent)</code></td><td style="text-align: right">Signal all stoppable tasks to stop</td></tr><tr><td style="text-align: right"><code>wait_for_all_tasks(agent)</code></td><td style="text-align: right">Wait until all scheduled tasks have finished</td></tr><tr><td style="text-align: right"><code>stop_and_wait_for_all_tasks(agent)</code></td><td style="text-align: right">Stop all tasks and wait</td></tr></table></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../container/">« Container</a><a class="docs-footer-nextpage" href="../simulation/">Simulation »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Saturday 21 February 2026 19:22">Saturday 21 February 2026</span>. Using Julia version 1.12.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
