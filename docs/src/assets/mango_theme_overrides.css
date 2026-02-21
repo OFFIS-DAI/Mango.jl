@@ -1,22 +1,44 @@
+/* ================================================
+   Mango.jl Theme Overrides
+   Brand palette:
+     mango-yellow : #fdc743
+     mango-orange : #f49600
+     leaf-green   : #6bad2e
+     mango-brown  : #7d4e24
+     amber-link   : #b07000  (AA-contrast on white)
+   ================================================ */
+
+/* ---- Base font ---- */
 body {
-  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI emojiEmoji;
+  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial,
+    sans-serif, Apple Color Emoji, Segoe UI Emoji;
 }
 
 html.theme--documenter-dark body {
-  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI emojiEmoji;
+  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial,
+    sans-serif, Apple Color Emoji, Segoe UI Emoji;
 }
 
+/* ---- Sidebar: hide package-name text (logo SVG already contains it) ---- */
+#documenter .docs-sidebar .docs-package-name {
+  visibility: hidden;
+  height: 0;
+}
+
+/* ---- Sidebar: no right border in dark mode ---- */
 html.theme--documenter-dark #documenter .docs-sidebar {
   border-right: none;
 }
 
+/* ---- Sidebar: input / search border in dark mode ---- */
 html.theme--documenter-dark .select select,
 html.theme--documenter-dark .textarea,
 html.theme--documenter-dark .input,
-html.theme--documenter-dark #documenter .docs-sidebar form.docs-search>input {
+html.theme--documenter-dark #documenter .docs-sidebar form.docs-search > input {
   border-color: #2f4547;
 }
 
+/* ---- Full-width documenter layout ---- */
 #documenter {
   width: 100%;
   display: flex;
@@ -61,11 +83,6 @@ html.theme--documenter-dark #documenter .docs-sidebar ul.docs-menu .tocitem {
   }
 }
 
-#documenter .docs-sidebar .docs-package-name {
-  visibility: hidden;
-  height: 0;
-}
-
 html.theme--documenter-dark .button.is-static {
   border-color: #2f4547;
 }
@@ -88,4 +105,324 @@ html.theme--documenter-dark #documenter .docs-sidebar ul.docs-menu {
 
 html.theme--documenter-dark #documenter .docs-main .docs-footer {
   border-color: #2f4547;
+}
+
+/* ================================================
+   LINKS — warm mango amber
+   ================================================ */
+#documenter a {
+  color: #b07000;
+}
+
+#documenter a:hover {
+  color: #f49600;
+}
+
+/* Don't re-color buttons or badge-style elements */
+#documenter a.button,
+#documenter a.tag,
+#documenter .docs-logo,
+#documenter .docs-edit-link,
+#documenter .docs-settings-button,
+#documenter .docs-sidebar-button,
+#documenter .tocitem {
+  color: inherit;
+}
+
+#documenter .tocitem:hover {
+  color: #f49600;
+}
+
+/* ================================================
+   HEADINGS — h1 mango-yellow underline
+   ================================================ */
+article.content h1 {
+  border-bottom: 3px solid #fdc743;
+  padding-bottom: 0.35em;
+  margin-bottom: 1rem;
+}
+
+/* ================================================
+   SIDEBAR — active item: warm amber highlight
+   ================================================ */
+#documenter .docs-sidebar ul.docs-menu li.is-active > .tocitem {
+  background-color: rgba(253, 199, 67, 0.18);
+  color: #b07000;
+  font-weight: 600;
+  border-left: 3px solid #f49600;
+  border-radius: 0 6px 6px 0;
+}
+
+#documenter .docs-sidebar ul.docs-menu li.is-active > .tocitem:hover {
+  background-color: rgba(244, 150, 0, 0.22);
+  color: #f49600;
+}
+
+/* ================================================
+   LOGO — slightly larger in sidebar
+   ================================================ */
+#documenter .docs-sidebar .docs-logo img {
+  max-height: 80px;
+  padding: 0.75rem 0.5rem 0.25rem;
+}
+
+/* ================================================
+   CODE BLOCKS — yellow left-gutter accent
+   ================================================ */
+article.content pre {
+  border-left: 4px solid #fdc743;
+  border-radius: 0 6px 6px 0;
+}
+
+/* ================================================
+   ADMONITIONS — green tip, orange warning
+   ================================================ */
+.admonition.is-success {
+  border-color: #6bad2e;
+}
+
+.admonition.is-success > .admonition-header {
+  background-color: #6bad2e;
+}
+
+.admonition.is-warning {
+  border-color: #f49600;
+}
+
+.admonition.is-warning > .admonition-header {
+  background-color: #f49600;
+}
+
+/* ================================================
+   TABLES — brand-tinted zebra rows and header
+   ================================================ */
+article.content table > thead > tr > th,
+article.content table > tbody > tr > th {
+  background-color: rgba(253, 199, 67, 0.15);
+}
+
+article.content table > tbody > tr:nth-child(even) {
+  background-color: rgba(253, 199, 67, 0.05);
+}
+
+/* Left-align table cells unless alignment is set explicitly */
+article.content table td,
+article.content table th {
+  text-align: left;
+}
+
+/* ================================================
+   DARK THEME — counterparts for all overrides above
+   ================================================ */
+
+/* Links */
+html.theme--documenter-dark #documenter a {
+  color: #fdc743;
+}
+
+html.theme--documenter-dark #documenter a:hover {
+  color: #f49600;
+}
+
+html.theme--documenter-dark #documenter .tocitem:hover {
+  color: #f49600;
+}
+
+/* h1 underline */
+html.theme--documenter-dark article.content h1 {
+  border-bottom-color: #f49600;
+}
+
+/* Active sidebar item */
+html.theme--documenter-dark #documenter .docs-sidebar ul.docs-menu li.is-active > .tocitem {
+  background-color: rgba(253, 199, 67, 0.12);
+  color: #fdc743;
+  border-left-color: #fdc743;
+}
+
+html.theme--documenter-dark #documenter .docs-sidebar ul.docs-menu li.is-active > .tocitem:hover {
+  background-color: rgba(253, 199, 67, 0.18);
+  color: #f49600;
+}
+
+/* Code blocks */
+html.theme--documenter-dark article.content pre {
+  border-left-color: #f49600;
+}
+
+/* Admonitions */
+html.theme--documenter-dark .admonition.is-success > .admonition-header {
+  background-color: #4a8022;
+}
+
+html.theme--documenter-dark .admonition.is-warning > .admonition-header {
+  background-color: #c47000;
+}
+
+/* Tables */
+html.theme--documenter-dark article.content table > thead > tr > th,
+html.theme--documenter-dark article.content table > tbody > tr > th {
+  background-color: rgba(253, 199, 67, 0.10);
+}
+
+html.theme--documenter-dark article.content table > tbody > tr:nth-child(even) {
+  background-color: rgba(253, 199, 67, 0.05);
+}
+
+/* ================================================
+   FEATURE GRID — index.md
+   ================================================ */
+.mango-feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1.1rem;
+  margin: 1.5rem 0 2rem;
+}
+
+.mango-feature-card {
+  border-top: 3px solid #fdc743;
+  border-radius: 0 0 6px 6px;
+  background: #fafafa;
+  padding: 1rem 1.1rem 0.9rem;
+}
+
+.mango-feature-card h4 {
+  margin: 0 0 0.4rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1d1d1b;
+}
+
+.mango-feature-card p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #444;
+  line-height: 1.5;
+}
+
+html.theme--documenter-dark .mango-feature-card {
+  background: #1f2424;
+  border-top-color: #f49600;
+}
+
+html.theme--documenter-dark .mango-feature-card h4 {
+  color: #e8e8e8;
+}
+
+html.theme--documenter-dark .mango-feature-card p {
+  color: #aaa;
+}
+
+/* ================================================
+   NAV CARD GRID — "Where to Start" / "What to Read Next"
+   ================================================ */
+.mango-nav-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 0.85rem;
+  margin: 1.25rem 0 1.75rem;
+}
+
+.mango-nav-card {
+  display: block;
+  border-left: 4px solid #f49600;
+  border-radius: 0 6px 6px 0;
+  background: #fafafa;
+  padding: 0.75rem 1rem;
+  text-decoration: none;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.mango-nav-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.10);
+}
+
+.mango-nav-card strong {
+  display: block;
+  font-size: 0.9rem;
+  color: #b07000;
+  margin-bottom: 0.2rem;
+}
+
+.mango-nav-card span {
+  font-size: 0.8rem;
+  color: #555;
+}
+
+html.theme--documenter-dark .mango-nav-card {
+  background: #1f2424;
+  border-left-color: #fdc743;
+}
+
+html.theme--documenter-dark .mango-nav-card strong {
+  color: #fdc743;
+}
+
+html.theme--documenter-dark .mango-nav-card span {
+  color: #999;
+}
+
+/* ================================================
+   CONCEPT SUMMARY GRID — concepts.md
+   ================================================ */
+.mango-concept-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin: 1.25rem 0 2rem;
+}
+
+@media screen and (max-width: 760px) {
+  .mango-concept-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.mango-concept-card {
+  border-bottom: 3px solid #fdc743;
+  border-radius: 6px 6px 0 0;
+  background: #fafafa;
+  padding: 1rem 1.1rem 0.9rem;
+}
+
+.mango-concept-card .mango-concept-label {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #b07000;
+  margin-bottom: 0.35rem;
+}
+
+.mango-concept-card h4 {
+  margin: 0 0 0.4rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1d1d1b;
+}
+
+.mango-concept-card p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #444;
+  line-height: 1.55;
+}
+
+html.theme--documenter-dark .mango-concept-card {
+  background: #1f2424;
+  border-bottom-color: #f49600;
+}
+
+html.theme--documenter-dark .mango-concept-card .mango-concept-label {
+  color: #fdc743;
+}
+
+html.theme--documenter-dark .mango-concept-card h4 {
+  color: #e8e8e8;
+}
+
+html.theme--documenter-dark .mango-concept-card p {
+  color: #aaa;
 }

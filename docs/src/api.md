@@ -1,8 +1,8 @@
 # API
 
-# Express
+## Express
 
-This part contains basic convenience functions for creating and running Mango.jl simulations. 
+This part contains basic convenience functions for creating and running Mango.jl simulations.
 
 ```@autodocs
 Modules = [Mango]
@@ -10,9 +10,9 @@ Private = false
 Pages = ["express/api.jl"]
 ```
 
-# Agent and Roles
+## Agent and Roles
 
-Here, the API for the agent structs created with @agent/@role is listed. 
+Here, the API for the agent structs created with @agent/@role is listed.
 
 ```@autodocs
 Modules = [Mango]
@@ -21,7 +21,7 @@ Pages = ["agent/api.jl", "agent/core.jl", "agent/role.jl", "agent/services.jl"]
 Order = [:macro, :function, :constant, :type, :module]
 ```
 
-# Real time container
+## Container API
 
 This part contains the API related to the container construction, access and management.
 
@@ -31,7 +31,7 @@ Private = false
 Pages = ["container/api.jl", "container/core.jl", "container/mqtt.jl", "container/protocol.jl", "container/tcp.jl"]
 ```
 
-# Simulation
+## Simulation World API
 
 In the following the APIs regarding the simulation world are listed.
 
@@ -41,7 +41,7 @@ Private = false
 Pages = ["simulation/container.jl", "simulation/communication.jl", "simulation/tasks.jl", "simulation/world.jl"]
 ```
 
-# Simulation Environment
+## Environment API
 
 In the following the APIs regarding the simulation environment are listed.
 
@@ -51,7 +51,7 @@ Private = false
 Pages = ["environment/api.jl", "environment/core.jl"]
 ```
 
-# Scheduling
+## Task Scheduling API
 
 In the following the APIs for scheduling TaskData is listed.
 
@@ -61,7 +61,7 @@ Private = false
 Pages = ["util/scheduling.jl"]
 ```
 
-# Topology
+## Topology API
 
 In the following the APIs for creating, aplying and using topologies is listed.
 
@@ -71,7 +71,7 @@ Private = false
 Pages = ["util/topology.jl"]
 ```
 
-# Encoding/Decoding
+## Encoding/Decoding
 
 In the following the built-in functions for encoding and decoding messages are listed.
 
@@ -81,7 +81,7 @@ Private = false
 Pages = ["util/encode_decode.jl"]
 ```
 
-# Misc
+## Misc
 
 
 ```@autodocs

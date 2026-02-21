@@ -9,7 +9,7 @@ Escherweg 2
 Germany  
 Phone +49 441 9722-0  
 Fax +49 441 9722-102  
-Email: [institut [ A T ] offis.de](<institut@offis.de>)  
+Email: [institut@offis.de](mailto:institut@offis.de)
 Internet: [www.offis.de](http://www.offis.de)  
 
 

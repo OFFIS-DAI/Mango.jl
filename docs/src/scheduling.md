@@ -1,123 +1,175 @@
 # Scheduling
 
-The `Scheduling` module exports several types and functions to facilitate task scheduling and execution. Let's briefly review the main components of this module.
+Mango.jl provides a built-in task scheduler so agents and roles can do work proactively — without waiting for an incoming message. Tasks are scheduled on an agent (or role) and run asynchronously. In simulation mode the same API integrates with the virtual clock, so tasks fire at the correct simulated time.
 
-## Task Data Types
+---
 
-The module provides different [`TaskData`](@ref) types, each catering to specific scheduling requirements:
+## Task Types
 
-1. [`PeriodicTaskData`](@ref): For tasks that need to be executed periodically, it holds the time interval in seconds between task executions.
-2. [`InstantTaskData`](@ref): For tasks that need to be executed instantly, without any delay.
-2. [`DelayTaskData`](@ref): For tasks that need to be executed with a specific delay once.
-3. [`DateTimeTaskData`](@ref): For tasks that need to be executed at a specific date and time.
-4. [`AwaitableTaskData`](@ref): For tasks that require waiting for an awaitable object to complete before execution.
-5. [`ConditionalTaskData`](@ref): For tasks that execute based on a specific condition at regular intervals.
+| Type | When it runs | Key field |
+|---|---|---|
+| [`InstantTaskData`](@ref) | Immediately (next async iteration) | — |
+| [`DelayTaskData`](@ref) | After a fixed delay | `delay_s::Real` |
+| [`PeriodicTaskData`](@ref) | Repeatedly at a fixed interval | `period_s::Real` |
+| [`DateTimeTaskData`](@ref) | At a specific `DateTime` | `date_time::DateTime` |
+| [`AwaitableTaskData`](@ref) | When an awaitable object completes | `awaitable` |
+| [`ConditionalTaskData`](@ref) | When a predicate becomes `true` | `condition::Function`, `period_s::Real` |
 
+---
 
-## Typical usage
+## Scheduling a Task
 
-Typically the scheduler is used within methods from the agent. To schedule a task the function [`schedule`](@ref) can be used. It takes two inputs: The agent (which forwards the call to its scheduler) and the TaskData object of the task.
+Use `schedule(agent_or_role, TaskData()) do ... end`. It returns a `Task` that can be waited on:
 
-```@example scheduling
+```@example sched_instant
 using Mango
 
-@agent struct MyAgent end
-agent = MyAgent()
-result = 0
+@agent struct WorkAgent
+    result::Int
+end
 
-t = schedule(agent, InstantTaskData()) do 
-    # some expensive calculation
-    result = 10       
+agent = WorkAgent(0)
+
+t = schedule(agent, InstantTaskData()) do
+    agent.result = 42
 end
 
 wait(t)
+agent.result  # → 42
 ```
 
-[`PeriodicTaskData`](@ref) creates tasks that get executed repeatedly forever. 
-This means that calling `wait` on such a task will generally simply block forever.
-For this reason a periodic task has to be stopped before it can be waited on.
+### Delayed task
 
-```@example scheduling
-delay_in_s = 0.1 # delay between executions of the task in seconds
-result = 0
+```@example sched_delay
+using Mango
 
-t = schedule(agent, PeriodicTaskData(delay_in_s)) do 
-    # some expensive calculation
-    println("iterated") 
+@agent struct DelayAgent
+    fired::Bool
 end
 
-sleep(0.2)
+agent = DelayAgent(false)
+
+t = schedule(agent, DelayTaskData(0.05)) do
+    agent.fired = true
+end
+
+wait(t)
+agent.fired  # → true
+```
+
+### Periodic task
+
+Periodic tasks run indefinitely. Use `stop_task` to stop them and `wait_for_all_tasks` to wait for completion:
+
+```@example sched_periodic
+using Mango
+
+@agent struct TickAgent
+    ticks::Int
+end
+
+agent = TickAgent(0)
+
+t = schedule(agent, PeriodicTaskData(0.05)) do
+    agent.ticks += 1
+end
+
+sleep(0.18)
 stop_task(agent, t)
 wait_for_all_tasks(agent)
 ```
 
-Alternatively, you can stop all `stopable` tasks simultaneously with the [`stop_all_tasks`](@ref) function.
+!!! warning "Waiting on periodic tasks blocks forever"
+    Calling `wait(t)` on a periodic task will block indefinitely because it never finishes. Always call `stop_task` first, then `wait_for_all_tasks`.
 
-```@example scheduling
-delay_in_s = 0.1 # delay between executions of the task in seconds
+### Stop all tasks at once
 
-for i in 1:10
-    schedule(agent, PeriodicTaskData(delay_in_s)) do 
-        # some expensive calculation
-        println("iterated") 
+```@example sched_stop_all
+using Mango
+
+@agent struct MultiTaskAgent
+    ticks::Int
+end
+
+agent = MultiTaskAgent(0)
+
+for _ in 1:3
+    schedule(agent, PeriodicTaskData(0.05)) do
+        agent.ticks += 1
     end
 end
 
-sleep(0.2)
+sleep(0.1)
 stop_all_tasks(agent)
 wait_for_all_tasks(agent)
 ```
 
-Finally, [`stop_and_wait_for_all_tasks`](@ref) is a convenience methods combining both [`stop_all_tasks`](@ref) and [`wait_for_all_tasks`](@ref).
+`stop_and_wait_for_all_tasks(agent)` combines the last two calls.
 
+---
 
-## Scheduler
+## Scheduling from a Role
 
-The [`Scheduler`](@ref) type is an internal structure that holds a collection of tasks to be scheduled and executed. Every agent contains such a scheduler struct by default and implements methods for convenient delegation.
+All task functions work identically on roles:
 
 ```julia
-struct Scheduler
-    tasks::Vector{Task}
+function Mango.setup(role::HeartbeatRole)
+    schedule(role, PeriodicTaskData(5.0)) do
+        send_message(role, "heartbeat", address(coordinator))
+    end
 end
 ```
 
-The [`execute_task`](@ref) function executes a task with a specific [`TaskData`](@ref).
+---
+
+## Scheduling on the Environment
+
+In simulation mode, tasks can also be scheduled directly on the environment (useful for global timed events):
 
 ```julia
-execute_task(f::Function, data::PeriodicTaskData)
-execute_task(f::Function, data::InstantTaskData)
-execute_task(f::Function, data::DelayTaskData)
-execute_task(f::Function, data::DateTimeTaskData)
-execute_task(f::Function, data::AwaitableTaskData)
-execute_task(f::Function, data::ConditionalTaskData)
+activate(world) do
+    schedule(env(world), DelayTaskData(10.0)) do
+        emit_global_event(world.env, :market_opens)
+    end
+end
 ```
 
-The [`schedule`](@ref) function adds a task to the scheduler with the specified [`TaskData`](@ref) and scheduling type.
+---
+
+## DateTime and Conditional Tasks
+
+### DateTimeTaskData — run at a specific time
 
 ```julia
-schedule(f::Function, scheduler::Union{Scheduler,Agent}, data::TaskData, scheduling_type::SchedulingType=ASYNC)
+using Dates
+
+target = DateTime(2025, 6, 1, 9, 0, 0)  # June 1st 09:00:00
+
+schedule(agent, DateTimeTaskData(target)) do
+    @info "Market opens" now()
+end
 ```
 
-The [`wait_for_all_tasks`](@ref) function waits for all the scheduled tasks in the provided scheduler to complete.
+In simulation mode, the task fires when the virtual clock reaches `target`.
+
+### ConditionalTaskData — run when a predicate is true
 
 ```julia
-wait_for_all_tasks(scheduler::Scheduler)
+schedule(agent, ConditionalTaskData(() -> agent.inbox_size > 0, 0.1)) do
+    process_inbox(agent)
+end
 ```
 
-The [`stop_task`](@ref) function sends the stop signal to a task `t`. This will result in its completion once the next execution cycle is finished. If `t` is not stopable this will output a warning.
+The scheduler re-evaluates the condition every `0.1` seconds (real time) or simulation steps.
 
-```julia
-stop_task(scheduler::Scheduler, t::Task)
-```
+---
 
-The [`stop_all_tasks`](@ref) function sends the stop signal to all stopable tasks. This will result in their completion once the next execution cycle is finished.
+## Task Control Reference
 
-```julia
-stop_all_tasks(scheduler::Scheduler)
-```
-
-The [`stop_and_wait_for_all_tasks`](@ref) function sends the stop signal to all stopable tasks. It then waits for all scheduled tasks to finish.
-
-```julia
-stop_and_wait_for_all_tasks(scheduler::Scheduler)
-```
+| Function | Description |
+|---|---|
+| `schedule(f, agent, data)` | Schedule `f` with the given `TaskData` |
+| `stop_task(agent, t)` | Signal a task to stop after its current iteration |
+| `stop_all_tasks(agent)` | Signal all stoppable tasks to stop |
+| `wait_for_all_tasks(agent)` | Wait until all scheduled tasks have finished |
+| `stop_and_wait_for_all_tasks(agent)` | Stop all tasks and wait |

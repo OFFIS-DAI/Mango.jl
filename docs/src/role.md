@@ -1,94 +1,237 @@
 # Roles
 
-Roles are used to provide a mechanism for reusability and modularization of functionsalities provided/implemented by agents. Every agent can contain and unlimited number of roles, which are separate structs on which typical agent functionalitites (like send_message) can be defined. All roles of an agent share the same address and agent id, as they are part of the agent and no autonomous unit for themself. 
+A **role** encapsulates a reusable, self-contained piece of agent behavior. An agent can hold any number of roles; all roles share the parent agent's AID and address because they are logically *part of* the agent, not independent entities.
 
-## Role definition
+Roles are the preferred unit of code reuse in Mango.jl. Instead of deep inheritance hierarchies, you compose agents from small, focused role structs that can be freely combined and reused across agent types.
 
-A role can be defined using the [`@role`](@ref) macro. This macro adds some baselinefields to the following struct definition. The struct can be defined like any other Julia struct.
+---
 
-```@example
+## Defining a Role
+
+Use the `@role` macro — it adds the necessary internal fields (context, system handlers) to your struct:
+
+```@example role_def
 using Mango
 
-# Define your role struct using @role macro
-@role struct MyRole
-    my_own_field::String
+@role struct LoggingRole
+    messages::Vector{String}
 end
 
-# Assume you have already defined roles using Mango.AgentRole module
-role1 = MyRole("Role1")
+role = LoggingRole(String[])
 ```
 
-Most functions, used for agent development can also be used with roles (e.g. [`handle_message`](@ref), [`address`](@ref), [`schedule`](@ref), [`send_message`](@ref) (plus variants) and the lifecycle methods).  
+## Handling Messages
 
-Additionally, roles can define the [`setup`](@ref) function to define actions to take when the roles are added to the agent. It is also possible to subscribe to specific messages using a boolean expression with the [`subscribe_message`](@ref) function. With the @role macro, the role context is added to the role, which contains the reference to the agent. However, it is recommended to use the equivalent methods defined on the role to execute actions like scheduling and sending messages. Further with roles it is possible to listen to all messages sent from within the agent. For this [`subscribe_send`](@ref) can be used.
+Override `handle_message` on a role type just as you would on an agent:
 
-## Role communication
-
-Besides the message subscriptions there are functionalities to communicate/work together with other roles. There are two different mechanisms for this:
-* Data sharing
-* An event system
-
-### Data sharing
-
-The data sharing can be used using ordinary Julia structs with default constructors. There are two ways to share the data, first you can create the model you want share with
-[`get_model`](@ref)
-
-```@example model_example
+```@example role_handle
 using Mango
 
-@role struct SharedModelTestRole end
-struct TestModel
-    c::Int64
-end
-TestModel() = TestModel(42)
-
-agent = agent_composed_of(SharedModelTestRole())
-shared_model = get_model(agent[1], TestModel)
-```
-
-Mango.jl will create a TestModel instance and manage this instance such that every role can access it. 
-
-Although this is a straightforward method it can be very clumsy to use. For this reason there is the macro [`@shared`](@ref), which can be used within a role definition
-to mark a field as shared model. Then, Mango.jl will ensure that a shared instance of the declared type will be created and assigned to the struct field.
-
-```@example model_example
-@role struct SharedFieldTestRole
-    @shared 
-    test_model::TestModel
+@role struct CountingRole
+    count::Int
 end
 
-agent_including_test_role = agent_composed_of(SharedFieldTestRole())
-agent_including_test_role[1].test_model
+function Mango.handle_message(role::CountingRole, ::Any, ::Any)
+    role.count += 1
+end
 ```
 
+## Creating Agents from Roles
 
-### Event system
+The preferred way to build agents is with `agent_composed_of`, which creates a lightweight wrapper agent that holds the given roles:
 
-
-Roles can emit events using [`emit_event`](@ref). If `event_type` is nothing, the type of `event` will be used as `event_type`. To handle these events roles can subscribe using [`subscribe_event`](@ref) or add a method to [`handle_event`](@ref).
-
-```@example
+```@example role_compose
 using Mango
 
-struct TestEvent end
+@role struct RoleA end
+@role struct RoleB end
 
-function Mango.handle_event(role::Role, src::Role, event::TestEvent; event_type::Any)
-    @info "Event is arriving!" role.name
-end
-function custom_handler(role::Role, src::Role, event::Any, event_type::Any)
-    @info "Event is also arriving!"
-end
+# Creates a GeneralAgent internally and adds both roles
+agent = agent_composed_of(RoleA(), RoleB())
 
-@agent struct RoleTestAgent end
-@role struct MyEventRole 
+agent[RoleA]          # access role by type
+has_role(agent, RoleB) # → true
+roles(agent)           # → [RoleA(), RoleB()]
+```
+
+To register directly into a container:
+
+```@example role_add_container
+using Mango
+
+@role struct ServiceRole end
+
+container = Container()
+agent = add_agent_composed_of(container, ServiceRole())
+```
+
+To combine roles with a custom `@agent` base struct (for fields at the agent level):
+
+```julia
+@agent struct MyBaseAgent
     name::String
 end
 
-role_emitter = MyEventRole("emitter")
-role_handler = MyEventRole("handler")
-agent = agent_composed_of(role_emitter, role_handler; base_agent=RoleTestAgent())
-
-subscribe_event(role_handler, TestEvent, custom_handler, (src, event) -> true) # condition is optional
-
-emit_event(role_emitter, TestEvent())
+agent = agent_composed_of(RoleA(), RoleB(); base_agent=MyBaseAgent("main"))
 ```
+
+---
+
+## Role Lifecycle: setup
+
+Override `setup` to run code when a role is attached to an agent. Use it to start tasks or subscribe to messages:
+
+```@example role_setup
+using Mango
+
+@role struct TimerRole
+    ticks::Int
+end
+
+function Mango.setup(role::TimerRole)
+    schedule(role, PeriodicTaskData(1.0)) do
+        role.ticks += 1
+    end
+end
+```
+
+`setup` is called inside `add(agent, role)`, so the role's context (and therefore its scheduler) is already available.
+
+---
+
+## Message Subscriptions
+
+`subscribe_message` registers a predicate-based handler for incoming messages. The handler is only called when the predicate returns `true`:
+
+```@example role_sub
+using Mango
+
+@role struct FilterRole
+    important::Int
+end
+
+function Mango.setup(role::FilterRole)
+    subscribe_message(role, (msg, _) -> msg isa String && startswith(msg, "ALERT")) do r, msg, _
+        r.important += 1
+        @debug "ALERT received" msg
+    end
+end
+```
+
+You can also listen for messages *sent outward* from the agent using `subscribe_send`:
+
+```julia
+function Mango.setup(role::AuditRole)
+    subscribe_send(role, Returns(true)) do _, msg, _
+        @info "Agent sent" msg
+    end
+end
+```
+
+---
+
+## Inter-Role Communication
+
+### Shared models
+
+Roles within the same agent can share data through a **shared model** — a struct managed by the framework so every role sees the same instance.
+
+Use the `@shared` annotation inside a `@role` definition:
+
+```@example role_shared
+using Mango
+
+struct SharedCounter
+    count::Ref{Int}
+end
+SharedCounter() = SharedCounter(Ref(0))
+
+@role struct ProducerRole
+    @shared
+    counter::SharedCounter
+end
+
+@role struct ConsumerRole
+    @shared
+    counter::SharedCounter
+end
+
+agent = agent_composed_of(ProducerRole(), ConsumerRole())
+
+# Both roles reference the same SharedCounter instance
+agent[ProducerRole].counter.count[] += 1
+agent[ConsumerRole].counter.count[]   # → 1
+```
+
+Or use `get_model` to retrieve the shared instance explicitly:
+
+```julia
+model = get_model(role, SharedCounter)
+```
+
+### Event system
+
+Roles can communicate via events without coupling directly to each other.
+
+**Emitting** an event from a role:
+
+```@example role_event
+using Mango
+
+struct DataReady
+    value::Float64
+end
+
+@role struct SensorRole end
+@role struct ProcessorRole
+    last::Float64
+end
+
+function Mango.handle_message(role::SensorRole, ::Any, ::Any)
+    emit_event(role, DataReady(42.0))
+end
+
+function Mango.handle_event(role::ProcessorRole, ::Role, event::DataReady; event_type=nothing)
+    role.last = event.value
+end
+```
+
+**Subscribing** with a custom handler and optional filter condition:
+
+```julia
+function Mango.setup(role::ProcessorRole)
+    subscribe_event(role, DataReady, (_, event) -> event.value > 0) do r, _, event, _
+        r.last = event.value
+    end
+end
+```
+
+The `event_type` keyword in `handle_event` lets you use the same method for multiple event types by dispatching on `event_type` rather than the event struct.
+
+---
+
+## Sending from a Role
+
+All message-sending functions available on agents also work on roles:
+
+```julia
+send_message(role, "hello", address(other_agent))
+reply_to(role, "ack", meta)
+schedule(role, InstantTaskData()) do
+    send_message(role, "tick", address(coordinator))
+end
+```
+
+The role's context provides transparent access to the parent agent's container, scheduler, and AID.
+
+---
+
+## Accessing Roles on an Agent
+
+```julia
+agent[MyRole]              # get role by type (error if not present)
+has_role(agent, MyRole)    # check presence
+roles(agent)               # all roles in registration order
+```
+
+When multiple roles of the same type are attached, `agent[MyRole]` returns the first one. Use `roles(agent)` and filter by type for the rest.

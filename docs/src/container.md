@@ -1,162 +1,210 @@
-# Real Time Container
+# Real-Time Container
 
-The real time container feature in Mango.jl allows you to create and manage a container, which acts as the communication layer within the environment. A container is responsible for handling messages, forwarding them to the appropriate agents, and managing agent registration. The real time component means that the container acts on a real time clock, and does not differentiate between a simulation time and the execution time, which essentially means everything executed withing the real time container is executed immediately as stated in the code. In contrast, there is also a "simulation" container, which maintains an interal simulation time and only executes tasks and delivers messages according to the requested step_sizes (next event time). More on the simulation container can be found under [Simulation Container](@ref). Note, that both container types implement the methods for the [`ContainerInterface`](@ref) and can therefore be drop-in replacements for the each other with slight differences in usage.
+The **container** is the message router of a Mango.jl agent system. Every agent must be registered in a container. The container:
 
-## Container Struct 
+- assigns a unique AID to each agent
+- routes incoming messages to the correct agent by AID
+- manages the underlying network protocol (TCP or MQTT)
 
-The [`Container`](@ref) struct represents the container as an actor within the environment. It is implemented using composition, making it flexible to use different protocols and codecs for message communication. The key components of the [`Container`](@ref) struct are:
+!!! note "Simulation container"
+    There is also a **simulation container** (the [`World`](@ref)) that replaces the real-time container when running simulations. It uses a virtual clock instead of the system clock. Both implement the same `ContainerInterface`, so agent code works unchanged in either context. See [Simulation](@ref) for details.
 
-- `protocol`: The protocol used for message communication (e.g., TCP).
-- `codec`: A pair of functions for encoding and decoding messages in the container.
+---
 
-## Start and Shutdown 
+## Creating a Container
 
-Before using the container for message handling and agent management, you need to start the container using the [`start`](@ref) function. This function initializes the container's components and enables it to act as the communication layer. After you are done with the container, [`shutdown`](@ref) has to be called.
+### TCP
 
-```@example
+The most common protocol for local and distributed agent communication:
+
+```@example tcp_container
 using Mango
 
-# Create a container instance
-container = Container()
-
-# ... setup the container, agents, define handles, ...
-
-# Start the container
-wait(Threads.@spawn start(container))
-
-# Execute some functionality to e.g. trigger the agent system
-
-# Shut down the container
-shutdown(container)
-@info "Agent container and agents shutdown"
+container1 = create_tcp_container("127.0.0.1", 5555)
+container2 = create_tcp_container("127.0.0.1", 5556)
 ```
 
-However, this approach can be error-prone for multiple reasons. Besides simply forgetting to call shutdown, an exception may occur between the start and shutdown calls on the containers, leading to resource leaks. For this reason, we recommend using [`activate`](@ref) instead. With this function, the above `start/shutdown' pair translates to...
+Or construct manually for full control over the protocol:
 
 ```julia
-# Start the container and shut it down after the runnable (do ... end) has been executed.
-activate(container) do
-
-# Execute some functionality to e.g. trigger the agent system
-
-end
+container = Container()
+container.protocol = TCPProtocol(address=InetAddr("127.0.0.2", 2940))
 ```
 
-## Registering Agents 
+### MQTT
 
-To enable the container to manage agents and handle their messaging activities, you can register agents using the [`register`](@ref) function. This function associates an agent with a unique agent ID (AID) and adds the agent to the container's internal list.
+MQTT uses a message broker for routing. Every container connects to the same broker; agents subscribe to topics and publish to other topics.
 
-```@example
+!!! note "Broker required"
+    An MQTT broker (e.g. Mosquitto) must be running before the container is started.
+    ```bash
+    sudo apt install mosquitto
+    sudo service mosquitto start
+    ```
+
+```julia
+c1 = create_mqtt_container("127.0.0.1", 1883, "ClientA")
+c2 = create_mqtt_container("127.0.0.1", 1883, "ClientB")
+```
+
+Or manually:
+
+```julia
+container = Container()
+container.protocol = MQTTProtocol("my_client_id", InetAddr(ip"127.0.0.1", 1883))
+```
+
+### Protocol comparison
+
+| | **TCP** | **MQTT** |
+|---|---|---|
+| Routing | Direct TCP connections | Via broker with topics |
+| Address type | `AgentAddress` | `MQTTAddress(broker, topic)` |
+| Broker needed | No | Yes |
+| Registration extra | — | `topics=["t1", "t2"]` |
+| Best for | Local multi-container setups | IoT, cloud, multi-network |
+
+---
+
+## Registering Agents
+
+```@example tcp_reg
 using Mango
 
-# Create a container instance
 container = Container()
 
-# Define and create an agent
-@agent struct MyAgent
-    # Your agent's fields and methods here
+@agent struct RegAgent end
+
+agent1 = register(container, RegAgent())           # auto AID: "agent0"
+agent2 = register(container, RegAgent(), "ctrl")   # custom AID: "ctrl"
+```
+
+For MQTT containers, pass `topics` to subscribe the agent to one or more broker topics:
+
+```julia
+agent = register(mqtt_container, MyAgent(); topics=["sensor/data", "sensor/alerts"])
+```
+
+All messages published to those topics on the broker are forwarded to that agent.
+
+---
+
+## The activate Pattern (Recommended)
+
+Use `activate` to start containers, run your code, and shut everything down — even if an error occurs:
+
+```julia
+# Single container
+activate(container) do
+    send_message(agent, "hello", address(other_agent))
+    sleep_until(() -> other_agent.counter >= 3)
 end
 
-my_agent = MyAgent()
-
-# Register the agent with the container
-register(container, my_agent)
+# Multiple containers — started in parallel
+activate([container1, container2]) do
+    send_message(ping_agent, "Ping", address(pong_agent))
+    sleep_until(() -> ping_agent.counter >= 5)
+end
 ```
+
+!!! warning "Don't start/shutdown manually"
+    While `start(container)` and `shutdown(container)` exist, calling them directly is error-prone — an exception between `start` and `shutdown` will leave the container running. Always prefer `activate`.
+
+---
 
 ## Sending Messages
 
-To send messages between agents within the container, you can use the [`send_message`](@ref) function. The container routes the message to the specified receiver agent based on the receiver's AID.
+### From the container directly
 
-```@example
+```@example tcp_send
 using Mango
 
-# Create a container instance
 container = Container()
-agent = register(container, PrintingAgent())
 
-# ... Register agents ...
+@agent struct PrintAgent end
 
-# Sending a message from one agent to another
-wait(send_message(container, "Hello from Agent 1!", address(agent)))
+function Mango.handle_message(::PrintAgent, msg::Any, ::Any)
+    @info "received" msg
+end
+
+agent = register(container, PrintAgent())
+
+wait(send_message(container, "hello", address(agent)))
 ```
 
-## TCP
-
-This protocol allows communication over plain TCP connections, enabling message exchange between different entities within the Mango.jl simulation environment.
-
-### Introduction
-
-The TCP Protocol in Mango.jl is a communication protocol used to exchange messages over plain TCP connections. It enables agents within the simulation environment to communicate with each other by establishing and managing TCP connections.
-
-### TCPProtocol Struct 
-
-The [`TCPProtocol`](@ref) struct represents the TCP Protocol within Mango.jl. It encapsulates the necessary functionalities for communication via TCP connections. Key features of the [`TCPProtocol`](@ref) struct are:
-
-- `address`: The `InetAddr` represents the address on which the TCP server listens.
-- `server`: A `TCPServer` instance used for accepting incoming connections.
-
-### Usage
-
-To use the tcp protocol you need to construct a TCPProtocol struct and assign it to the `protocol` field in the container.
-
-```@example
-using Mango, Sockets
-
-container2 = Container()
-container2.protocol = TCPProtocol(address=Sockets.InetAddr("127.0.0.2", 2940))
-```
-
-It is also possible to use the convenience function [`create_tcp_container`](@ref).
-
-```@example
-using Mango 
-
-container2 = create_tcp_container("127.0.0.2", 2940)
-```
-
-## MQTT
-### Introduction
-The MQTT protocol enables sending via an MQTT message broker.
-It allows a container to subscribe to different topics on a broker and publish messages to them.
-
-Currently, one container may only connect to a single broker.
-Subscribed topics for each agent are set on agent registration and tracked by the container.
-Incoming messages on these topics are distributed to the subscribing agents by the container.
-
-### MQTTProtocol Struct 
-The [`MQTTProtocol`](@ref) contains the status and channels of the underlying mosquitto C library (as abstracted to Julia by the Mosquitto.jl package).
-
-The constructor takes a `client_id` and the `broker_addr`.
-Internally it also tracks the `msg_channel` and `conn_channel`, internal flags, the information to map topics to subscribing agents.
-
-`protocol = MQTTProtocol(cliant_id, broker_addr)`
-- `client_id` - `String` id the container will communicate to the MQTT broker.
-- `broker_addr` - `InetAddr` of the MQTT broker
-
-### Usage
-
-To use the mqtt protocol you need to construct a MQTTProtocol struct and assign it to the `protocol` field in the container. Further it is possible to use a convenience function for this 
-It is also possible to use the convenience function [`create_mqtt_container`](@ref).
-```julia
-using Mango, Sockets
-
-container2 = Container()
-container2.protocol = MQTTProtocol("my_id", Sockets.InetAddr(ip"127.0.0.2", 2940))
-```
-
-!!! note "Running MQTT broker expected"
-    The MQTT protocol expects an MQTT broker to run at the specified host and port.
-
-Subscribing an agent to a topic can happen only as registration time and is not allowed otherwise.
-When registering a new agent to the container the topics to subscribe are passed by the `topics` keyword argument, taking a collection of `String` topic names.
-NOTE: It is recommended you pass a `Vector{String}` as this is what is tested. 
-Other collections could work but no guarantees are given.
+### Between agents over TCP
 
 ```julia
-using Mango
+activate([c1, c2]) do
+    send_message(ping_agent, "Ping", address(pong_agent))
+    sleep_until(() -> pong_agent.counter >= 1)
+end
+```
 
-container2 = create_mqtt_container("127.0.0.2", 2940, "MyMqttClient")
+### Between agents over MQTT
 
-a1 = PrintingAgent()
-register(container2, a1; topics=["topic1", "topic2"])
+MQTT addresses carry the broker address and the destination topic. The sending side must know the receiving agent's subscribed topic:
+
+```julia
+function Mango.handle_message(agent::MyMQTTAgent, message::Any, ::Any)
+    broker = agent.context.container.protocol.broker_addr
+    if message == "Ping"
+        send_message(agent, "Pong", MQTTAddress(broker, "pongs"))
+    end
+end
+
+activate([c1, c2]) do
+    broker_addr = c1.protocol.broker_addr
+    send_message(ping_agent, "Ping", MQTTAddress(broker_addr, "pings"))
+    sleep_until(() -> ping_agent.counter >= 5)
+end
+```
+
+---
+
+## Express API Shortcuts
+
+The express API wraps the full container lifecycle in a single call:
+
+```julia
+# TCP — n containers, agents distributed round-robin
+run_with_tcp(2, agent1, agent2, agent3) do container_list
+    # ...
+end
+
+# With per-agent options (aid, topics)
+run_with_tcp(2, (agent1, :aid => "primary"), agent2) do cl
+    # ...
+end
+
+# MQTT
+run_with_mqtt(2, (agent1, :topics => ["pings"]), (agent2, :topics => ["pongs"])) do cl
+    # ...
+end
+```
+
+---
+
+## Codec Configuration
+
+Every container applies a codec — a `(encode, decode)` function pair — to messages before sending and after receiving. The default is BSON serialization, which is required for cross-process TCP/MQTT communication.
+
+```julia
+# Default BSON codec (applied automatically)
+container = create_tcp_container("127.0.0.1", 5555)
+
+# Custom codec
+container = create_tcp_container("127.0.0.1", 5555; codec=(my_encode, my_decode))
+```
+
+For simulation containers (in-memory messaging, same process), codecs are not applied. See [Codecs](@ref) for details on the built-in BSON codec.
+
+---
+
+## Accessing Agents
+
+```julia
+container[1]          # first registered agent (by registration order)
+container["agent0"]   # agent with AID "agent0"
+agents(container)     # all agents as an ordered vector
 ```
