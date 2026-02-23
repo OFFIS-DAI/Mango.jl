@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>EV Coordination · Mango.jl Documentation</title><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script><link href="../../assets/mango_theme_overrides.css" rel="stylesheet" type="text/css"/></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../"><img class="docs-light-only" src="../../assets/logo.svg" alt="Mango.jl Documentation logo"/><img class="docs-dark-only" src="../../assets/logo-dark.svg" alt="Mango.jl Documentation logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../../">Mango.jl Documentation</a></span></div><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><a class="tocitem" href="../../getting_started/">Getting Started</a></li><li><span class="tocitem">Tutorials</span><ul><li><a class="tocitem" href="../ping_pong/">Ping-Pong with TCP</a></li><li><a class="tocitem" href="../simulation/">Ping-Pong in Simulation</a></li><li class="is-active"><a class="tocitem" href>EV Coordination</a><ul class="internal"><li><a class="tocitem" href="#Scenario"><span>Scenario</span></a></li><li><a class="tocitem" href="#Step-1-—-Message-Types"><span>Step 1 — Message Types</span></a></li><li><a class="tocitem" href="#Step-2-—-Household-Agent"><span>Step 2 — Household Agent</span></a></li><li><a class="tocitem" href="#Step-3-—-EV-Agent"><span>Step 3 — EV Agent</span></a></li><li><a class="tocitem" href="#Step-4-—-Coordinator-Agent"><span>Step 4 — Coordinator Agent</span></a></li><li><a class="tocitem" href="#Step-5-—-World-Setup-and-Spatial-Placement"><span>Step 5 — World Setup and Spatial Placement</span></a></li><li><a class="tocitem" href="#Step-6-—-Data-Recording-and-Running"><span>Step 6 — Data Recording and Running</span></a></li><li><a class="tocitem" href="#Step-7-—-Plotting-the-Results"><span>Step 7 — Plotting the Results</span></a></li><li><a class="tocitem" href="#Complete-Standalone-Script"><span>Complete Standalone Script</span></a></li><li><a class="tocitem" href="#What&#39;s-Next?"><span>What&#39;s Next?</span></a></li></ul></li></ul></li><li><a class="tocitem" href="../../concepts/">Concepts</a></li><li><span class="tocitem">Agent Programming</span><ul><li><a class="tocitem" href="../../agent/">Agents</a></li><li><a class="tocitem" href="../../role/">Roles</a></li><li><a class="tocitem" href="../../scheduling/">Scheduling</a></li><li><a class="tocitem" href="../../topology/">Topology</a></li></ul></li><li><span class="tocitem">Real-Time Mode</span><ul><li><a class="tocitem" href="../../container/">Container (TCP / MQTT)</a></li><li><a class="tocitem" href="../../encode_decode/">Codecs</a></li></ul></li><li><span class="tocitem">Simulation Mode</span><ul><li><a class="tocitem" href="../../simulation/">Simulation</a></li></ul></li><li><a class="tocitem" href="../../api/">API</a></li><li><a class="tocitem" href="../../legals/">Legals</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Tutorials</a></li><li class="is-active"><a href>EV Coordination</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>EV Coordination</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/OFFIS-DAI/Mango.jl" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Tutorial:-Electric-Vehicle-Coordination-in-a-Smart-Grid"><a class="docs-heading-anchor" href="#Tutorial:-Electric-Vehicle-Coordination-in-a-Smart-Grid">Tutorial: Electric Vehicle Coordination in a Smart Grid</a><a id="Tutorial:-Electric-Vehicle-Coordination-in-a-Smart-Grid-1"></a><a class="docs-heading-anchor-permalink" href="#Tutorial:-Electric-Vehicle-Coordination-in-a-Smart-Grid" title="Permalink"></a></h1><p>This tutorial builds an agent-based simulation of electric vehicles (EVs) acting as mobile energy storages in a small neighbourhood. Households with photovoltaic (PV) generators produce surplus energy at midday; the objective is to have EVs collect that surplus and deliver it to households with a deficit — maximising local self-consumption and reducing grid exchange.</p><p>This scenario combines every major simulation feature in one example: the <strong><code>Area2D</code> space</strong> for spatial positioning, <strong><code>on_step</code></strong> for physics-based movement and energy balance, <strong>message passing</strong> for decentralised coordination, and <strong>data recording</strong> for result analysis. Note, that this is a toy example, created to demonstrate the capabilities of Mango.jl.</p><div class="admonition is-success"><header class="admonition-header">Prerequisites</header><div class="admonition-body"><p>Read the <a href="../../simulation/#Simulation">Simulation</a> reference page before this tutorial. A working knowledge of <a href="../../agent/#Agents">Agents</a>, <a href="../../role/#Roles">Roles</a>, and the <a href="../simulation/#Tutorial:-Ping-Pong-in-Simulation">Tutorial: Ping-Pong in Simulation</a> is assumed.</p></div></div><hr/><h2 id="Scenario"><a class="docs-heading-anchor" href="#Scenario">Scenario</a><a id="Scenario-1"></a><a class="docs-heading-anchor-permalink" href="#Scenario" title="Permalink"></a></h2><pre><code class="nohighlight hljs">  (0,10) ─────────────────── (10,10)
+    │  H2(1,8)     H4(7,8)      │
+    │                           │
+    │     EV1  EV2  EV3         │
+    │                           │
+    │  H1(1,3)     H5(9,5)      │
+    │         H3(5,2)           │
+  (0,0)  ─────────────────── (10,0)</code></pre><ul><li><strong>5 households</strong> at fixed positions — each has a rooftop PV installation and a constant load.</li><li><strong>3 EVs</strong> that can move freely in the 2D grid — each carries a battery that can be charged at a surplus household and discharged at a deficit one.</li><li><strong>1 coordinator</strong> that collects net-power reports from all households every hour and dispatches EVs to the most urgent locations.</li></ul><p>A <strong>1-hour time step</strong> is used. Simulated time starts at midnight on a sunny summer day (solar irradiance peaks around noon).</p><hr/><h2 id="Step-1-—-Message-Types"><a class="docs-heading-anchor" href="#Step-1-—-Message-Types">Step 1 — Message Types</a><a id="Step-1-—-Message-Types-1"></a><a class="docs-heading-anchor-permalink" href="#Step-1-—-Message-Types" title="Permalink"></a></h2><p>All coordination messages are plain Julia structs. No special Mango annotations are needed.</p><pre><code class="language-julia hljs">using Mango, Dates
+
+# Sent by a household to the coordinator every step.
+struct NetPowerReport
+    sender_aid::String        # AID of the reporting household
+    net_power_kw::Float64     # positive = surplus, negative = deficit
+    position::Position2D      # where the household sits in the grid
+end
+
+# Sent by the coordinator to an EV.
+struct EVAssignment
+    target::Position2D        # where to go
+    action::Symbol            # :charge or :discharge
+    power_kw::Float64         # rate while at target
+end</code></pre><hr/><h2 id="Step-2-—-Household-Agent"><a class="docs-heading-anchor" href="#Step-2-—-Household-Agent">Step 2 — Household Agent</a><a id="Step-2-—-Household-Agent-1"></a><a class="docs-heading-anchor-permalink" href="#Step-2-—-Household-Agent" title="Permalink"></a></h2><p>Each household tracks its cumulative grid exchange. Its <code>on_step</code> hook computes the hourly energy balance and reports the current net power to the coordinator.</p><pre><code class="language-julia hljs">@agent struct HouseholdAgent
+    pv_peak_kw::Float64       # peak PV capacity
+    load_kw::Float64          # constant load
+    grid_import_kwh::Float64  # cumulative energy bought from grid
+    grid_export_kwh::Float64  # cumulative energy sold to grid
+    self_consumed_kwh::Float64
+    coordinator::AgentAddress
+end
+
+# Sinusoidal PV profile: peak at solar noon (hour 12), zero before 6 and after 18.
+function pv_output_kw(agent::HouseholdAgent, t::DateTime)
+    h = Dates.hour(t) + Dates.minute(t) / 60.0
+    return max(0.0, agent.pv_peak_kw * sin(π * (h - 6.0) / 12.0))
+end
+
+import Mango.on_step
+
+function on_step(agent::HouseholdAgent, env::Environment, clock::Clock, step_size_s::Real)
+    step_h   = step_size_s / 3600.0
+    pv       = pv_output_kw(agent, clock.simulation_time)
+    net      = pv - agent.load_kw   # +surplus / -deficit
+
+    if net &gt;= 0.0
+        agent.self_consumed_kwh += agent.load_kw * step_h
+        agent.grid_export_kwh   += net * step_h
+    else
+        agent.self_consumed_kwh += pv * step_h
+        agent.grid_import_kwh   += (-net) * step_h
+    end
+
+    # Report current net power and position to the coordinator.
+    pos = location(env.space, agent)
+    send_message(agent, NetPowerReport(aid(agent), net, pos), agent.coordinator)
+end</code></pre><div class="admonition is-info"><header class="admonition-header">Step ordering</header><div class="admonition-body"><p><code>on_step</code> is called for every agent before any message is delivered within a step. Messages sent by households in step <em>N</em> are received by the coordinator in the same step <em>N</em> (zero-delay), but the coordinator&#39;s own <code>on_step</code> for step <em>N</em> has already run. The coordinator therefore dispatches EVs based on reports from the <strong>previous</strong> step — a realistic one-step coordination lag.</p></div></div><hr/><h2 id="Step-3-—-EV-Agent"><a class="docs-heading-anchor" href="#Step-3-—-EV-Agent">Step 3 — EV Agent</a><a id="Step-3-—-EV-Agent-1"></a><a class="docs-heading-anchor-permalink" href="#Step-3-—-EV-Agent" title="Permalink"></a></h2><p>An EV moves through the <code>Area2D</code> space at a fixed speed. When it reaches the assigned target it charges or discharges its battery. New assignments from the coordinator update the target and action.</p><pre><code class="language-julia hljs">@agent struct EVAgent
+    capacity_kwh::Float64
+    soc_kwh::Float64
+    max_power_kw::Float64
+    speed::Float64                          # grid units per hour
+    target::Union{Position2D, Nothing}
+    action::Symbol                          # :idle, :charge, or :discharge
+    assigned_power_kw::Float64
+end
+
+function on_step(agent::EVAgent, env::Environment, clock::Clock, step_size_s::Real)
+    isnothing(agent.target) &amp;&amp; return
+
+    step_h  = step_size_s / 3600.0
+    current = location(env.space, agent)
+    dx      = agent.target.x - current.x
+    dy      = agent.target.y - current.y
+    dist    = sqrt(dx^2 + dy^2)
+
+    max_travel = agent.speed * step_h
+
+    if dist &lt;= max_travel
+        # Arrived — snap to target and perform energy exchange.
+        move(env.space, agent, agent.target)
+        energy_kwh = agent.assigned_power_kw * step_h
+        if agent.action == :charge
+            agent.soc_kwh = min(agent.capacity_kwh, agent.soc_kwh + energy_kwh)
+        elseif agent.action == :discharge
+            agent.soc_kwh = max(0.0, agent.soc_kwh - energy_kwh)
+        end
+    else
+        # Still en route — advance toward target.
+        ratio   = max_travel / dist
+        new_pos = Position2D(current.x + dx * ratio, current.y + dy * ratio)
+        move(env.space, agent, new_pos)
+    end
+end
+
+import Mango.handle_message
+
+function handle_message(agent::EVAgent, msg::EVAssignment, ::AbstractDict)
+    agent.target           = msg.target
+    agent.action           = msg.action
+    agent.assigned_power_kw = msg.power_kw
+end</code></pre><hr/><h2 id="Step-4-—-Coordinator-Agent"><a class="docs-heading-anchor" href="#Step-4-—-Coordinator-Agent">Step 4 — Coordinator Agent</a><a id="Step-4-—-Coordinator-Agent-1"></a><a class="docs-heading-anchor-permalink" href="#Step-4-—-Coordinator-Agent" title="Permalink"></a></h2><p>The coordinator collects net-power reports and, on each <code>on_step</code>, sends one assignment per EV. Surpluses are ranked by size (most urgent first), deficits by depth. Each EV gets exactly one target: the top-surplus locations are filled first, then remaining EV slots go to top-deficit locations.</p><pre><code class="language-julia hljs">@agent struct CoordinatorAgent
+    powers::Dict{String, Float64}       # aid → latest net power (kW)
+    positions::Dict{String, Position2D} # aid → household position
+    ev_addresses::Vector{AgentAddress}
+end
+
+function handle_message(agent::CoordinatorAgent, msg::NetPowerReport, ::AbstractDict)
+    agent.powers[msg.sender_aid]    = msg.net_power_kw
+    agent.positions[msg.sender_aid] = msg.position
+end
+
+function on_step(agent::CoordinatorAgent, env::Environment, clock::Clock, step_size_s::Real)
+    isempty(agent.powers) &amp;&amp; return
+
+    # Rank households by urgency.
+    surpluses = sort([(k, v) for (k, v) in agent.powers if v  &gt;  0.3],
+                     by = x -&gt; -x[2])   # descending
+    deficits  = sort([(k, v) for (k, v) in agent.powers if v &lt; -0.3],
+                     by = x -&gt;  x[2])   # ascending (most negative first)
+
+    n = length(agent.ev_addresses)
+    n == 0 &amp;&amp; return
+
+    # One assignment per EV — surpluses first, then deficits to fill remaining slots.
+    ev_idx = 1
+    for (haid, power) in surpluses
+        ev_idx &gt; n &amp;&amp; break
+        send_message(agent,
+            EVAssignment(agent.positions[haid], :charge, min(power, 3.3)),
+            agent.ev_addresses[ev_idx])
+        ev_idx += 1
+    end
+    for (haid, power) in deficits
+        ev_idx &gt; n &amp;&amp; break
+        send_message(agent,
+            EVAssignment(agent.positions[haid], :discharge, min(-power, 3.3)),
+            agent.ev_addresses[ev_idx])
+        ev_idx += 1
+    end
+end</code></pre><div class="admonition is-info"><header class="admonition-header">Why one assignment per EV?</header><div class="admonition-body"><p><code>handle_message</code> overwrites the EV&#39;s target on every call. Sending more messages than there are EVs (as a naïve round-robin does) means some EVs receive two conflicting assignments in the same step — only the <em>last</em> one takes effect, which corresponds to a <em>lower-ranked</em> location. By capping at <code>n</code> messages, each EV gets exactly the most urgent available target.</p></div></div><hr/><h2 id="Step-5-—-World-Setup-and-Spatial-Placement"><a class="docs-heading-anchor" href="#Step-5-—-World-Setup-and-Spatial-Placement">Step 5 — World Setup and Spatial Placement</a><a id="Step-5-—-World-Setup-and-Spatial-Placement-1"></a><a class="docs-heading-anchor-permalink" href="#Step-5-—-World-Setup-and-Spatial-Placement" title="Permalink"></a></h2><p>Create a <code>World</code> with a 10×10 <code>Area2D</code> space and zero message delay (all reports arrive in the same step they are sent).</p><pre><code class="language-julia hljs">world = create_world(
+    DateTime(2025, 6, 21),   # summer solstice — maximum daylight
+    communication_sim = SimpleCommunicationSimulation(default_delay_s=0),
+    space             = Area2D(width=10.0, height=10.0),
+)</code></pre><p>Register the coordinator first, then the households (they need the coordinator&#39;s address), then the EVs.</p><pre><code class="language-julia hljs">coord = register(world, CoordinatorAgent(Dict{String,Float64}(), Dict{String,Position2D}(), AgentAddress[]))
+
+h1 = register(world, HouseholdAgent(6.0, 2.0, 0.0, 0.0, 0.0, address(coord)))
+h2 = register(world, HouseholdAgent(4.0, 1.5, 0.0, 0.0, 0.0, address(coord)))
+h3 = register(world, HouseholdAgent(7.0, 2.5, 0.0, 0.0, 0.0, address(coord)))
+h4 = register(world, HouseholdAgent(5.0, 1.0, 0.0, 0.0, 0.0, address(coord)))
+h5 = register(world, HouseholdAgent(3.0, 2.0, 0.0, 0.0, 0.0, address(coord)))
+
+ev1 = register(world, EVAgent(40.0, 20.0, 3.3, 3.0, nothing, :idle, 0.0))
+ev2 = register(world, EVAgent(40.0, 15.0, 3.3, 3.0, nothing, :idle, 0.0))
+ev3 = register(world, EVAgent(40.0, 10.0, 3.3, 3.0, nothing, :idle, 0.0))
+
+push!(coord.ev_addresses, address(ev1), address(ev2), address(ev3))</code></pre><p>Inside the <code>activate</code> block, the <code>Area2D</code> space is initialised (agents receive random positions). Override the household positions to their fixed grid locations. EVs keep their random starting positions.</p><pre><code class="language-julia hljs">activate(world) do
+    # Fix household positions — buildings don&#39;t move.
+    household_positions = [
+        (h1, Position2D(1.0, 3.0)),
+        (h2, Position2D(1.0, 8.0)),
+        (h3, Position2D(5.0, 2.0)),
+        (h4, Position2D(7.0, 8.0)),
+        (h5, Position2D(9.0, 5.0)),
+    ]
+    for (h, pos) in household_positions
+        move(world.env.space, h, pos)
+    end
+
+    # ...recording and stepping (see Step 6)
+end</code></pre><hr/><h2 id="Step-6-—-Data-Recording-and-Running"><a class="docs-heading-anchor" href="#Step-6-—-Data-Recording-and-Running">Step 6 — Data Recording and Running</a><a id="Step-6-—-Data-Recording-and-Running-1"></a><a class="docs-heading-anchor-permalink" href="#Step-6-—-Data-Recording-and-Running" title="Permalink"></a></h2><p>Set up recordings before stepping. Four metrics are tracked:</p><table><tr><th style="text-align: right">Recording</th><th style="text-align: right">Function</th><th style="text-align: right">What is measured</th></tr><tr><td style="text-align: right"><code>&quot;soc&quot;</code></td><td style="text-align: right"><code>record_agent!</code></td><td style="text-align: right">Battery state-of-charge (kWh) per EV</td></tr><tr><td style="text-align: right"><code>&quot;import&quot;</code></td><td style="text-align: right"><code>record_agent!</code></td><td style="text-align: right">Cumulative grid import (kWh) per household</td></tr><tr><td style="text-align: right"><code>&quot;self_consumed&quot;</code></td><td style="text-align: right"><code>record_agent!</code></td><td style="text-align: right">Cumulative self-consumed PV energy (kWh) per household</td></tr><tr><td style="text-align: right"><code>&quot;positions&quot;</code></td><td style="text-align: right"><code>record_position!</code></td><td style="text-align: right"><code>Position2D</code> snapshot per EV after each step</td></tr></table><pre><code class="language-julia hljs">activate(world) do
+    for (h, pos) in household_positions
+        move(world.env.space, h, pos)
+    end
+
+    # record_agent! runs on ALL registered agents, so guard each lambda by type.
+    record_agent!(a -&gt; a isa EVAgent ? a.soc_kwh           : nothing, world, &quot;soc&quot;)
+    record_agent!(a -&gt; a isa HouseholdAgent ? a.grid_import_kwh   : nothing, world, &quot;import&quot;)
+    record_agent!(a -&gt; a isa HouseholdAgent ? a.self_consumed_kwh : nothing, world, &quot;self_consumed&quot;)
+    record_agent!(a -&gt; a isa HouseholdAgent ? a.grid_export_kwh   : nothing, world, &quot;export&quot;)
+
+    # record_position! snapshots every EVAgent&#39;s Position2D after each step automatically.
+    record_position!(world, filter = a -&gt; a isa EVAgent)
+
+    # Simulate 24 hours with 1-hour fixed steps.
+    for _ in 1:24
+        step_simulation(world, 3600.0)
+    end
+end</code></pre><p>After the simulation completes, inspect the results:</p><pre><code class="language-julia hljs">soc_data  = data_agent_collection(world, &quot;soc&quot;)
+imp_data  = data_agent_collection(world, &quot;import&quot;)
+sc_data   = data_agent_collection(world, &quot;self_consumed&quot;)
+
+println(&quot;=== EV state of charge over 24 h ===&quot;)
+for ev in [ev1, ev2, ev3]
+    println(&quot;  $(aid(ev)): $(round.(soc_data.timeseries[aid(ev)], digits=1)) kWh&quot;)
+end
+
+println(&quot;\n=== Household grid import (total) ===&quot;)
+for h in [h1, h2, h3, h4, h5]
+    total_import = last(imp_data.timeseries[aid(h)])
+    total_sc     = last(sc_data.timeseries[aid(h)])
+    scr = round(100 * total_sc / (total_sc + total_import), digits=1)
+    println(&quot;  $(aid(h)): import=$(round(total_import, digits=2)) kWh  self-consumption=$(scr)%&quot;)
+end</code></pre><hr/><h2 id="Step-7-—-Plotting-the-Results"><a class="docs-heading-anchor" href="#Step-7-—-Plotting-the-Results">Step 7 — Plotting the Results</a><a id="Step-7-—-Plotting-the-Results-1"></a><a class="docs-heading-anchor-permalink" href="#Step-7-—-Plotting-the-Results" title="Permalink"></a></h2><p>Use <a href="https://docs.makie.org/stable/">CairoMakie.jl</a> (or any compatible Makie backend) to visualise the simulation output. The examples below assume the recordings and trajectory tracking from Steps 6 are already in scope.</p><h3 id="EV-state-of-charge-and-household-net-power"><a class="docs-heading-anchor" href="#EV-state-of-charge-and-household-net-power">EV state of charge and household net power</a><a id="EV-state-of-charge-and-household-net-power-1"></a><a class="docs-heading-anchor-permalink" href="#EV-state-of-charge-and-household-net-power" title="Permalink"></a></h3><pre><code class="language-julia hljs">using CairoMakie
+
+ev_agents = [ev1, ev2, ev3]
+ev_colors = [:royalblue, :crimson, :darkorange]
+ev_labels = [&quot;EV1&quot;, &quot;EV2&quot;, &quot;EV3&quot;]
+
+h_agents      = [h1, h2, h3, h4, h5]
+h_colors      = [:teal, :purple, :sienna, :olivedrab, :steelblue]
+h_labels_long = [&quot;H1 (6 kW PV)&quot;, &quot;H2 (4 kW PV)&quot;, &quot;H3 (7 kW PV)&quot;,
+                 &quot;H4 (5 kW PV)&quot;, &quot;H5 (3 kW PV)&quot;]
+
+soc_data = data_agent_collection(world, &quot;soc&quot;)
+imp_data = data_agent_collection(world, &quot;import&quot;)
+ex_data  = data_agent_collection(world, &quot;export&quot;)
+
+hours = 0:24
+
+fig = Figure(size=(1100, 440), fontsize=13)
+
+# Left panel — EV state of charge
+axA = Axis(fig[1, 1];
+    title=&quot;EV Battery State of Charge&quot;, xlabel=&quot;Hour of day&quot;, ylabel=&quot;SoC (kWh)&quot;,
+    xticks=0:4:24)
+vspan!(axA, 6, 18; color=(:gold, 0.12))
+hlines!(axA, [40]; color=(:gray, 0.4), linestyle=:dash, linewidth=1)
+for (ev, col, lbl) in zip(ev_agents, ev_colors, ev_labels)
+    soc = soc_data.timeseries[aid(ev)]
+    lines!(axA, hours, soc; color=col, linewidth=2.5, label=lbl)
+end
+axislegend(axA; position=:lt)
+xlims!(axA, 0, 24);  ylims!(axA, 0, 43)
+
+# Right panel — household net power
+axB = Axis(fig[1, 2];
+    title=&quot;Household Net Power (PV − Load)&quot;, xlabel=&quot;Hour of day&quot;, ylabel=&quot;Net power (kW)&quot;,
+    xticks=0:4:24)
+hlines!(axB, [0]; color=:black, linewidth=0.8)
+vspan!(axB, 6, 18; color=(:gold, 0.12))
+for (h, col, lbl) in zip(h_agents, h_colors, h_labels_long)
+    imp = imp_data.timeseries[aid(h)]
+    ex  = ex_data.timeseries[aid(h)]
+    net = [(ex[t] - ex[t-1]) - (imp[t] - imp[t-1]) for t in eachindex(imp)[2:end]]
+    lines!(axB, 1:24, net; color=col, linewidth=2.0, label=lbl)
+end
+axislegend(axB; position=:lt)
+xlims!(axB, 0, 24)
+
+Label(fig[0, :]; text=&quot;EV Coordination Simulation — 24-Hour Overview&quot;,
+      fontsize=15, font=:bold)</code></pre><p><strong>Result:</strong></p><p><img src="../../assets/tutorials/ev_soc_netpower.png" alt="EV state of charge and household net power over 24 hours"/></p><p>The left panel shows each EV&#39;s battery level over the day. All three EVs charge during the solar surplus window (shaded, roughly 08:00–16:00) and some discharge at deficit households in the early morning and evening. The right panel confirms the expected sinusoidal PV profile: deep deficit at night, strong surplus around noon.</p><h3 id="EV-trajectories-in-the-2D-grid"><a class="docs-heading-anchor" href="#EV-trajectories-in-the-2D-grid">EV trajectories in the 2D grid</a><a id="EV-trajectories-in-the-2D-grid-1"></a><a class="docs-heading-anchor-permalink" href="#EV-trajectories-in-the-2D-grid" title="Permalink"></a></h3><p>Position snapshots were already collected by <code>record_position!</code> in Step 6. Retrieve the history and plot:</p><pre><code class="language-julia hljs">pos_data = position_history(world)   # AgentsRecording with timeseries[aid] =&gt; Vector{Position2D}
+
+fig2 = Figure(size=(540, 540), fontsize=13)
+axT  = Axis(fig2[1, 1];
+    title=&quot;EV Trajectories over 24 Hours&quot;,
+    xlabel=&quot;x (grid units)&quot;, ylabel=&quot;y (grid units)&quot;,
+    aspect=DataAspect(), xticks=0:2:10, yticks=0:2:10)
+
+h_labels = [&quot;H1&quot;, &quot;H2&quot;, &quot;H3&quot;, &quot;H4&quot;, &quot;H5&quot;]
+for (lbl, (_, pos)) in zip(h_labels, household_positions)
+    scatter!(axT, [pos.x], [pos.y]; color=:black, markersize=22, marker=:rect)
+    scatter!(axT, [pos.x], [pos.y]; color=:white, markersize=12, marker=:rect)
+    text!(axT, pos.x, pos.y + 0.6; text=lbl, fontsize=10, align=(:center,:center), font=:bold)
+end
+scatter!(axT, [NaN], [NaN]; color=:black, markersize=14, marker=:rect, label=&quot;Household&quot;)
+
+for (ev, col, lbl) in zip(ev_agents, ev_colors, ev_labels)
+    track = pos_data.timeseries[aid(ev)]   # Vector{Position2D}, one entry per step
+    xs = [p.x for p in track];  ys = [p.y for p in track]
+    lines!(axT, xs, ys; color=(col, 0.55), linewidth=1.6)
+    scatter!(axT, [xs[1]],   [ys[1]];   color=col, markersize=10, marker=:circle,
+             strokecolor=col, strokewidth=2, label=lbl)
+    scatter!(axT, [xs[end]], [ys[end]]; color=col, markersize=12, marker=:star5)
+end
+
+axislegend(axT; position=:lb)
+limits!(axT, -0.5, 10.5, -0.5, 10.5)</code></pre><p><strong>Result:</strong></p><p><img src="../../assets/tutorials/ev_trajectories.png" alt="EV trajectories in the 10×10 grid"/></p><p>Each coloured path shows where one EV traveled over 24 hours. The filled circle marks the random starting position; the star marks the final position. The EVs cluster around the households with the strongest surplus (H1, H2, H3 — high PV peak) during daylight hours, then shift toward deficit locations as the sun sets.</p><hr/><h2 id="Complete-Standalone-Script"><a class="docs-heading-anchor" href="#Complete-Standalone-Script">Complete Standalone Script</a><a id="Complete-Standalone-Script-1"></a><a class="docs-heading-anchor-permalink" href="#Complete-Standalone-Script" title="Permalink"></a></h2><pre><code class="language-julia hljs">using Mango, Dates
+
+# ── Message types ────────────────────────────────────────────────────────────
+
+struct NetPowerReport
+    sender_aid::String
+    net_power_kw::Float64
+    position::Position2D
+end
+
+struct EVAssignment
+    target::Position2D
+    action::Symbol
+    power_kw::Float64
+end
+
+# ── Household ────────────────────────────────────────────────────────────────
+
+@agent struct HouseholdAgent
+    pv_peak_kw::Float64
+    load_kw::Float64
+    grid_import_kwh::Float64
+    grid_export_kwh::Float64
+    self_consumed_kwh::Float64
+    coordinator::AgentAddress
+end
+
+function pv_output_kw(agent::HouseholdAgent, t::DateTime)
+    h = Dates.hour(t) + Dates.minute(t) / 60.0
+    return max(0.0, agent.pv_peak_kw * sin(π * (h - 6.0) / 12.0))
+end
+
+import Mango.on_step
+
+function on_step(agent::HouseholdAgent, env::Environment, clock::Clock, step_size_s::Real)
+    step_h = step_size_s / 3600.0
+    pv     = pv_output_kw(agent, clock.simulation_time)
+    net    = pv - agent.load_kw
+
+    if net &gt;= 0.0
+        agent.self_consumed_kwh += agent.load_kw * step_h
+        agent.grid_export_kwh   += net * step_h
+    else
+        agent.self_consumed_kwh += pv * step_h
+        agent.grid_import_kwh   += (-net) * step_h
+    end
+
+    pos = location(env.space, agent)
+    send_message(agent, NetPowerReport(aid(agent), net, pos), agent.coordinator)
+end
+
+# ── EV ───────────────────────────────────────────────────────────────────────
+
+@agent struct EVAgent
+    capacity_kwh::Float64
+    soc_kwh::Float64
+    max_power_kw::Float64
+    speed::Float64
+    target::Union{Position2D, Nothing}
+    action::Symbol
+    assigned_power_kw::Float64
+end
+
+function on_step(agent::EVAgent, env::Environment, clock::Clock, step_size_s::Real)
+    isnothing(agent.target) &amp;&amp; return
+
+    step_h  = step_size_s / 3600.0
+    current = location(env.space, agent)
+    dx      = agent.target.x - current.x
+    dy      = agent.target.y - current.y
+    dist    = sqrt(dx^2 + dy^2)
+
+    max_travel = agent.speed * step_h
+
+    if dist &lt;= max_travel
+        move(env.space, agent, agent.target)
+        energy_kwh = agent.assigned_power_kw * step_h
+        if agent.action == :charge
+            agent.soc_kwh = min(agent.capacity_kwh, agent.soc_kwh + energy_kwh)
+        elseif agent.action == :discharge
+            agent.soc_kwh = max(0.0, agent.soc_kwh - energy_kwh)
+        end
+    else
+        ratio = max_travel / dist
+        move(env.space, agent,
+            Position2D(current.x + dx * ratio, current.y + dy * ratio))
+    end
+end
+
+import Mango.handle_message
+
+function handle_message(agent::EVAgent, msg::EVAssignment, ::AbstractDict)
+    agent.target            = msg.target
+    agent.action            = msg.action
+    agent.assigned_power_kw = msg.power_kw
+end
+
+# ── Coordinator ───────────────────────────────────────────────────────────────
+
+@agent struct CoordinatorAgent
+    powers::Dict{String, Float64}
+    positions::Dict{String, Position2D}
+    ev_addresses::Vector{AgentAddress}
+end
+
+function handle_message(agent::CoordinatorAgent, msg::NetPowerReport, ::AbstractDict)
+    agent.powers[msg.sender_aid]    = msg.net_power_kw
+    agent.positions[msg.sender_aid] = msg.position
+end
+
+function on_step(agent::CoordinatorAgent, env::Environment, clock::Clock, step_size_s::Real)
+    isempty(agent.powers) &amp;&amp; return
+
+    surpluses = sort([(k, v) for (k, v) in agent.powers if v  &gt;  0.3], by = x -&gt; -x[2])
+    deficits  = sort([(k, v) for (k, v) in agent.powers if v &lt; -0.3], by = x -&gt;  x[2])
+
+    n = length(agent.ev_addresses)
+    n == 0 &amp;&amp; return
+
+    ev_idx = 1
+    for (haid, power) in surpluses
+        ev_idx &gt; n &amp;&amp; break
+        send_message(agent,
+            EVAssignment(agent.positions[haid], :charge, min(power, 3.3)),
+            agent.ev_addresses[ev_idx])
+        ev_idx += 1
+    end
+    for (haid, power) in deficits
+        ev_idx &gt; n &amp;&amp; break
+        send_message(agent,
+            EVAssignment(agent.positions[haid], :discharge, min(-power, 3.3)),
+            agent.ev_addresses[ev_idx])
+        ev_idx += 1
+    end
+end
+
+# ── Simulation setup ─────────────────────────────────────────────────────────
+
+world = create_world(
+    DateTime(2025, 6, 21),
+    communication_sim = SimpleCommunicationSimulation(default_delay_s=0),
+    space             = Area2D(width=10.0, height=10.0),
+)
+
+coord = register(world, CoordinatorAgent(Dict{String,Float64}(), Dict{String,Position2D}(), AgentAddress[]))
+
+h1 = register(world, HouseholdAgent(6.0, 2.0, 0.0, 0.0, 0.0, address(coord)))
+h2 = register(world, HouseholdAgent(4.0, 1.5, 0.0, 0.0, 0.0, address(coord)))
+h3 = register(world, HouseholdAgent(7.0, 2.5, 0.0, 0.0, 0.0, address(coord)))
+h4 = register(world, HouseholdAgent(5.0, 1.0, 0.0, 0.0, 0.0, address(coord)))
+h5 = register(world, HouseholdAgent(3.0, 2.0, 0.0, 0.0, 0.0, address(coord)))
+
+ev1 = register(world, EVAgent(40.0, 20.0, 3.3, 3.0, nothing, :idle, 0.0))
+ev2 = register(world, EVAgent(40.0, 15.0, 3.3, 3.0, nothing, :idle, 0.0))
+ev3 = register(world, EVAgent(40.0, 10.0, 3.3, 3.0, nothing, :idle, 0.0))
+
+push!(coord.ev_addresses, address(ev1), address(ev2), address(ev3))
+
+household_positions = [
+    (h1, Position2D(1.0, 3.0)),
+    (h2, Position2D(1.0, 8.0)),
+    (h3, Position2D(5.0, 2.0)),
+    (h4, Position2D(7.0, 8.0)),
+    (h5, Position2D(9.0, 5.0)),
+]
+
+activate(world) do
+    for (h, pos) in household_positions
+        move(world.env.space, h, pos)
+    end
+
+    record_agent!(a -&gt; a isa EVAgent ? a.soc_kwh           : nothing, world, &quot;soc&quot;)
+    record_agent!(a -&gt; a isa HouseholdAgent ? a.grid_import_kwh   : nothing, world, &quot;import&quot;)
+    record_agent!(a -&gt; a isa HouseholdAgent ? a.self_consumed_kwh : nothing, world, &quot;self_consumed&quot;)
+    record_agent!(a -&gt; a isa HouseholdAgent ? a.grid_export_kwh   : nothing, world, &quot;export&quot;)
+    record_position!(world, filter = a -&gt; a isa EVAgent)
+
+    for _ in 1:24
+        step_simulation(world, 3600.0)
+    end
+end
+
+# ── Results ───────────────────────────────────────────────────────────────────
+
+soc_data = data_agent_collection(world, &quot;soc&quot;)
+imp_data = data_agent_collection(world, &quot;import&quot;)
+sc_data  = data_agent_collection(world, &quot;self_consumed&quot;)
+
+println(&quot;=== EV state of charge over 24 h (kWh) ===&quot;)
+for ev in [ev1, ev2, ev3]
+    println(&quot;  $(aid(ev)): $(round.(soc_data.timeseries[aid(ev)], digits=1))&quot;)
+end
+
+println(&quot;\n=== Household results ===&quot;)
+for h in [h1, h2, h3, h4, h5]
+    total_import = last(imp_data.timeseries[aid(h)])
+    total_sc     = last(sc_data.timeseries[aid(h)])
+    denom = total_sc + total_import
+    scr = denom &gt; 0 ? round(100 * total_sc / denom, digits=1) : 100.0
+    println(&quot;  $(aid(h)): import=$(round(total_import, digits=2)) kWh  &quot; *
+            &quot;self-consumption rate=$(scr)%&quot;)
+end</code></pre><hr/><h2 id="What&#39;s-Next?"><a class="docs-heading-anchor" href="#What&#39;s-Next?">What&#39;s Next?</a><a id="What&#39;s-Next?-1"></a><a class="docs-heading-anchor-permalink" href="#What&#39;s-Next?" title="Permalink"></a></h2><ul><li><strong>Topology-aware coordination</strong> — use <a href="../../topology/#Topology">Topology</a> to limit which households an EV can reach from its current position.</li><li><strong>Stochastic delays</strong> — swap <code>SimpleCommunicationSimulation</code> for <code>DelayProviderCommunicationSimulation</code> to model unreliable wireless communication between coordinator and EVs.</li><li><strong>Competing objectives</strong> — add a market role so households can bid for EV charging capacity and the coordinator resolves the auction.</li><li><strong>Finer position granularity</strong> — call <code>record_position!</code> with a smaller step size or without any filter to record all agents and inspect spatial dynamics at sub-hourly resolution.</li><li><strong>Roles-based refactor</strong> — extract the energy-balance logic into a <code>PVLoadRole</code> and attach it to different base agents (household, industry, charging station) without code duplication; see <a href="../../role/#Roles">Roles</a>.</li></ul></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../simulation/">« Ping-Pong in Simulation</a><a class="docs-footer-nextpage" href="../../concepts/">Concepts »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Monday 23 February 2026 09:05">Monday 23 February 2026</span>. Using Julia version 1.12.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
