@@ -4,6 +4,9 @@ A **role** encapsulates a reusable, self-contained piece of agent behavior. An a
 
 Roles are the preferred unit of code reuse in Mango.jl. Instead of deep inheritance hierarchies, you compose agents from small, focused role structs that can be freely combined and reused across agent types.
 
+!!! note "Applies to both modes"
+    Roles work identically in real-time mode (Container) and simulation mode (World). Define a role once; use it in either context without modification.
+
 ---
 
 ## Defining a Role
@@ -111,10 +114,9 @@ using Mango
 end
 
 function Mango.setup(role::FilterRole)
-    subscribe_message(role, (msg, _) -> msg isa String && startswith(msg, "ALERT")) do r, msg, _
-        r.important += 1
-        @debug "ALERT received" msg
-    end
+    subscribe_message(role,
+        (r, msg, _) -> (r.important += 1; @debug "ALERT received" msg),
+        (msg, _) -> msg isa String && startswith(msg, "ALERT"))
 end
 ```
 
@@ -122,9 +124,7 @@ You can also listen for messages *sent outward* from the agent using `subscribe_
 
 ```julia
 function Mango.setup(role::AuditRole)
-    subscribe_send(role, Returns(true)) do _, msg, _
-        @info "Agent sent" msg
-    end
+    subscribe_send(role, (_, msg, _) -> @info "Agent sent" msg)
 end
 ```
 
@@ -200,9 +200,9 @@ end
 
 ```julia
 function Mango.setup(role::ProcessorRole)
-    subscribe_event(role, DataReady, (_, event) -> event.value > 0) do r, _, event, _
-        r.last = event.value
-    end
+    subscribe_event(role, DataReady,
+        (r, _, event, _) -> r.last = event.value,
+        (_, event) -> event.value > 0)
 end
 ```
 

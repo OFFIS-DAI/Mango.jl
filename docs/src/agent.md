@@ -1,6 +1,9 @@
 # Agents
 
-An **agent** is the fundamental unit of Mango.jl. It is an autonomous entity that can send and receive messages, schedule proactive tasks, and interact with a shared environment. Agents are identified by a unique *agent ID* (AID) assigned when they are registered in a container.
+An **agent** is the fundamental unit of Mango.jl. It is an autonomous entity that can send and receive messages, schedule proactive tasks, and interact with a shared environment. Agents are identified by a unique *agent ID* (AID) assigned when they are registered in a container or world.
+
+!!! note "Applies to both modes"
+    Everything on this page works identically in real-time mode (registered in a `Container`) and simulation mode (registered in a `World`). The only exception is [`behavior_in`](@ref), which is simulation-only and marked as such in the section below.
 
 ---
 
@@ -25,13 +28,19 @@ agent = CounterAgent(0)
 
 ## Registering an Agent
 
-Agents must be registered in a container before they can send or receive messages. Registration assigns an AID:
+Agents must be registered in a backend before they can send or receive messages. Registration assigns an AID. The `register` call is identical whether you use a real-time `Container` or a simulation `World`:
 
 ```julia
+# Real-time mode
 container = create_tcp_container("127.0.0.1", 5555)
-
 agent = register(container, CounterAgent(0))        # AID auto-assigned: "agent0"
 agent = register(container, CounterAgent(0), "c1")  # custom AID: "c1"
+
+# Simulation mode — same API
+using Dates
+world = create_world(DateTime(2020))
+agent = register(world, CounterAgent(0))
+agent = register(world, CounterAgent(0), "c1")
 
 aid(agent)      # → "agent0" or "c1"
 address(agent)  # → AgentAddress(...)
@@ -222,6 +231,9 @@ Agent descriptions integrate with `record_agent_having!` in simulation worlds fo
 
 ## Declarative Behavior with behavior_in
 
+!!! note "Simulation mode only"
+    `behavior_in` requires a `World` and is only available in simulation mode. It has no equivalent for real-time containers.
+
 `behavior_in` lets you attach message handlers and event subscriptions to a matched subset of agents in a simulation world — without modifying any agent or role definition:
 
 ```julia
@@ -231,12 +243,12 @@ behavior_in(world; on_message=SomeMessage) do agent, msg, meta
 end
 
 # Only SensorAgent instances, handling a global event
-behavior_in(world; agent_types=SensorAgent, on_global_event=AlarmEvent) do agent, event, clock
+behavior_in(world; agent_types=SensorAgent, on_global_event=AlarmEvent) do agent, clock, event
     @info "Sensor $(aid(agent)) alarm triggered"
 end
 
 # Only agents that have a CoordRole — handler called on the role
-behavior_in(world; role_types=CoordRole, on_event=UpdateEvent) do role, event, clock
+behavior_in(world; role_types=CoordRole, on_event=UpdateEvent) do role, src, event, event_type
     role.count += 1
 end
 ```

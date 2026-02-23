@@ -1,7 +1,8 @@
 export World, register, send_message, shutdown, protocol_addr,
     create_world, step_simulation, SimulationResult, CommunicationSimulationResult,
     TaskSimulationResult, on_step, discrete_step_until, env, space, time, clock,
-    record_world!, record_agent!, record_agent_having!, MessageTransaction, data_collection, data_agent_collection, 
+    record_world!, record_agent!, record_agent_having!, record_position!, position_history,
+    MessageTransaction, data_collection, data_agent_collection,
     agent_recording_as_plottable, agent_recordings_as_dict
 
 using Base.Threads
@@ -624,6 +625,48 @@ function record_agent_having!(agent_recorder::Function,
             insert_agent_recording!(dc, w, a, agent_recorder(a))
         end
     end
+end
+
+"""
+    record_position!(world::World, key::String="positions"; filter::Union{Nothing,Function}=nothing)
+
+Record the spatial position of every agent that has a location in the world's space after
+each simulation step, using the same data-collection infrastructure as [`record_agent!`](@ref).
+
+An optional `filter` function `(agent) -> Bool` restricts recording to a subset of agents.
+The recorded data is stored as `Position2D` values and is accessible via
+[`position_history`](@ref) or [`data_agent_collection`](@ref).
+
+# Example
+```julia
+record_position!(world)                               # all agents in the space
+record_position!(world, filter = a -> a isa EVAgent)  # only EVAgents
+
+pos = position_history(world)
+pos.timeseries[aid(ev1)]   # Vector{Position2D} — one entry per step
+pos.time                   # Vector of elapsed seconds at each snapshot
+```
+"""
+function record_position!(world::World, key::String="positions";
+                          filter::Union{Nothing,Function}=nothing)
+    sp = space(world.env)
+    collect_agent_data(world, key, no_plot=true) do w, a, dc
+        if has_position(sp, a) && (isnothing(filter) || filter(a))
+            insert_agent_recording!(dc, w, a, location(sp, a))
+        end
+    end
+end
+
+"""
+    position_history(world::World, key::String="positions")
+
+Return the [`AgentsRecording`](@ref) populated by [`record_position!`](@ref).
+
+`timeseries` maps each agent AID to a `Vector{Position2D}` (one entry per simulation step).
+`time` holds the elapsed seconds at each snapshot, aligned across all agents.
+"""
+function position_history(world::World, key::String="positions")
+    return data_agent_collection(world, key)
 end
 
 function Base.getindex(world::World, index::String)

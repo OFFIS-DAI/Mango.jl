@@ -1,6 +1,7 @@
 export DefaultEnvironment, Position2D, Area2D, location,
     move, initialize, initialized, schedule,
-    emit_global_event, behavior, space, install, emit_agent_event
+    emit_global_event, behavior, space, install, emit_agent_event,
+    has_position
 
 struct NoBehavior <: Behavior end
 
@@ -48,6 +49,16 @@ struct Position2D <: Position
     y::Real
 end
 
+"""
+    has_position(space::Space, agent::Agent) -> Bool
+
+Return `true` if `agent` currently has a registered position in `space`.
+
+The default implementation returns `false`; concrete `Space` subtypes should
+override this method.
+"""
+has_position(::Space, ::Agent) = false
+
 @kwdef struct Area2D <: Space{Position2D}
     width::Real
     height::Real
@@ -94,6 +105,8 @@ function step(env::DefaultEnvironment, clock::Clock, step_size_s::Real)
     on_step(behavior(env), env, clock, step_size_s)
 end
 
+has_position(space::Area2D, agent::Agent) = haskey(space.to_position, aid(agent))
+
 function location(space::Area2D, agent::Agent)::Position2D
     return space.to_position[aid(agent)]
 end
@@ -104,7 +117,9 @@ end
 
 function initialize(space::Area2D, agents::Vector{A}, clock::Clock) where {A<:Agent}
     for agent in agents
-        space.to_position[aid(agent)] = Position2D(rand() * space.width, rand() * space.height)
+        if !haskey(space.to_position, aid(agent)) 
+            space.to_position[aid(agent)] = Position2D(rand() * space.width, rand() * space.height)
+        end
     end
 end
 

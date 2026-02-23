@@ -6,8 +6,8 @@ The **container** is the message router of a Mango.jl agent system. Every agent 
 - routes incoming messages to the correct agent by AID
 - manages the underlying network protocol (TCP or MQTT)
 
-!!! note "Simulation container"
-    There is also a **simulation container** (the [`World`](@ref)) that replaces the real-time container when running simulations. It uses a virtual clock instead of the system clock. Both implement the same `ContainerInterface`, so agent code works unchanged in either context. See [Simulation](@ref) for details.
+!!! note "This page covers real-time mode only"
+    A Mango.jl system uses either a real-time **Container** (this page) or a simulation **[`World`](@ref)** — not both. The `World` replaces the container entirely when running simulations: it has no network, advances a virtual clock, and delivers messages through an in-process queue. Because both implement the same `ContainerInterface`, your agent code works unchanged in either mode. See [Simulation](@ref) for details.
 
 ---
 
@@ -172,8 +172,8 @@ run_with_tcp(2, agent1, agent2, agent3) do container_list
     # ...
 end
 
-# With per-agent options (aid, topics)
-run_with_tcp(2, (agent1, :aid => "primary"), agent2) do cl
+# With per-agent options — all entries must be 2-element tuples (agent, :key => val)
+run_with_tcp(2, (agent1, :aid => "primary"), (agent2, :aid => "backup")) do cl
     # ...
 end
 

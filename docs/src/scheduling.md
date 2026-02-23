@@ -2,6 +2,9 @@
 
 Mango.jl provides a built-in task scheduler so agents and roles can do work proactively — without waiting for an incoming message. Tasks are scheduled on an agent (or role) and run asynchronously. In simulation mode the same API integrates with the virtual clock, so tasks fire at the correct simulated time.
 
+!!! note "Applies to both modes"
+    The scheduling API (`schedule`, `stop_task`, `wait_for_all_tasks`, all `TaskData` types) works identically in real-time mode (Container) and simulation mode (World). The only exception is scheduling directly on the environment, which is simulation-only and marked as such in the section below.
+
 ---
 
 ## Task Types
@@ -123,6 +126,9 @@ end
 ---
 
 ## Scheduling on the Environment
+
+!!! note "Simulation mode only"
+    The environment scheduler is part of the `World` and is only available in simulation mode.
 
 In simulation mode, tasks can also be scheduled directly on the environment (useful for global timed events):
 

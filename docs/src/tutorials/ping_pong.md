@@ -152,7 +152,7 @@ The first argument to `run_with_tcp` is the number of containers to create. Agen
 
 ## What's Next?
 
+- **Run the same agent in simulation** — no network, controlled timing, data recording → [Tutorial: Ping-Pong in Simulation](@ref)
 - **Add roles** to structure the agent's behavior → [Roles](@ref)
-- **Run a simulation** without network overhead → [Simulation](@ref)
 - **Build a topology** to model structured communication → [Topology](@ref)
 - **Schedule proactive tasks** → [Scheduling](@ref)

@@ -1,6 +1,9 @@
 # Simulation
 
-The simulation system in Mango.jl allows you to run agent-based simulations with full control over time advancement, message delivery, and agent behavior. The central abstraction is the `World`, which replaces the real-time container during simulation. The same agent and role definitions work in both real-time and simulation contexts without modification.
+The simulation system in Mango.jl lets you run agent-based simulations with full control over time advancement, message delivery, and agent behavior.
+
+!!! note "This page covers simulation mode only"
+    A Mango.jl system uses either a simulation **World** (this page) or a real-time **[`Container`](@ref)** (TCP/MQTT) — not both. The `World` replaces the container entirely: it has no network, advances a virtual clock, and delivers messages through an in-process queue. Because both implement the same `ContainerInterface`, your agent code works unchanged in either mode. See [Real-Time Container](@ref) for details.
 
 !!! tip "Background reading"
     For a conceptual overview of how the simulation world fits into the broader architecture, see [Mango.jl Concepts](@ref).

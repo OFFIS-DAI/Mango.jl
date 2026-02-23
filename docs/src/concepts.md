@@ -8,7 +8,8 @@ This page explains the core abstractions of Mango.jl and how they fit together. 
 
 ```
 ┌────────────────────────────────────────────────────────┐
-│  Container / World                                     │
+│  Container (real-time)  ─── or ───  World (simulation) │
+│       ↑ choose exactly one per system                  │
 │  ┌─────────────────────┐  ┌─────────────────────────┐  │
 │  │  Agent              │  │  Agent                  │  │
 │  │  ┌───────────────┐  │  │  ┌──────────────────┐  │  │
@@ -19,7 +20,7 @@ This page explains the core abstractions of Mango.jl and how they fit together. 
 │  │  └───────────────┘  │  │  └──────────────────┘  │  │
 │  └─────────────────────┘  └─────────────────────────┘  │
 │         ↑ messages ↓                ↑ messages ↓        │
-│                 Container routes messages               │
+│                     routes messages                     │
 └────────────────────────────────────────────────────────┘
 ```
 
@@ -36,9 +37,9 @@ This page explains the core abstractions of Mango.jl and how they fit together. 
     <p>Reusable behavior defined with <code>@role</code>. Multiple roles compose into one agent, sharing its address.</p>
   </div>
   <div class="mango-concept-card">
-    <span class="mango-concept-label">Message router</span>
-    <h4>Container / World</h4>
-    <p>Routes messages between agents via TCP, MQTT, or a virtual simulation clock.</p>
+    <span class="mango-concept-label">Execution mode — pick one</span>
+    <h4>Container or World</h4>
+    <p>Register agents in a real-time <strong>Container</strong> (TCP/MQTT) <em>or</em> a simulation <strong>World</strong> — not both. Agent code is identical either way.</p>
   </div>
 </div>
 ```
@@ -89,57 +90,71 @@ agent[LoggingRole].log
 
 Roles are the preferred unit of reuse in Mango.jl. Rather than inheriting from a base agent type, compose agents from small, focused roles.
 
-### Containers
+### Execution Backend: Container or World
 
-A **container** is the message router. Every agent must be registered in a container. The container:
-- Assigns an AID to each agent
-- Routes incoming messages to the correct agent by AID
-- Manages the protocol (TCP, MQTT, or simulation) for sending/receiving messages
+Every agent must be registered in exactly one backend before it can communicate. There are two alternatives — you choose one for your entire system:
+
+- **Container** — the real-time backend. Communicates over TCP or MQTT. Agents run on the system clock. Used for deployed systems, hardware-in-the-loop, and distributed setups.
+- **World** — the simulation backend. No network involved. A virtual clock advances only when you call `step_simulation`. Used for prototyping, testing, and analysis.
 
 ```julia
+# Real-time mode — register into a Container
 container = create_tcp_container("127.0.0.1", 5555)
 agent = register(container, MyAgent("hello"))
+
+# Simulation mode — register into a World
+using Dates
+world = create_world(DateTime(2020))
+agent = register(world, MyAgent("hello"))
 ```
+
+!!! warning "Do not mix Container and World"
+    A given agent system uses either a Container or a World — never both. Attempting to register the same agent in both is not supported. The value of the shared interface is code reuse across *separate* systems, not simultaneous use.
 
 ---
 
-## Real-Time vs. Simulation
+## Two Execution Modes
 
-Mango.jl provides two container types that implement the same interface:
+Mango.jl agent systems run in **exactly one** of two modes. You pick at the start by choosing which backend to register your agents in. The table below summarizes the difference:
 
 | | **Container** (real-time) | **World** (simulation) |
 |---|---|---|
-| Time | System clock, tasks run immediately | Virtual clock, controlled by `step_simulation` |
-| Communication | TCP or MQTT protocol | Internal queue, delivery via `SimpleCommunicationSimulation` |
-| Entry point | `activate(containers) do ... end` | `step_simulation(world, step_size_s)` |
-| Use case | Production systems, hardware-in-the-loop | Rapid prototyping, testing, analysis |
+| Backend | `create_tcp_container(...)` / `create_mqtt_container(...)` | `create_world(...)` |
+| Time | System clock — tasks run as they are scheduled | Virtual clock — only advances via `step_simulation` |
+| Communication | TCP or MQTT over the network | In-process queue, delivery controlled by a `CommunicationSimulation` |
+| Entry point | `activate(container) do ... end` | `activate(world) do; step_simulation(world, Δt); end` |
+| Use case | Production systems, hardware-in-the-loop | Rapid prototyping, testing, scalability analysis |
 
-Because both types implement `ContainerInterface`, the same agent and role code works in either context without modification.
+!!! note "Why the same agent code works in both"
+    Container and World both implement the same `ContainerInterface`. Functions like `send_message`, `schedule`, `handle_message`, and `reply_to` behave identically in either mode. The typical workflow is to develop and test in simulation, then switch to a real-time container for deployment — without touching agent or role definitions.
 
 ---
 
-## The Container Lifecycle
+## The Lifecycle Pattern
 
-Starting and stopping containers manually is error-prone. The recommended pattern is `activate`, which starts the containers, runs your code, and shuts everything down — even on error.
+Regardless of which mode you use, the recommended way to start and stop is `activate`. It starts the backend, runs your code block, and shuts everything down — even on error.
+
+**Real-time mode** (Container):
 
 ```julia
-# Single container
+# One container
 activate(container) do
     send_message(agent, "start", address(other_agent))
     sleep_until(() -> other_agent.counter >= 5)
 end
 
-# Multiple containers (started in parallel)
+# Multiple containers started in parallel
 activate([container1, container2]) do
-    # ...
+    send_message(ping_agent, "Ping", address(pong_agent))
+    sleep_until(() -> ping_agent.counter >= 5)
 end
 ```
 
-For the simulation world, use `activate` the same way:
+**Simulation mode** (World):
 
 ```julia
 activate(world) do
-    # setup: send initial messages, register recordings, etc.
+    # register recordings, send initial messages, then step
     step_simulation(world, 1.0)
 end
 ```

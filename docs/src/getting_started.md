@@ -77,15 +77,43 @@ schedule(agent, PeriodicTaskData(1.0)) do
 end
 ```
 
-### Run a simulation (no network required)
+---
+
+## Choosing an Execution Mode
+
+Every Mango.jl system uses **either** a real-time Container **or** a simulation World — not both. The same agent and role definitions work in either mode.
+
+### Real-time mode (TCP/MQTT)
+
+Agents communicate over the network. Time is the system clock.
+
+```julia
+container = create_tcp_container("127.0.0.1", 5555)
+a1 = register(container, MyAgent(0))
+
+activate(container) do
+    send_message(a1, "hello", address(a1))
+    sleep_until(() -> a1.value > 0)
+end
+```
+
+### Simulation mode (no network required)
+
+Agents communicate in-process. Time advances only when you call `step_simulation`.
 
 ```julia
 using Dates
 
 world = create_world(DateTime(2020))
 a1 = register(world, MyAgent(0))
-step_simulation(world, 1.0)   # advance 1 simulated second
+
+activate(world) do
+    step_simulation(world, 1.0)   # advance 1 simulated second
+end
 ```
+
+!!! tip "Easy transition from simulation to real-time environment"
+    Write your agent logic once. Transitioning the agent-based simulation is easily possible, often without changing the agent code at all.
 
 ---
 

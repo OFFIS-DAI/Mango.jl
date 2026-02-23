@@ -13,17 +13,23 @@ with_logger(logger) do
             "Home" => "index.md",
             "Getting Started" => "getting_started.md",
             "Tutorials" => [
-                "Ping-Pong with TCP" => "tutorials/ping_pong.md",
+                "Ping-Pong with TCP"        => "tutorials/ping_pong.md",
+                "Ping-Pong in Simulation"   => "tutorials/simulation.md",
+                "EV Coordination"           => "tutorials/ev_coordination.md",
             ],
             "Concepts" => "concepts.md",
-            "Reference" => [
+            "Agent Programming" => [
                 "Agents"     => "agent.md",
                 "Roles"      => "role.md",
-                "Container"  => "container.md",
                 "Scheduling" => "scheduling.md",
-                "Simulation" => "simulation.md",
                 "Topology"   => "topology.md",
-                "Codecs"     => "encode_decode.md",
+            ],
+            "Real-Time Mode" => [
+                "Container (TCP / MQTT)" => "container.md",
+                "Codecs"                 => "encode_decode.md",
+            ],
+            "Simulation Mode" => [
+                "Simulation" => "simulation.md",
             ],
             "API"    => "api.md",
             "Legals" => "legals.md",

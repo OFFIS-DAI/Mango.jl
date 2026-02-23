@@ -2,6 +2,9 @@
 
 In Mango.jl, a **topology** defines which agents can communicate with which other agents. Instead of maintaining address lists manually, agents use a topology service to discover their neighbors at runtime. Topologies are built on `Graphs.jl` and `MetaGraphsNext.jl`.
 
+!!! note "Applies to both modes"
+    Topologies work with both real-time containers (`Container`) and simulation worlds (`World`). Assignment functions such as `auto_assign!` accept either backend. The examples below use `create_world` for brevity, but the same calls work with a `Container`.
+
 ---
 
 ## Creating a Topology
@@ -138,7 +141,8 @@ Edges between agents can be in one of five states, modelling link health:
 Change an edge state:
 
 ```julia
-set_edge_state!(topology, node_a, node_b, BROKEN)
+# n0, n1 are the integer node indices returned by add_node!
+set_edge_state!(topology, n0, n1, BROKEN)
 ```
 
 Query only neighbors reachable via `INACTIVE` edges:
@@ -154,7 +158,8 @@ topology_neighbors(agent; state=INACTIVE)
 Nodes in a topology can carry arbitrary symbolic characteristics (e.g. `:leader`, `:gateway`). This lets agents filter neighbors by role or capability:
 
 ```julia
-set_characteristic!(topology, node_id, :gateway)
+# n0 is the integer node index returned by add_node!
+set_characteristic!(topology, n0, agent, :gateway)
 
 # Only neighbors tagged as :gateway
 topology_neighbors(agent; has_characteristic=:gateway)
