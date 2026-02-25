@@ -3,7 +3,9 @@ export World, register, send_message, shutdown, protocol_addr,
     TaskSimulationResult, on_step, discrete_step_until, env, space, time, clock,
     record_world!, record_agent!, record_agent_having!, record_position!, position_history,
     MessageTransaction, data_collection, data_agent_collection,
-    agent_recording_as_plottable, agent_recordings_as_dict
+    agent_recording_as_plottable, agent_recordings_as_dict,
+    step_until, filter_messages, messages_as_dict,
+    distance_traveled, displacement, average_speed, trajectory_matrix
 
 using Base.Threads
 using Dates
@@ -679,4 +681,197 @@ end
 
 function shutdown(world::World)
     shutdown(world.container)
+end
+
+"""
+    step_until(world::World, condition::Function; max_advance_s::Real=Inf, step_size_s::Real=DISCRETE_EVENT)::Int
+
+Step the simulation until `condition(world)` returns `true`, or until the simulated time
+has advanced by `max_advance_s` seconds, or until no further events are available.
+
+Returns the number of simulation steps taken.
+
+In discrete-event mode (`step_size_s = DISCRETE_EVENT`, the default), each call to
+`step_simulation` jumps to the next scheduled event. For continuous stepping, pass a
+positive `step_size_s`.
+
+# Example
+```julia
+using Mango, Dates
+
+@agent struct GoalAgent
+    done::Bool
+end
+
+function Mango.on_step(a::GoalAgent, env, clock, _)
+    if seconds_elapsed(clock) >= 5.0
+        a.done = true
+    end
+end
+
+world = create_world(DateTime(0))
+agent = register(world, GoalAgent(false))
+
+steps = step_until(world, w -> w[1].done; max_advance_s=60.0, step_size_s=1.0)
+@info "Done after \$steps steps"
+```
+"""
+function step_until(world::World, condition::Function;
+                    max_advance_s::Real=Inf,
+                    step_size_s::Real=DISCRETE_EVENT)::Int
+    steps = 0
+    elapsed_s = 0.0
+    while !condition(world) && elapsed_s < max_advance_s
+        remaining_s = max_advance_s - elapsed_s
+        if step_size_s == DISCRETE_EVENT
+            result = step_simulation(world, DISCRETE_EVENT; max_advance_time_s=remaining_s == Inf ? -1 : remaining_s)
+            isnothing(result) && break
+            elapsed_s += result.simulation_step_size_s
+        else
+            actual_step = min(step_size_s, remaining_s)
+            step_simulation(world, actual_step)
+            elapsed_s += actual_step
+        end
+        steps += 1
+    end
+    return steps
+end
+
+"""
+    filter_messages(world::World; sender_id=nothing, receiver_id=nothing, content_type=nothing)
+
+Return the subset of recorded [`MessageTransaction`](@ref) objects that match all
+provided criteria. Unspecified criteria are treated as "match all".
+
+| Keyword | Description |
+|---|---|
+| `sender_id` | AID string of the sender |
+| `receiver_id` | AID string of the receiver |
+| `content_type` | Only messages whose `content` is an instance of this type |
+
+# Example
+```julia
+txs = filter_messages(world; receiver_id=aid(agent_b), content_type=PingMessage)
+```
+"""
+function filter_messages(world::World;
+                         sender_id::Union{String,Nothing}=nothing,
+                         receiver_id::Union{String,Nothing}=nothing,
+                         content_type::Union{DataType,Nothing}=nothing)
+    return filter(world.recorded_messages) do tx
+        (isnothing(sender_id)    || tx.sender_id   == sender_id)    &&
+        (isnothing(receiver_id)  || tx.receiver_id == receiver_id)  &&
+        (isnothing(content_type) || tx.content isa content_type)
+    end
+end
+
+"""
+    messages_as_dict(world::World) -> Dict{String, Vector{MessageTransaction}}
+
+Return all recorded messages grouped by receiver AID.
+
+# Example
+```julia
+by_receiver = messages_as_dict(world)
+msgs_for_b  = by_receiver[aid(agent_b)]
+```
+"""
+function messages_as_dict(world::World)
+    result = Dict{String, Vector{MessageTransaction}}()
+    for tx in world.recorded_messages
+        push!(get!(result, tx.receiver_id, MessageTransaction[]), tx)
+    end
+    return result
+end
+
+"""
+    distance_traveled(world::World, agent::Agent, key::String="positions")::Float64
+
+Return the total path length (sum of step-to-step Euclidean distances) that `agent`
+traveled over the simulation, as recorded by [`record_position!`](@ref).
+
+Returns `0.0` if fewer than two position snapshots are available.
+
+# Example
+```julia
+record_position!(world)
+discrete_step_until(world, 30.0)
+println(distance_traveled(world, rover))
+```
+"""
+function distance_traveled(world::World, agent::Agent, key::String="positions")::Float64
+    hist = data_agent_collection(world, key)
+    positions = get(hist.timeseries, aid(agent), nothing)
+    if isnothing(positions) || length(positions) < 2
+        return 0.0
+    end
+    total = 0.0
+    for i in 2:length(positions)
+        total += distance(positions[i-1], positions[i])
+    end
+    return total
+end
+
+"""
+    displacement(world::World, agent::Agent, key::String="positions")::Float64
+
+Return the straight-line distance between the first and last recorded position of `agent`.
+
+Returns `0.0` if fewer than two snapshots are available.
+"""
+function displacement(world::World, agent::Agent, key::String="positions")::Float64
+    hist = data_agent_collection(world, key)
+    positions = get(hist.timeseries, aid(agent), nothing)
+    if isnothing(positions) || length(positions) < 2
+        return 0.0
+    end
+    return distance(first(positions), last(positions))
+end
+
+"""
+    average_speed(world::World, agent::Agent, key::String="positions")::Float64
+
+Return the average speed of `agent` (total distance traveled divided by elapsed simulation
+time in seconds). Returns `0.0` when the elapsed time is zero or no positions are recorded.
+"""
+function average_speed(world::World, agent::Agent, key::String="positions")::Float64
+    hist = data_agent_collection(world, key)
+    positions = get(hist.timeseries, aid(agent), nothing)
+    if isnothing(positions) || length(positions) < 2
+        return 0.0
+    end
+    t = hist.time
+    elapsed = length(t) >= 2 ? t[end] - t[1] : 0.0
+    elapsed == 0.0 && return 0.0
+    return distance_traveled(world, agent, key) / elapsed
+end
+
+"""
+    trajectory_matrix(world::World, agent::Agent, key::String="positions")
+
+Return the trajectory of `agent` as a matrix with columns `[x y]`.
+Each row is one recorded position snapshot.
+
+Returns an empty `0×2` matrix when no positions are recorded.
+
+# Example
+```julia
+record_position!(world)
+discrete_step_until(world, 60.0)
+mat = trajectory_matrix(world, rover)
+# mat[:, 1] → x-coordinates, mat[:, 2] → y-coordinates
+```
+"""
+function trajectory_matrix(world::World, agent::Agent, key::String="positions")
+    hist = data_agent_collection(world, key)
+    positions = get(hist.timeseries, aid(agent), nothing)
+    if isnothing(positions) || isempty(positions)
+        return Matrix{Float64}(undef, 0, 2)
+    end
+    mat = Matrix{Float64}(undef, length(positions), 2)
+    for (i, p) in enumerate(positions)
+        mat[i, 1] = p.x
+        mat[i, 2] = p.y
+    end
+    return mat
 end

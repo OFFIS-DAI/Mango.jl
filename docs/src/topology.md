@@ -108,7 +108,31 @@ for addr in neighbors
 end
 ```
 
-Optional keyword arguments let you filter the result:
+### Broadcast to neighbors
+
+`broadcast_to_neighbors` is a shorthand that sends the same message to every topology neighbor in one call and returns the list of addresses that received it:
+
+```julia
+# Send "ping" to all neighbors in the default topology
+broadcast_to_neighbors(agent, "ping")
+
+# Only to neighbors reachable via NORMAL edges in a named topology
+broadcast_to_neighbors(agent, payload; tid=:backbone, state=NORMAL)
+```
+
+Works identically on roles:
+
+```julia
+function Mango.on_ready(role::CoordRole)
+    broadcast_to_neighbors(role, RequestMessage())
+end
+```
+
+It accepts the same `tid` and `state` keyword arguments as `topology_neighbors`.
+
+---
+
+Optional keyword arguments for `topology_neighbors` let you filter the result:
 
 | Keyword | Default | Description |
 |---|---|---|

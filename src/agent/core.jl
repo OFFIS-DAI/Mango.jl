@@ -18,6 +18,7 @@ export @agent,
     service_of_type,
     add_service!,
     services,
+    has_service,
     on_global_event,
     on_agent_event,
     sender_address,
@@ -766,6 +767,22 @@ Add a service to the agent. Every service can exists exactly one time (stored by
 """
 function add_service!(agent::Agent, service::Any)
     agent.services[typeof(service)] = service
+end
+
+"""
+    has_service(agent, type::Type)::Bool
+
+Return `true` if `agent` has a service of the given `type` registered, `false` otherwise.
+
+# Example
+```julia
+add_service!(agent, MyService())
+has_service(agent, MyService)  # → true
+has_service(agent, OtherType)  # → false
+```
+"""
+function has_service(agent::Agent, type::Type)::Bool
+    return haskey(agent.services, type)
 end
 
 """

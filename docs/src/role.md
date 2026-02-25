@@ -128,6 +128,32 @@ function Mango.setup(role::AuditRole)
 end
 ```
 
+### Collecting replies with WaitingMessagePreprocessor
+
+`WaitingMessagePreprocessor` gates a subscription handler so it fires only after *all* expected reply addresses have sent at least one message. After firing, the preprocessor automatically resets, ready to collect the next round of replies.
+
+Pass it as the `preprocessor` keyword argument to `subscribe_message`:
+
+```julia
+@role struct CollectorRole
+    triggered::Int
+end
+
+function Mango.setup(role::CollectorRole)
+    # The handler fires only once both agent_b and agent_c have replied
+    wmp = WaitingMessagePreprocessor(
+        waiting_for_func = () -> [address(agent_b), address(agent_c)]
+    )
+    subscribe_message(role,
+        (r, msg, meta) -> (r.triggered += 1),
+        (msg, meta) -> true;
+        preprocessor = wmp,
+    )
+end
+```
+
+The `waiting_for_func` is called every time the preprocessor resets, so addresses can be computed dynamically at the time of each new collection round.
+
 ---
 
 ## Inter-Role Communication

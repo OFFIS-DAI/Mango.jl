@@ -1,7 +1,7 @@
 export DefaultEnvironment, Position2D, Area2D, location,
     move, initialize, initialized, schedule,
     emit_global_event, behavior, space, install, emit_agent_event,
-    has_position
+    has_position, distance, agents_within, move_toward!
 
 struct NoBehavior <: Behavior end
 
@@ -197,7 +197,67 @@ function emit_agent_event(environment::DefaultEnvironment, event::Any, id::Any)
         for role in roles(agent)
             on_agent_event(role, environment.scheduler.clock, event)
         end
-    else 
+    else
         @debug "You are calling emit_agent_event although no agent is installed on the ID" id
+    end
+end
+
+"""
+    distance(pa::Position2D, pb::Position2D)::Float64
+
+Return the Euclidean distance between two `Position2D` points.
+"""
+function distance(pa::Position2D, pb::Position2D)::Float64
+    return sqrt((pa.x - pb.x)^2 + (pa.y - pb.y)^2)
+end
+
+"""
+    distance(space::Area2D, agent_a::Agent, agent_b::Agent)::Float64
+
+Return the Euclidean distance between the current positions of `agent_a` and `agent_b`
+in `space`. Both agents must have a registered position.
+"""
+function distance(space::Area2D, agent_a::Agent, agent_b::Agent)::Float64
+    return distance(location(space, agent_a), location(space, agent_b))
+end
+
+"""
+    agents_within(space::Area2D, center::Position2D, radius::Real, agent_list)
+
+Return all agents from `agent_list` whose registered position in `space` is within
+`radius` of `center`. Agents without a registered position are excluded.
+
+# Example
+```julia
+nearby = agents_within(space(world), location(space(world), hub), 5.0, agents(world))
+```
+"""
+function agents_within(space::Area2D, center::Position2D, radius::Real, agent_list)
+    return filter(a -> has_position(space, a) && distance(location(space, a), center) <= radius,
+                  agent_list)
+end
+
+"""
+    move_toward!(space::Area2D, agent::Agent, target::Position2D, max_step::Real)
+
+Move `agent` toward `target` by at most `max_step` units. If the agent is already
+within `max_step` of `target` it is placed exactly at `target`.
+
+# Example
+```julia
+function Mango.on_step(agent::RoverAgent, env::Environment, clock::Clock, step_size_s::Real)
+    move_toward!(env.space, agent, agent.goal, agent.speed * step_size_s)
+end
+```
+"""
+function move_toward!(space::Area2D, agent::Agent, target::Position2D, max_step::Real)
+    current = location(space, agent)
+    d = distance(current, target)
+    if d <= max_step || d == 0
+        move(space, agent, target)
+    else
+        ratio = max_step / d
+        move(space, agent, Position2D(current.x + ratio * (target.x - current.x),
+                                      current.y + ratio * (target.y - current.y)))
     end
 end

@@ -78,6 +78,23 @@ discrete_step_until(world, 100.0)         # run for 100 simulated seconds
 discrete_step_until(world, Second(100))   # same with a Period
 ```
 
+### Stepping until a condition is met
+
+`step_until` advances the simulation until a predicate on the world becomes `true`, a maximum simulated time is reached, or no further events are available. It returns the number of steps taken.
+
+```julia
+# Run until agent is done, but no more than 60 simulated seconds
+steps = step_until(world, w -> w[1].done; max_advance_s=60.0, step_size_s=1.0)
+
+# Discrete-event mode (default): jump to each event in turn
+steps = step_until(world, w -> length(w.recorded_messages) >= 10)
+```
+
+| Keyword | Default | Description |
+|---|---|---|
+| `max_advance_s` | `Inf` | Stop after this many simulated seconds even if condition is not met |
+| `step_size_s` | `DISCRETE_EVENT` | Fixed step size; pass `DISCRETE_EVENT` for event-driven stepping |
+
 ### Mixing styles
 
 Continuous and discrete stepping can be freely mixed within a single simulation run.
@@ -403,6 +420,57 @@ Each entry has:
 | `sent_date` | `DateTime` when the message was sent |
 | `arriving_date` | `DateTime` when the message was delivered |
 | `content` | The message content |
+
+Two helper functions make it easy to query the recorded messages without iterating manually:
+
+```julia
+# Filter by any combination of sender, receiver, and content type
+txs = filter_messages(world; receiver_id=aid(agent_b))
+txs = filter_messages(world; sender_id=aid(agent_a), content_type=PingMessage)
+
+# Group all transactions by receiver AID
+by_receiver = messages_as_dict(world)
+msgs_for_b  = by_receiver[aid(agent_b)]
+```
+
+### Recording spatial positions
+
+`record_position!` hooks into the data-collection infrastructure and records each agent's `Position2D` after every simulation step:
+
+```julia
+record_position!(world)                             # all positioned agents
+record_position!(world; filter = a -> a isa EVAgent)  # filtered subset
+record_position!(world, "my_key")                   # custom collection key
+```
+
+After stepping, inspect the history:
+
+```julia
+hist = position_history(world)           # AgentsRecording
+hist.timeseries[aid(rover)]              # Vector{Position2D} — one entry per step
+hist.time                                # Vector of elapsed seconds
+```
+
+### Position analytics
+
+Four convenience functions compute movement statistics from a position history:
+
+```julia
+# Total path length (sum of step-to-step distances)
+distance_traveled(world, rover)
+
+# Straight-line distance between first and last recorded position
+displacement(world, rover)
+
+# distance_traveled / elapsed time
+average_speed(world, rover)
+
+# n×2 matrix with columns [x y], one row per snapshot
+mat = trajectory_matrix(world, rover)
+# mat[:, 1] → x-coordinates,  mat[:, 2] → y-coordinates
+```
+
+All four accept an optional third argument `key` (default `"positions"`) to target a named position collection.
 
 ## Express API
 

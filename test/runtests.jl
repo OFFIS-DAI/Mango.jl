@@ -17,6 +17,7 @@ using Documenter
     include("topology_tests.jl")
     include("environment_api_tests.jl")
     include("recording_and_position_tests.jl")
+    include("simulation_convenience_api_tests.jl")
     if get(ENV, "MANGO_TEST_VISUALIZATION", "false") == "true"
         include("visualization_tests.jl")
     end

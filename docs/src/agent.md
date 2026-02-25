@@ -229,6 +229,63 @@ Agent descriptions integrate with `record_agent_having!` in simulation worlds fo
 
 ---
 
+## Agent Services
+
+Services are a lightweight extension mechanism: arbitrary objects can be attached to any agent and retrieved later by type. They let you augment agent behavior without modifying the agent struct.
+
+### General service API
+
+```julia
+add_service!(agent, MyService())          # register a service (keyed by type)
+svc = service_of_type(agent, MyService)   # retrieve (returns nothing if absent)
+svc = service_of_type(agent, MyService, MyService())  # retrieve or create default
+has_service(agent, MyService)             # → true / false
+```
+
+### Observation service
+
+`install_observer` registers a zero-argument function that computes an observable value on demand. `observation` calls it by name:
+
+```julia
+install_observer(() -> agent.temperature, agent, :temperature)
+install_observer(() -> agent.battery, agent, :battery)
+
+temp = observation(agent, :temperature)   # calls the registered function
+temp = observation(agent)                 # :default key
+```
+
+Works identically from a role:
+
+```julia
+function Mango.setup(role::SensorRole)
+    install_observer(() -> role.last_reading, context(role).agent, :reading)
+end
+
+val = observation(role, :reading)
+```
+
+### Action service
+
+`install_action` registers a named callable that can be invoked later via `action`:
+
+```julia
+install_action(agent, :charge) do
+    agent.battery = 100
+end
+
+action(agent, :charge)()   # invoke the action
+```
+
+All registered actions are available via `actions(agent)`:
+
+```julia
+for (name, fn) in actions(agent)
+    @info "Available action" name
+end
+```
+
+---
+
 ## Declarative Behavior with behavior_in
 
 !!! note "Simulation mode only"

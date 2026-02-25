@@ -3,7 +3,7 @@ export complete_topology, star_topology, cycle_topology, graph_topology, per_nod
     choose_agents!, assign_agents!, NORMAL, BROKEN, INACTIVE, set_edge_state!, remove_edge!, remove_node!,
     auto_assign!, topology_node_id, topology_to_aid_graph, set_as_connector!, connect_topologies!, mark_as_connector!,
     topology_connectors, topology_connection_types, NORMAL, INACTIVE, BROKEN, UNKNOWN, EXT_CONNECTION, State, topology_service,
-    set_characteristic!, topology_characteristic
+    set_characteristic!, topology_characteristic, broadcast_to_neighbors
 
 using MetaGraphsNext
 using Graphs
@@ -594,4 +594,43 @@ function topology_to_aid_graph(topology::Topology)
         end
     end
     return MetaGraph(graph, vertex_description, edges_description)
+end
+
+"""
+    broadcast_to_neighbors(agent::Agent, content::Any; tid::Symbol=:default, state::State=NORMAL, kwargs...)
+
+Send `content` to every neighbor of `agent` in its topology. Returns the list of addresses
+that received the message. Accepts the same keyword arguments as [`topology_neighbors`](@ref)
+(`has_characteristic`, `include_connectors`, `match_func`) and any extra kwargs are forwarded
+to [`send_message`](@ref).
+
+# Example
+```julia
+function Mango.on_ready(agent::CoordAgent)
+    broadcast_to_neighbors(agent, "ping")
+end
+```
+"""
+function broadcast_to_neighbors(agent::Agent, content::Any;
+                                 tid::Symbol=:default, state::State=NORMAL, kwargs...)
+    neighbors = topology_neighbors(agent; tid=tid, state=state)
+    for addr in neighbors
+        send_message(agent, content, addr)
+    end
+    return neighbors
+end
+
+"""
+    broadcast_to_neighbors(role::Role, content::Any; tid::Symbol=:default, state::State=NORMAL, kwargs...)
+
+Role variant of [`broadcast_to_neighbors`](@ref). Sends `content` to every topology neighbor
+of the parent agent. Returns the list of neighbor addresses.
+"""
+function broadcast_to_neighbors(role::Role, content::Any;
+                                 tid::Symbol=:default, state::State=NORMAL, kwargs...)
+    neighbors = topology_neighbors(role; tid=tid, state=state)
+    for addr in neighbors
+        send_message(role, content, addr)
+    end
+    return neighbors
 end

@@ -17,6 +17,7 @@ Mango.jl provides a built-in task scheduler so agents and roles can do work proa
 | [`DateTimeTaskData`](@ref) | At a specific `DateTime` | `date_time::DateTime` |
 | [`AwaitableTaskData`](@ref) | When an awaitable object completes | `awaitable` |
 | [`ConditionalTaskData`](@ref) | When a predicate becomes `true` | `condition::Function`, `period_s::Real` |
+| [`TimeseriesTaskData`](@ref) | Once for each `DateTime` in a vector | `dates::Vector{DateTime}` |
 
 ---
 
@@ -167,6 +168,25 @@ end
 ```
 
 The scheduler re-evaluates the condition every `0.1` seconds (real time) or simulation steps.
+
+### TimeseriesTaskData — run once per DateTime in a list
+
+`TimeseriesTaskData` accepts a vector of `DateTime` values and calls the task function once for each of them in order.
+
+!!! warning "The function receives the date as its argument"
+    Unlike all other task types, the scheduled function for `TimeseriesTaskData` is called with the current `DateTime` as its first argument: `f(date::DateTime)`.
+
+```julia
+using Dates
+
+dates = [DateTime(2025, 1, d) for d in 1:5]   # Jan 1–5
+
+schedule(agent, TimeseriesTaskData(dates)) do date
+    @info "Running at" date
+end
+```
+
+In simulation mode the scheduler sleeps to the next date on the virtual clock between invocations. In real-time mode it sleeps the wall-clock difference.
 
 ---
 
